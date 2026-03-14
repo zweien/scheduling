@@ -33,7 +33,7 @@ function SortableItem({ user, onDelete }: { user: User; onDelete: (id: number, n
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="flex items-center justify-between p-2 bg-gray-50 rounded cursor-move hover:bg-gray-100">
+      className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-move hover:bg-muted">
       <span className="text-sm">{user.name}</span>
       <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(user.id, user.name); }} className="h-6 w-6 p-0 text-red-500">
         ×

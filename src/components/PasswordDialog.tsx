@@ -60,17 +60,17 @@ export function PasswordDialog({ open, onClose }: PasswordDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[calc(100%-2rem)]">
         <DialogHeader>
           <DialogTitle>修改密码</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="text-sm text-red-500 bg-red-50 p-2 rounded">{error}</div>
+            <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</div>
           )}
           {success && (
-            <div className="text-sm text-green-500 bg-green-50 p-2 rounded">密码修改成功！</div>
+            <div className="text-sm text-green-500 bg-green-500/10 p-2 rounded">密码修改成功！</div>
           )}
 
           <div className="space-y-2">

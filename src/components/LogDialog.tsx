@@ -36,30 +36,30 @@ export function LogDialog({ open, onClose }: LogDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-lg w-[calc(100%-2rem)] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>操作日志</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
           {logs.length === 0 ? (
-            <div className="text-center text-gray-500 py-10">暂无日志记录</div>
+            <div className="text-center text-muted-foreground py-10">暂无日志记录</div>
           ) : (
             <div className="space-y-2">
               {logs.map(log => (
                 <div key={log.id} className="border rounded p-3 text-sm">
                   <div className="flex justify-between items-start">
-                    <div className="font-medium text-blue-600">
+                    <div className="font-medium text-primary">
                       {actionLabels[log.action] || log.action}
                     </div>
-                    <div className="text-gray-400 text-xs">
+                    <div className="text-muted-foreground text-xs">
                       {format(parseISO(log.created_at), 'MM-dd HH:mm', { locale: zhCN })}
                     </div>
                   </div>
-                  <div className="mt-1 text-gray-600">{log.target}</div>
+                  <div className="mt-1 text-foreground">{log.target}</div>
                   {log.old_value && log.new_value && (
-                    <div className="mt-2 bg-gray-50 p-2 rounded text-xs space-y-1">
-                      <div><span className="text-red-500">旧值：</span>{log.old_value}</div>
+                    <div className="mt-2 bg-muted p-2 rounded text-xs space-y-1">
+                      <div><span className="text-destructive">旧值：</span>{log.old_value}</div>
                       <div><span className="text-green-500">新值：</span>{log.new_value}</div>
                     </div>
                   )}

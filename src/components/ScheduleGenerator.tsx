@@ -44,7 +44,7 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
 
   return (
     <div className="space-y-3">
-      {error && <div className="text-sm text-red-500">{error}</div>}
+      {error && <div className="text-sm text-destructive">{error}</div>}
 
       <div className="space-y-1">
         <Label htmlFor="startDate" className="text-xs">开始日期</Label>

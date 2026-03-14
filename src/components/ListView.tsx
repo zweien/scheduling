@@ -53,24 +53,24 @@ export function ListView({ refreshKey }: ListViewProps) {
       <h2 className="text-lg font-semibold">值班列表</h2>
 
       {schedules.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">暂无排班数据</div>
+        <div className="text-center text-muted-foreground py-10">暂无排班数据</div>
       ) : (
         <Card className="divide-y">
           {schedules.map(schedule => (
             <div
               key={schedule.id}
               onClick={() => handleRowClick(schedule.date)}
-              className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer"
+              className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer"
             >
               <div>
                 <div className="font-medium">
                   {format(parseISO(schedule.date), 'M月d日 EEEE', { locale: zhCN })}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   {schedule.is_manual && <span className="text-amber-500 mr-1">* 手动调整</span>}
                 </div>
               </div>
-              <div className="text-blue-600 font-medium">{schedule.user.name}</div>
+              <div className="text-primary font-medium">{schedule.user.name}</div>
             </div>
           ))}
         </Card>

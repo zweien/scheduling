@@ -15,7 +15,7 @@ import { ExportDialog } from '@/components/ExportDialog';
 type ViewMode = 'calendar' | 'list';
 
 export default function DashboardPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [refreshKey, setRefreshKey] = useState(0);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -40,9 +40,13 @@ export default function DashboardPage() {
         onShowPrint={() => setPrintOpen(true)}
         onShowExport={() => setExportOpen(true)}
       />
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar isOpen={sidebarOpen} onScheduleGenerated={handleScheduleGenerated} />
-        <main className="flex-1 p-4 bg-gray-50 overflow-y-auto">
+      <div className="flex-1 flex overflow-hidden relative">
+        <Sidebar
+          isOpen={sidebarOpen}
+          onScheduleGenerated={handleScheduleGenerated}
+          onClose={() => setSidebarOpen(false)}
+        />
+        <main className="flex-1 p-4 bg-muted/30 overflow-y-auto">
           {viewMode === 'calendar' ? (
             <CalendarView refreshKey={refreshKey} />
           ) : (

@@ -76,26 +76,28 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">
           {format(currentMonth, 'yyyy年M月', { locale: zhCN })}
         </h2>
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <Button variant="outline" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            上月
+            <span className="hidden sm:inline">上月</span>
+            <span className="sm:hidden">&lt;</span>
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentMonth(today)}>
             今天
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-            下月
+            <span className="hidden sm:inline">下月</span>
+            <span className="sm:hidden">&gt;</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {['一', '二', '三', '四', '五', '六', '日'].map(day => (
-          <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+          <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
             {day}
           </div>
         ))}
@@ -107,8 +109,8 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
 
           if (!isCurrentMonth) {
             return (
-              <div key={dateStr} className="min-h-[80px] p-2 border rounded border-gray-100 bg-gray-50 opacity-50">
-                <div className="text-sm text-gray-300">{format(day, 'd')}</div>
+              <div key={dateStr} className="min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded border-border bg-muted/30 opacity-50">
+                <div className="text-xs sm:text-sm text-muted-foreground">{format(day, 'd')}</div>
               </div>
             );
           }

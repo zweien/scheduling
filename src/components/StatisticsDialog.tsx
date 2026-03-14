@@ -39,26 +39,26 @@ export function StatisticsDialog({ open, onClose }: StatisticsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>值班统计</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="bg-blue-50 p-3 rounded">
-              <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
-              <div className="text-sm text-gray-500">总值班次数</div>
+            <div className="bg-primary/10 p-3 rounded">
+              <div className="text-2xl font-bold text-primary">{totalCount}</div>
+              <div className="text-sm text-muted-foreground">总值班次数</div>
             </div>
-            <div className="bg-green-50 p-3 rounded">
+            <div className="bg-green-500/10 p-3 rounded">
               <div className="text-2xl font-bold text-green-600">{userCount}</div>
-              <div className="text-sm text-gray-500">值班人数</div>
+              <div className="text-sm text-muted-foreground">值班人数</div>
             </div>
           </div>
 
           {stats.length > 0 && (
             <>
-              <div className="text-sm font-medium text-gray-700">人员对比</div>
+              <div className="text-sm font-medium text-foreground">人员对比</div>
               <div className="space-y-2">
                 {stats.map(stat => (
                   <div key={stat.userId} className="space-y-1">
@@ -66,9 +66,9 @@ export function StatisticsDialog({ open, onClose }: StatisticsDialogProps) {
                       <span>{stat.userName}</span>
                       <span className="font-medium">{stat.count} 次</span>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 rounded-full transition-all"
+                        className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${(stat.count / maxCount) * 100}%` }}
                       />
                     </div>
@@ -78,12 +78,12 @@ export function StatisticsDialog({ open, onClose }: StatisticsDialogProps) {
 
               {mostDuty && leastDuty && (
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="bg-amber-50 p-2 rounded">
+                  <div className="bg-amber-500/10 p-2 rounded">
                     <span className="text-amber-600">最多：</span>
                     <span className="font-medium">{mostDuty.userName} ({mostDuty.count}次)</span>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded">
-                    <span className="text-gray-500">最少：</span>
+                  <div className="bg-muted p-2 rounded">
+                    <span className="text-muted-foreground">最少：</span>
                     <span className="font-medium">{leastDuty.userName} ({leastDuty.count}次)</span>
                   </div>
                 </div>

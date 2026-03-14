@@ -15,11 +15,11 @@ interface UserSelectDialogProps {
 export function UserSelectDialog({ open, users, onSelect, onClose }: UserSelectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>选择值班人员</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-2 py-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-4">
           {users.map(user => (
             <Button
               key={user.id}

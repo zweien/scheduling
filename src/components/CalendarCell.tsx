@@ -25,20 +25,20 @@ export function CalendarCell({ date, schedule, isToday, onClick, onDragStart, on
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={`
-        min-h-[80px] p-2 border rounded cursor-pointer transition-colors
-        ${isToday ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-200'}
-        ${isWeekend ? 'bg-gray-50' : 'bg-white'}
-        ${schedule ? 'hover:border-blue-300' : ''}
-        ${schedule?.is_manual ? 'bg-amber-50' : ''}
+        min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded cursor-pointer transition-colors
+        ${isToday ? 'border-primary border-2 bg-primary/10' : 'border-border'}
+        ${isWeekend ? 'bg-muted/50' : 'bg-background'}
+        ${schedule ? 'hover:border-primary/50' : ''}
+        ${schedule?.is_manual ? 'bg-amber-500/10' : ''}
       `}
     >
-      <div className={`text-sm font-medium ${isWeekend ? 'text-gray-400' : 'text-gray-600'}`}>
+      <div className={`text-xs sm:text-sm font-medium ${isWeekend ? 'text-muted-foreground' : 'text-foreground'}`}>
         {day}
       </div>
       {schedule && (
-        <div className="mt-1 text-xs text-blue-600 font-medium truncate">
+        <div className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-primary font-medium truncate">
           {schedule.user.name}
-          {schedule.is_manual && <span className="ml-1 text-amber-500">*</span>}
+          {schedule.is_manual && <span className="ml-0.5 text-amber-500">*</span>}
         </div>
       )}
     </div>

@@ -48,21 +48,21 @@ export function PrintDialog({ open, onClose }: PrintDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl w-[calc(100%-2rem)] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>打印排班表</DialogTitle>
         </DialogHeader>
 
         {!preview ? (
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>开始日期</Label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 bg-background"
                 />
               </div>
               <div className="space-y-2">
@@ -71,7 +71,7 @@ export function PrintDialog({ open, onClose }: PrintDialogProps) {
                   type="date"
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 bg-background"
                 />
               </div>
             </div>
@@ -86,14 +86,14 @@ export function PrintDialog({ open, onClose }: PrintDialogProps) {
             <div className="print:p-4">
               <div className="hidden print:block mb-4">
                 <h2 className="text-xl font-bold text-center">值班排班表</h2>
-                <p className="text-center text-gray-500">
+                <p className="text-center text-muted-foreground">
                   {startDate} 至 {endDate}
                 </p>
               </div>
 
-              <table className="w-full border-collapse print:border">
+              <table className="w-full border-collapse print:border text-sm">
                 <thead>
-                  <tr className="bg-gray-100 print:bg-gray-200">
+                  <tr className="bg-muted print:bg-gray-200">
                     <th className="border px-2 py-1 text-left">日期</th>
                     <th className="border px-2 py-1 text-left">星期</th>
                     <th className="border px-2 py-1 text-left">值班人员</th>

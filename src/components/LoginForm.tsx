@@ -23,8 +23,8 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30">
+      <Card className="w-full max-w-md mx-4">
         <CardHeader>
           <CardTitle>值班排班系统</CardTitle>
           <CardDescription>请输入密码登录</CardDescription>
@@ -32,7 +32,7 @@ export function LoginForm() {
         <CardContent>
           <form action={handleSubmit} className="space-y-4">
             {error && (
-              <div className="text-sm text-red-500 bg-red-50 p-2 rounded">{error}</div>
+              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</div>
             )}
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>
