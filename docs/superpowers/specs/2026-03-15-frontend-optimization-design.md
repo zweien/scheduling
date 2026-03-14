@@ -64,6 +64,7 @@ const notoSansSC = Noto_Sans_SC({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
+  display: "swap", // 避免阻塞首屏渲染
 });
 ```
 
@@ -92,13 +93,35 @@ const notoSansSC = Noto_Sans_SC({
 **状态样式**：
 | 状态 | 样式 |
 |------|------|
-| 今日 | 蓝色左边框 4px + 浅蓝背景 + 脉冲光晕 |
+| 今日 | 蓝色左边框 4px + 浅蓝背景 + 脉冲光晕（见下方 keyframes） |
 | 周末 | 背景稍暗 (muted) |
-| 手动调整 | 右上角橙色小圆点 |
+| 手动调整 | 右上角橙色小圆点 (4px) |
 | 空单元格 | hover 时显示 "+" 图标 |
 
-**头像生成**：
-- 背景色：基于用户名 hash 生成稳定 HSL 色相
+**今日脉冲光晕动画**：
+```css
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.50 0.12 250 / 0.3); }
+  50% { box-shadow: 0 0 0 6px oklch(0.50 0.12 250 / 0); }
+}
+.today-cell {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+```
+
+**头像颜色生成算法**：
+```typescript
+// 基于用户名生成稳定的 HSL 色相
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 65%, 50%)`;
+}
+// 示例：getAvatarColor("张三") → "hsl(142, 65%, 50%)"
+```
 - 尺寸：桌面 32px / 移动端 24px
 - 文字：白色，居中，姓名首字
 
@@ -140,6 +163,11 @@ const notoSansSC = Noto_Sans_SC({
 - 柱状图颜色与用户头像色一致
 - 添加"本月/全部"切换标签
 - 数字使用 tabular-nums 等宽
+
+**API 修改**：
+- 现有 `getStats()` 返回全部统计
+- 新增可选参数 `getStats(startDate?: string, endDate?: string)`
+- "本月"模式传入当月起止日期
 
 ### 4. 日志对话框（LogDialog）
 
@@ -199,7 +227,7 @@ const notoSansSC = Noto_Sans_SC({
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
-/* 每个单元格 delay = index * 10ms，最大 300ms */
+/* 每个单元格 delay = Math.min(index * 8, 200)ms */
 ```
 
 ### 对话框动画
@@ -233,7 +261,14 @@ const notoSansSC = Noto_Sans_SC({
 1. 拖拽开始：原单元格 opacity 0.4
 2. 拖拽中：显示拖拽预览浮层（人员名 + 日期）
 3. 拖拽目标：虚线蓝色边框 + 浅蓝背景
-4. 释放后：短暂闪烁确认动画
+4. 释放后：闪烁确认动画
+```css
+@keyframes dropConfirm {
+  0% { box-shadow: 0 0 0 0 oklch(0.50 0.12 250 / 0.5); }
+  100% { box-shadow: 0 0 0 8px oklch(0.50 0.12 250 / 0); }
+}
+/* 释放后应用到目标单元格，duration: 300ms, fill: forwards */
+```
 
 ## 文件修改清单
 
