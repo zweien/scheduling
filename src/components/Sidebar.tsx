@@ -2,6 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserList } from '@/components/UserList';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,8 +18,8 @@ export function Sidebar({ isOpen, onScheduleGenerated }: SidebarProps) {
         <CardHeader>
           <CardTitle className="text-base">人员管理</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-sm text-gray-500">加载中...</div>
+        <CardContent>
+          <UserList />
         </CardContent>
       </Card>
 
