@@ -17,6 +17,7 @@ export function getSchedulesByDateRange(startDate: string, endDate: string): Sch
   ).all(startDate, endDate) as Schedule[];
   return schedules.map(s => ({
     ...s,
+    is_manual: Boolean(s.is_manual),
     user: getUserById(s.user_id)!
   })).filter(s => s.user);
 }
