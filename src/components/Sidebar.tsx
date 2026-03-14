@@ -3,6 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserList } from '@/components/UserList';
+import { ScheduleGenerator } from '@/components/ScheduleGenerator';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,8 +28,8 @@ export function Sidebar({ isOpen, onScheduleGenerated }: SidebarProps) {
         <CardHeader>
           <CardTitle className="text-base">生成排班</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-sm text-gray-500">加载中...</div>
+        <CardContent>
+          <ScheduleGenerator onGenerated={onScheduleGenerated} />
         </CardContent>
       </Card>
     </aside>
