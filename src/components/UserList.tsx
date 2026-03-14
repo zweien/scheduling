@@ -83,9 +83,15 @@ export function UserList() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={users.map(u => u.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1 max-h-48 overflow-y-auto">
-            {users.map(user => (
-              <SortableItem key={user.id} user={user} onDelete={handleDelete} />
-            ))}
+            {users.length === 0 ? (
+              <div className="border-2 border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
+                添加第一位值班人员
+              </div>
+            ) : (
+              users.map(user => (
+                <SortableItem key={user.id} user={user} onDelete={handleDelete} />
+              ))
+            )}
           </div>
         </SortableContext>
       </DndContext>

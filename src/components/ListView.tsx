@@ -53,7 +53,10 @@ export function ListView({ refreshKey }: ListViewProps) {
       <h2 className="text-lg font-semibold">值班列表</h2>
 
       {schedules.length === 0 ? (
-        <div className="text-center text-muted-foreground py-10">暂无排班数据</div>
+        <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
+          <p className="text-sm">暂无排班数据</p>
+          <p className="text-xs mt-1">点击左侧生成排班开始</p>
+        </div>
       ) : (
         <Card className="divide-y">
           {schedules.map(schedule => (

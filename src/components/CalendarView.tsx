@@ -10,10 +10,13 @@ import { getSchedules, replaceSchedule, swapSchedules } from '@/app/actions/sche
 import { getUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CalendarViewProps {
   refreshKey: number;
 }
+
+type SlideDirection = 'none' | 'left' | 'right';
 
 export function CalendarView({ refreshKey }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -22,6 +25,7 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
+  const [slideDirection, setSlideDirection] = useState<SlideDirection>('none');
 
   const today = new Date();
 
@@ -74,6 +78,34 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
     loadData();
   };
 
+  const goToPrevMonth = () => {
+    setSlideDirection('right');
+    setTimeout(() => {
+      setCurrentMonth(subMonths(currentMonth, 1));
+      setSlideDirection('none');
+    }, 50);
+  };
+
+  const goToNextMonth = () => {
+    setSlideDirection('left');
+    setTimeout(() => {
+      setCurrentMonth(addMonths(currentMonth, 1));
+      setSlideDirection('none');
+    }, 50);
+  };
+
+  const goToToday = () => {
+    const direction = currentMonth < today ? 'left' : 'right';
+    setSlideDirection(direction);
+    setTimeout(() => {
+      setCurrentMonth(today);
+      setSlideDirection('none');
+    }, 50);
+  };
+
+  const slideClass = slideDirection === 'left' ? 'animate-slide-left' :
+                     slideDirection === 'right' ? 'animate-slide-right' : '';
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -81,31 +113,32 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
           {format(currentMonth, 'yyyy年M月', { locale: zhCN })}
         </h2>
         <div className="flex gap-1 sm:gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            <span className="hidden sm:inline">上月</span>
-            <span className="sm:hidden">&lt;</span>
+          <Button variant="outline" size="sm" onClick={goToPrevMonth}>
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1">上月</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(today)}>
+          <Button variant="outline" size="sm" onClick={goToToday}>
             今天
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-            <span className="hidden sm:inline">下月</span>
-            <span className="sm:hidden">&gt;</span>
+          <Button variant="outline" size="sm" onClick={goToNextMonth}>
+            <span className="hidden sm:inline mr-1">下月</span>
+            <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+      <div className={`grid grid-cols-7 gap-0.5 sm:gap-1 ${slideClass}`}>
         {['一', '二', '三', '四', '五', '六', '日'].map(day => (
           <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
             {day}
           </div>
         ))}
 
-        {days.map(day => {
+        {days.map((day, index) => {
           const dateStr = format(day, 'yyyy-MM-dd');
           const schedule = schedules.find(s => s.date === dateStr);
           const isCurrentMonth = isSameMonth(day, currentMonth);
+          const animationDelay = Math.min(index * 8, 200);
 
           if (!isCurrentMonth) {
             return (
@@ -125,6 +158,9 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
               onDragStart={() => handleDragStart(dateStr)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(dateStr)}
+              isDragSource={dragDate === dateStr}
+              isDropTarget={dragDate !== null && dragDate !== dateStr}
+              animationDelay={animationDelay}
             />
           );
         })}

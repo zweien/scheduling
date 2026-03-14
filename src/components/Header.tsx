@@ -5,6 +5,19 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
+import {
+  Menu,
+  BarChart3,
+  History,
+  Printer,
+  Download,
+  Key,
+  LogOut,
+  Calendar,
+  List,
+  MoreVertical,
+  X,
+} from 'lucide-react';
 
 type ViewMode = 'calendar' | 'list';
 
@@ -27,125 +40,150 @@ export function Header({
   onShowLogs,
   onShowPassword,
   onShowPrint,
-  onShowExport
+  onShowExport,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const menuItems = [
+    { label: '统计', icon: BarChart3, onClick: onShowStats },
+    { label: '日志', icon: History, onClick: onShowLogs },
+    { label: '打印', icon: Printer, onClick: onShowPrint },
+    { label: '导出', icon: Download, onClick: onShowExport },
+    { label: '改密', icon: Key, onClick: onShowPassword },
+  ];
+
   return (
-    <header className="h-14 border-b bg-background flex items-center justify-between px-4">
-      <div className="flex items-center gap-2 sm:gap-4">
-        <Button variant="ghost" size="sm" onClick={onToggleSidebar}>
-          ☰
+    <header className="h-14 border-b bg-background flex items-center justify-between px-4 gap-4">
+      {/* 品牌区 */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="h-8 w-8">
+          <Menu className="w-5 h-5" />
         </Button>
         <h1 className="text-base sm:text-lg font-semibold truncate">值班排班系统</h1>
       </div>
 
-      {/* 桌面端：显示所有按钮 */}
-      <div className="hidden md:flex items-center gap-2">
+      {/* 桌面端：视图切换 + 操作区 */}
+      <div className="hidden md:flex items-center gap-3">
+        {/* 主题切换 */}
         <ThemeToggle />
-        <div className="flex border rounded overflow-hidden">
+
+        {/* 视图切换 */}
+        <div className="flex border rounded-lg overflow-hidden">
           <Button
             variant={viewMode === 'calendar' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => onViewModeChange('calendar')}
-            className="rounded-none"
+            className="rounded-none gap-1"
           >
+            <Calendar className="w-4 h-4" />
             月历
           </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => onViewModeChange('list')}
-            className="rounded-none"
+            className="rounded-none gap-1"
           >
+            <List className="w-4 h-4" />
             列表
           </Button>
         </div>
 
-        <Button variant="outline" size="sm" onClick={onShowStats}>统计</Button>
-        <Button variant="outline" size="sm" onClick={onShowLogs}>日志</Button>
-        <Button variant="outline" size="sm" onClick={onShowPrint}>打印</Button>
-        <Button variant="outline" size="sm" onClick={onShowExport}>导出</Button>
-        <Button variant="outline" size="sm" onClick={onShowPassword}>改密</Button>
+        {/* 分隔线 */}
+        <div className="w-px h-6 bg-border" />
 
+        {/* 操作按钮 */}
+        {menuItems.map(item => (
+          <Button
+            key={item.label}
+            variant="ghost"
+            size="sm"
+            onClick={item.onClick}
+            className="gap-1.5"
+          >
+            <item.icon className="w-4 h-4" />
+            <span className="hidden lg:inline">{item.label}</span>
+          </Button>
+        ))}
+
+        {/* 退出 */}
         <form action={logout}>
-          <Button variant="outline" size="sm" type="submit">退出</Button>
+          <Button variant="ghost" size="sm" type="submit" className="gap-1.5 text-destructive hover:text-destructive">
+            <LogOut className="w-4 h-4" />
+            <span className="hidden lg:inline">退出</span>
+          </Button>
         </form>
       </div>
 
       {/* 移动端：紧凑布局 */}
       <div className="flex md:hidden items-center gap-1">
         <ThemeToggle />
+
+        {/* 视图切换 */}
         <div className="flex border rounded overflow-hidden">
           <Button
             variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-            size="sm"
+            size="icon"
             onClick={() => onViewModeChange('calendar')}
-            className="rounded-none px-2"
+            className="rounded-none h-8 w-8"
           >
-            月历
+            <Calendar className="w-4 h-4" />
           </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="sm"
+            size="icon"
             onClick={() => onViewModeChange('list')}
-            className="rounded-none px-2"
+            className="rounded-none h-8 w-8"
           >
-            列表
+            <List className="w-4 h-4" />
           </Button>
         </div>
 
         {/* 更多菜单 */}
         <div className="relative">
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={() => setMenuOpen(!menuOpen)}
+            className="h-8 w-8"
           >
-            ▼
+            {menuOpen ? <X className="w-4 h-4" /> : <MoreVertical className="w-4 h-4" />}
           </Button>
+
+          {/* Action Sheet 风格菜单 */}
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-32 bg-background border rounded shadow-lg z-50">
-              <button
-                onClick={() => { onShowStats(); setMenuOpen(false); }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-muted"
-              >
-                统计
-              </button>
-              <button
-                onClick={() => { onShowLogs(); setMenuOpen(false); }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-muted"
-              >
-                日志
-              </button>
-              <button
-                onClick={() => { onShowPrint(); setMenuOpen(false); }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-muted"
-              >
-                打印
-              </button>
-              <button
-                onClick={() => { onShowExport(); setMenuOpen(false); }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-muted"
-              >
-                导出
-              </button>
-              <button
-                onClick={() => { onShowPassword(); setMenuOpen(false); }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-muted"
-              >
-                改密
-              </button>
-              <hr />
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-muted text-red-500"
-                >
-                  退出
-                </button>
-              </form>
-            </div>
+            <>
+              {/* 遮罩 */}
+              <div
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                onClick={() => setMenuOpen(false)}
+              />
+
+              {/* 菜单面板 */}
+              <div className="fixed bottom-0 left-0 right-0 bg-background border-t rounded-t-2xl p-4 z-50 animate-fade-in">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {menuItems.map(item => (
+                    <button
+                      key={item.label}
+                      onClick={() => { item.onClick(); setMenuOpen(false); }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-muted transition-colors"
+                    >
+                      <item.icon className="w-6 h-6 text-primary" />
+                      <span className="text-sm">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-destructive/10 text-destructive font-medium hover:bg-destructive/20 transition-colors"
+                  >
+                    退出登录
+                  </button>
+                </form>
+              </div>
+            </>
           )}
         </div>
       </div>

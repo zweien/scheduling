@@ -48,72 +48,113 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  /* 主色调 - 冷灰蓝 */
+  --primary: oklch(0.50 0.12 250);
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* 强调色 - 青色点缀 */
+  --accent: oklch(0.65 0.10 200);
+  --accent-foreground: oklch(0.15 0 0);
+
+  /* 背景层级 */
+  --background: oklch(0.985 0.002 250);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+
+  /* 次要 */
+  --secondary: oklch(0.96 0.005 250);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.96 0.005 250);
+  --muted-foreground: oklch(0.50 0 0);
+
+  /* 边框和分割 */
+  --border: oklch(0.90 0.008 250);
+  --input: oklch(0.90 0.008 250);
+  --ring: oklch(0.50 0.12 250);
+
+  /* 功能色 */
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+  --success: oklch(0.65 0.15 145);
+  --warning: oklch(0.75 0.15 85);
+
+  /* 图表色 */
+  --chart-1: oklch(0.50 0.12 250);
+  --chart-2: oklch(0.60 0.12 220);
+  --chart-3: oklch(0.55 0.10 200);
+  --chart-4: oklch(0.45 0.12 260);
+  --chart-5: oklch(0.40 0.10 240);
+
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+
+  /* Sidebar */
+  --sidebar: oklch(0.985 0.002 250);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.50 0.12 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.96 0.005 250);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-border: oklch(0.90 0.008 250);
+  --sidebar-ring: oklch(0.50 0.12 250);
+
+  /* 动画颜色 */
+  --glow-color: oklch(0.50 0.12 250);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  /* 主色调 */
+  --primary: oklch(0.65 0.12 250);
+  --primary-foreground: oklch(0.15 0 0);
+
+  /* 强调色 */
+  --accent: oklch(0.55 0.10 200);
+  --accent-foreground: oklch(0.98 0 0);
+
+  /* 背景层级 */
+  --background: oklch(0.15 0.005 250);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.20 0.005 250);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.20 0.005 250);
+  --popover-foreground: oklch(0.98 0 0);
+
+  /* 次要 */
+  --secondary: oklch(0.26 0.008 250);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.26 0.008 250);
+  --muted-foreground: oklch(0.65 0 0);
+
+  /* 边框和分割 */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.12 250);
+
+  /* 功能色 */
+  --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.65 0.15 145);
+  --warning: oklch(0.75 0.15 85);
+
+  /* 图表色 */
+  --chart-1: oklch(0.65 0.12 250);
+  --chart-2: oklch(0.60 0.12 220);
+  --chart-3: oklch(0.55 0.10 200);
+  --chart-4: oklch(0.50 0.12 260);
+  --chart-5: oklch(0.45 0.10 240);
+
+  /* Sidebar */
+  --sidebar: oklch(0.20 0.005 250);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.65 0.12 250);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.26 0.008 250);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.55 0.12 250);
+
+  /* 动画颜色 */
+  --glow-color: oklch(0.65 0.12 250);
 }
 
 @layer base {
@@ -161,4 +202,71 @@
   .print\:bg-gray-200 {
     background-color: #e5e5e5;
   }
+}
+
+/* === 动画系统 === */
+
+/* 今日脉冲光晕 */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--glow-color); opacity: 0.3; }
+  50% { box-shadow: 0 0 0 6px var(--glow-color); opacity: 0; }
+}
+
+/* 页面淡入 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 月份切换 */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 单元格交错入场 */
+@keyframes cellReveal {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 拖拽释放确认 */
+@keyframes dropConfirm {
+  0% { box-shadow: 0 0 0 0 var(--glow-color); }
+  100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* 工具类 */
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 200ms ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 200ms ease-out forwards;
+}
+
+.animate-slide-right {
+  animation: slideInRight 200ms ease-out forwards;
+}
+
+.animate-cell-reveal {
+  animation: cellReveal 150ms ease-out forwards;
+}
+
+.animate-drop-confirm {
+  animation: dropConfirm 300ms ease-out forwards;
+}
+
+/* 数字等宽 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

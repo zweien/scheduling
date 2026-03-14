@@ -2,6 +2,8 @@
 'use client';
 
 import type { ScheduleWithUser } from '@/types';
+import { getAvatarColor, getAvatarInitial } from '@/lib/avatar';
+import { Plus } from 'lucide-react';
 
 interface CalendarCellProps {
   date: Date;
@@ -11,9 +13,23 @@ interface CalendarCellProps {
   onDragStart?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: () => void;
+  isDragSource?: boolean;
+  isDropTarget?: boolean;
+  animationDelay?: number;
 }
 
-export function CalendarCell({ date, schedule, isToday, onClick, onDragStart, onDragOver, onDrop }: CalendarCellProps) {
+export function CalendarCell({
+  date,
+  schedule,
+  isToday,
+  onClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragSource = false,
+  isDropTarget = false,
+  animationDelay = 0,
+}: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
@@ -25,20 +41,46 @@ export function CalendarCell({ date, schedule, isToday, onClick, onDragStart, on
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={`
-        min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded cursor-pointer transition-colors
-        ${isToday ? 'border-primary border-2 bg-primary/10' : 'border-border'}
-        ${isWeekend ? 'bg-muted/50' : 'bg-background'}
-        ${schedule ? 'hover:border-primary/50' : ''}
-        ${schedule?.is_manual ? 'bg-amber-500/10' : ''}
+        relative min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded cursor-pointer
+        transition-all duration-150
+        ${isToday
+          ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow'
+          : 'border-border'}
+        ${isWeekend ? 'bg-muted/30' : 'bg-background'}
+        ${schedule ? 'hover:-translate-y-0.5 hover:shadow-md' : ''}
+        ${isDragSource ? 'opacity-40' : ''}
+        ${isDropTarget ? 'border-2 border-dashed border-primary bg-primary/10' : ''}
       `}
+      style={{ animationDelay: `${animationDelay}ms` }}
     >
-      <div className={`text-xs sm:text-sm font-medium ${isWeekend ? 'text-muted-foreground' : 'text-foreground'}`}>
+      {/* 日期 */}
+      <div className={`absolute top-1 right-1 text-xs font-medium
+        ${isWeekend ? 'text-muted-foreground' : 'text-foreground'}
+        ${isToday ? 'text-primary' : ''}`}>
         {day}
       </div>
+
+      {/* 手动调整标记 */}
+      {schedule?.is_manual && (
+        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" />
+      )}
+
+      {/* 头像 */}
       {schedule && (
-        <div className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-primary font-medium truncate">
-          {schedule.user.name}
-          {schedule.is_manual && <span className="ml-0.5 text-amber-500">*</span>}
+        <div className="flex items-center justify-center h-full pt-4">
+          <div
+            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm"
+            style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+          >
+            {getAvatarInitial(schedule.user.name)}
+          </div>
+        </div>
+      )}
+
+      {/* 空单元格 hover 提示 */}
+      {!schedule && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+          <Plus className="w-4 h-4 text-muted-foreground" />
         </div>
       )}
     </div>
