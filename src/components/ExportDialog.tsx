@@ -1,0 +1,110 @@
+// src/components/ExportDialog.tsx
+'use client';
+
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { exportToCSV, exportToJSON } from '@/app/actions/export';
+
+interface ExportDialogProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function ExportDialog({ open, onClose }: ExportDialogProps) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleExportCSV() {
+    if (!startDate || !endDate) {
+      alert('请选择日期范围');
+      return;
+    }
+    setLoading(true);
+    try {
+      const csv = await exportToCSV(startDate, endDate);
+      downloadFile(csv, `排班表_${startDate}_${endDate}.csv`, 'text/csv');
+    } catch (error) {
+      alert('导出失败');
+    }
+    setLoading(false);
+  }
+
+  async function handleExportJSON() {
+    if (!startDate || !endDate) {
+      alert('请选择日期范围');
+      return;
+    }
+    setLoading(true);
+    try {
+      const json = await exportToJSON(startDate, endDate);
+      downloadFile(json, `排班表_${startDate}_${endDate}.json`, 'application/json');
+    } catch (error) {
+      alert('导出失败');
+    }
+    setLoading(false);
+  }
+
+  function downloadFile(content: string, filename: string, type: string) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>导出排班表</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>开始日期</Label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>结束日期</Label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={handleExportCSV}
+              disabled={loading}
+              className="flex-1"
+            >
+              导出 CSV
+            </Button>
+            <Button
+              onClick={handleExportJSON}
+              disabled={loading}
+              variant="outline"
+              className="flex-1"
+            >
+              导出 JSON
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

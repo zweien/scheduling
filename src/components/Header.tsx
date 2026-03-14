@@ -14,9 +14,10 @@ interface HeaderProps {
   onShowLogs: () => void;
   onShowPassword: () => void;
   onShowPrint: () => void;
+  onShowExport: () => void;
 }
 
-export function Header({ onToggleSidebar, viewMode, onViewModeChange, onShowStats, onShowLogs, onShowPassword, onShowPrint }: HeaderProps) {
+export function Header({ onToggleSidebar, viewMode, onViewModeChange, onShowStats, onShowLogs, onShowPassword, onShowPrint, onShowExport }: HeaderProps) {
   return (
     <header className="h-14 border-b bg-white flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
@@ -49,6 +50,7 @@ export function Header({ onToggleSidebar, viewMode, onViewModeChange, onShowStat
         <Button variant="outline" size="sm" onClick={onShowStats}>统计</Button>
         <Button variant="outline" size="sm" onClick={onShowLogs}>日志</Button>
         <Button variant="outline" size="sm" onClick={onShowPrint}>打印</Button>
+        <Button variant="outline" size="sm" onClick={onShowExport}>导出</Button>
         <Button variant="outline" size="sm" onClick={onShowPassword}>改密</Button>
 
         <form action={logout}>

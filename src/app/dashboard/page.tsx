@@ -10,6 +10,7 @@ import { StatisticsDialog } from '@/components/StatisticsDialog';
 import { LogDialog } from '@/components/LogDialog';
 import { PasswordDialog } from '@/components/PasswordDialog';
 import { PrintDialog } from '@/components/PrintDialog';
+import { ExportDialog } from '@/components/ExportDialog';
 
 type ViewMode = 'calendar' | 'list';
 
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [logsOpen, setLogsOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const handleScheduleGenerated = () => {
     setRefreshKey(k => k + 1);
@@ -36,6 +38,7 @@ export default function DashboardPage() {
         onShowLogs={() => setLogsOpen(true)}
         onShowPassword={() => setPasswordOpen(true)}
         onShowPrint={() => setPrintOpen(true)}
+        onShowExport={() => setExportOpen(true)}
       />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onScheduleGenerated={handleScheduleGenerated} />
@@ -52,6 +55,7 @@ export default function DashboardPage() {
       <LogDialog open={logsOpen} onClose={() => setLogsOpen(false)} />
       <PasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
       <PrintDialog open={printOpen} onClose={() => setPrintOpen(false)} />
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
     </div>
   );
 }
