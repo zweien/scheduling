@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { updatePassword } from '@/lib/auth';
+import { updatePasswordAction } from '@/app/actions/config';
 
 interface PasswordDialogProps {
   open: boolean;
@@ -41,7 +41,7 @@ export function PasswordDialog({ open, onClose }: PasswordDialogProps) {
     }
 
     setLoading(true);
-    const result = await updatePassword(oldPassword, newPassword);
+    const result = await updatePasswordAction(oldPassword, newPassword);
     setLoading(false);
 
     if (result.success) {

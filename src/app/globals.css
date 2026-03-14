@@ -127,3 +127,38 @@
     @apply font-sans;
   }
 }
+
+/* Print styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  .print\:p-4 {
+    padding: 1rem;
+  }
+  .print\:border {
+    border: 1px solid #000;
+  }
+  .print\:h-8 {
+    height: 2rem;
+  }
+  .print\:bg-gray-200 {
+    background-color: #e5e5e5;
+  }
+}
