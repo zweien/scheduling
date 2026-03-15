@@ -6,7 +6,6 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { CalendarView } from '@/components/CalendarView';
 import { ListView } from '@/components/ListView';
-import { StatisticsDialog } from '@/components/StatisticsDialog';
 import { LogDialog } from '@/components/LogDialog';
 import { PasswordDialog } from '@/components/PasswordDialog';
 import { PrintDialog } from '@/components/PrintDialog';
@@ -18,7 +17,6 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [statsOpen, setStatsOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
@@ -34,7 +32,6 @@ export default function DashboardPage() {
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        onShowStats={() => setStatsOpen(true)}
         onShowLogs={() => setLogsOpen(true)}
         onShowPassword={() => setPasswordOpen(true)}
         onShowPrint={() => setPrintOpen(true)}
@@ -55,7 +52,6 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      <StatisticsDialog open={statsOpen} onClose={() => setStatsOpen(false)} />
       <LogDialog open={logsOpen} onClose={() => setLogsOpen(false)} />
       <PasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
       <PrintDialog open={printOpen} onClose={() => setPrintOpen(false)} />
