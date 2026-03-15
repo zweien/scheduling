@@ -174,15 +174,30 @@
   body * {
     visibility: hidden;
   }
+  [data-slot="dialog-overlay"] {
+    display: none !important;
+  }
+  .print-dialog-content {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    display: block !important;
+  }
   .print-area,
   .print-area * {
     visibility: visible;
   }
   .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+    position: static !important;
+    width: 100% !important;
   }
   .print\:hidden {
     display: none !important;
@@ -201,6 +216,15 @@
   }
   .print\:bg-gray-200 {
     background-color: #e5e5e5;
+  }
+  .print-calendar-layout {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem !important;
+    align-items: start;
+  }
+  .print-calendar-month {
+    break-inside: avoid;
   }
 }
 
