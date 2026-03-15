@@ -10,6 +10,7 @@ import { LogDialog } from '@/components/LogDialog';
 import { PasswordDialog } from '@/components/PasswordDialog';
 import { PrintDialog } from '@/components/PrintDialog';
 import { ExportDialog } from '@/components/ExportDialog';
+import { TokenDialog } from '@/components/TokenDialog';
 
 type ViewMode = 'calendar' | 'list';
 
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [tokenOpen, setTokenOpen] = useState(false);
 
   const handleScheduleGenerated = () => {
     setRefreshKey(k => k + 1);
@@ -36,6 +38,7 @@ export default function DashboardPage() {
         onShowPassword={() => setPasswordOpen(true)}
         onShowPrint={() => setPrintOpen(true)}
         onShowExport={() => setExportOpen(true)}
+        onShowTokens={() => setTokenOpen(true)}
       />
       <div className="flex-1 flex overflow-hidden relative">
         <Sidebar
@@ -56,6 +59,7 @@ export default function DashboardPage() {
       <PasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
       <PrintDialog open={printOpen} onClose={() => setPrintOpen(false)} />
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
+      <TokenDialog open={tokenOpen} onClose={() => setTokenOpen(false)} />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   Printer,
   Download,
   Key,
+  LockKeyhole,
   LogOut,
   Calendar,
   List,
@@ -30,6 +31,7 @@ interface HeaderProps {
   onShowPassword: () => void;
   onShowPrint: () => void;
   onShowExport: () => void;
+  onShowTokens: () => void;
 }
 
 export function Header({
@@ -40,6 +42,7 @@ export function Header({
   onShowPassword,
   onShowPrint,
   onShowExport,
+  onShowTokens,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -47,6 +50,7 @@ export function Header({
     { label: '日志', icon: History, onClick: onShowLogs },
     { label: '打印', icon: Printer, onClick: onShowPrint },
     { label: '导出', icon: Download, onClick: onShowExport },
+    { label: 'Token', icon: LockKeyhole, onClick: onShowTokens },
     { label: '改密', icon: Key, onClick: onShowPassword },
   ];
 

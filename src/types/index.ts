@@ -34,6 +34,16 @@ export interface Config {
   value: string;
 }
 
+export interface ApiToken {
+  id: number;
+  name: string;
+  token_hash: string;
+  token_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  disabled_at: string | null;
+}
+
 export type Action =
   | 'login'
   | 'logout'
