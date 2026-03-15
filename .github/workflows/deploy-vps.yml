@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - feature/deploy-vps
   workflow_dispatch:
 
 jobs:
@@ -22,15 +21,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          script_stop: true
           command_timeout: 30m
           script: |
             set -euo pipefail
             cd "${{ secrets.VPS_APP_DIR }}"
-            DEPLOY_REF="${{ github.ref_name }}"
             git fetch --all
-            git checkout "${DEPLOY_REF}"
-            git reset --hard "origin/${DEPLOY_REF}"
+            git checkout master
+            git reset --hard origin/master
             npm ci --include=dev
             set -a
             source ./.env.production
