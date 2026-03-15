@@ -35,7 +35,7 @@ export function deleteSchedule(date: string): void {
 
 export function getScheduleStats(startDate?: string, endDate?: string): { userId: number; count: number }[] {
   let query = `
-    SELECT user_id, COUNT(*) as count
+    SELECT user_id as userId, COUNT(*) as count
     FROM schedules
   `;
   const params: string[] = [];
