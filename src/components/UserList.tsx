@@ -12,6 +12,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  type DragEndEvent,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -67,7 +68,11 @@ function SortableItem({
   );
 }
 
-export function UserList() {
+interface UserListProps {
+  onUsersChanged?: () => void;
+}
+
+export function UserList({ onUsersChanged }: UserListProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [newName, setNewName] = useState('');
 
@@ -85,19 +90,22 @@ export function UserList() {
     const user = await addUser(newName.trim());
     setUsers([...users, user]);
     setNewName('');
+    onUsersChanged?.();
   }
 
   async function handleDelete(id: number, name: string) {
     await removeUser(id, name);
     setUsers(users.filter(u => u.id !== id));
+    onUsersChanged?.();
   }
 
   async function handleToggleActive(id: number, isActive: boolean) {
     await updateUserActiveAction(id, isActive);
     setUsers(users.map(u => u.id === id ? { ...u, is_active: isActive } : u));
+    onUsersChanged?.();
   }
 
-  async function handleDragEnd(event: { active: any; over: any }) {
+  async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       const oldIndex = users.findIndex(u => u.id === active.id);
@@ -105,6 +113,7 @@ export function UserList() {
       const newUsers = arrayMove(users, oldIndex, newIndex);
       setUsers(newUsers);
       await updateUserOrder(newUsers.map(u => u.id));
+      onUsersChanged?.();
     }
   }
 

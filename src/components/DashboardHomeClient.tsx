@@ -23,6 +23,10 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
     setRefreshKey(key => key + 1);
   };
 
+  const handleUsersChanged = () => {
+    setRefreshKey(key => key + 1);
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <Header
@@ -37,6 +41,7 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
           <Sidebar
             isOpen={sidebarOpen}
             onScheduleGenerated={handleScheduleGenerated}
+            onUsersChanged={handleUsersChanged}
             onClose={() => setSidebarOpen(false)}
           />
         ) : null}
@@ -52,4 +57,3 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
     </div>
   );
 }
-

@@ -9,10 +9,11 @@ import { Users, CalendarPlus } from 'lucide-react';
 interface SidebarProps {
   isOpen: boolean;
   onScheduleGenerated: () => void;
+  onUsersChanged: () => void;
   onClose?: () => void;
 }
 
-export function Sidebar({ isOpen, onScheduleGenerated, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onScheduleGenerated, onUsersChanged, onClose }: SidebarProps) {
   return (
     <>
       {/* 侧边栏 */}
@@ -34,7 +35,7 @@ export function Sidebar({ isOpen, onScheduleGenerated, onClose }: SidebarProps) 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <UserList />
+              <UserList onUsersChanged={onUsersChanged} />
             </CardContent>
           </Card>
 
