@@ -39,6 +39,19 @@ export interface User {
   is_active: boolean;  // 新增
   created_at: string;
 }
+
+// 更新 Action 类型
+export type Action =
+  | 'login'
+  | 'logout'
+  | 'add_user'
+  | 'delete_user'
+  | 'reorder_users'
+  | 'toggle_user_active'  // 新增
+  | 'generate_schedule'
+  | 'replace_schedule'
+  | 'swap_schedule'
+  | 'set_password';
 ```
 
 ### 3. 后端改动
@@ -113,6 +126,8 @@ export function generateSchedule(startDate: string, endDate?: string) {
 | 只有一人参与 | 正常排班，所有日期都是该人 |
 | 结束日期早于开始日期 | 保持原有校验，报错 |
 | 结束日期不填且参与人数为 0 | 报错："没有参与值班的人员" |
+| 用户被设为"不参与"但已有排班记录 | 保留历史记录，仅影响新生成的排班 |
+| 用户切换状态后已有的自动排班 | 不变，保持 `is_manual` 语义（手动调整的保留，自动生成的可被覆盖） |
 
 ### 6. 日志记录
 
@@ -124,10 +139,13 @@ addLog('toggle_user_active', `人员: ${name}`, oldValue, newValue);
 
 ## 实现顺序
 
-1. 修改数据库表结构和类型定义
-2. 修改 `users.ts` — 新增 `getActiveUsers`、`setUserActive`
-3. 修改 `schedule.ts` — 支持 `endDate` 可选
-4. 修改 Server Actions
-5. 修改 `UserList.tsx` — 添加开关
-6. 修改 `ScheduleGenerator.tsx` — 结束日期可选
-7. 测试
+1. **数据库迁移**
+   - 在 `db.ts` 表初始化语句中添加 `is_active` 字段（新数据库自动包含）
+   - 对已存在的数据库执行 `ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1`
+2. **类型定义** — 更新 `User` 接口和 `Action` 类型
+3. **后端逻辑** — 修改 `users.ts`（新增 `getActiveUsers`、`setUserActive`）
+4. **排班逻辑** — 修改 `schedule.ts` 支持 `endDate` 可选
+5. **Server Actions** — 新增 `updateUserActive`，修改 `generateScheduleAction`
+6. **前端 UI** — 修改 `UserList.tsx` 添加开关
+7. **前端 UI** — 修改 `ScheduleGenerator.tsx` 结束日期可选
+8. **测试** — 验证各功能正常
