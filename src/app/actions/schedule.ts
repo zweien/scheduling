@@ -7,7 +7,7 @@ import { getUserById } from '@/lib/users';
 import { addLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
 
-export async function generateScheduleAction(startDate: string, endDate: string) {
+export async function generateScheduleAction(startDate: string, endDate?: string) {
   try {
     doGenerateSchedule(startDate, endDate);
     revalidatePath('/dashboard');
