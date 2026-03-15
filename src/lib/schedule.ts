@@ -1,21 +1,24 @@
 // src/lib/schedule.ts
-import { getAllUsers } from './users';
+import { getActiveUsers } from './users';
 import { setSchedule, getSchedulesByDateRange } from './schedules';
 import { addLog } from './logs';
-import { format, eachDayOfInterval, parseISO } from 'date-fns';
+import { format, eachDayOfInterval, parseISO, addDays } from 'date-fns';
 
-export function generateSchedule(startDate: string, endDate: string) {
-  const users = getAllUsers();
+export function generateSchedule(startDate: string, endDate?: string) {
+  const users = getActiveUsers();
   if (users.length === 0) {
-    throw new Error('请先添加值班人员');
+    throw new Error('没有参与值班的人员');
   }
 
   const start = parseISO(startDate);
-  const end = parseISO(endDate);
+  // 如果没有结束日期，只排一轮（参与人数 = 天数）
+  const end = endDate ? parseISO(endDate) : addDays(start, users.length - 1);
   const days = eachDayOfInterval({ start, end });
 
+  const endDateStr = endDate || format(end, 'yyyy-MM-dd');
+
   // 获取已有手动调整的日期
-  const existingSchedules = getSchedulesByDateRange(startDate, endDate);
+  const existingSchedules = getSchedulesByDateRange(startDate, endDateStr);
   const manualDates = new Set(
     existingSchedules.filter(s => s.is_manual).map(s => s.date)
   );
@@ -37,5 +40,5 @@ export function generateSchedule(startDate: string, endDate: string) {
     userIndex++;
   });
 
-  addLog('generate_schedule', `日期: ${startDate} ~ ${endDate}`, undefined, assigned.join(', '));
+  addLog('generate_schedule', `日期: ${startDate} ~ ${endDateStr}`, undefined, assigned.join(', '));
 }
