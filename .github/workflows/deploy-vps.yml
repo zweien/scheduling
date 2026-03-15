@@ -33,5 +33,6 @@ jobs:
             source ./.env.production
             set +a
             npm run build
-            pm2 startOrReload ecosystem.config.js --env production
+            pm2 kill || true
+            pm2 start ecosystem.config.js --env production --update-env
             pm2 save

@@ -92,7 +92,8 @@ set -a
 source ./.env.production
 set +a
 npm run build
-pm2 startOrReload ecosystem.config.js --env production
+pm2 kill || true
+pm2 start ecosystem.config.js --env production --update-env
 pm2 save
 ```
 
@@ -114,7 +115,8 @@ pm2 logs scheduling
 5. 执行 `npm ci --include=dev`
 6. 加载 `.env.production`
 7. 执行 `npm run build`
-8. 执行 `pm2 startOrReload ecosystem.config.js --env production`
+8. 执行 `pm2 kill || true`
+9. 执行 `pm2 start ecosystem.config.js --env production --update-env`
 9. 执行 `pm2 save`
 
 这个流程假设 VPS 部署目录只用于部署，不在服务器上直接修改代码。
@@ -159,7 +161,8 @@ set -a
 source ./.env.production
 set +a
 npm run build
-pm2 startOrReload ecosystem.config.js --env production
+pm2 kill || true
+pm2 start ecosystem.config.js --env production --update-env
 pm2 save
 ```
 
@@ -172,6 +175,28 @@ pm2 save
 - `.env.production` 是否存在
 - `SESSION_SECRET` 是否配置
 - `pm2 logs scheduling` 是否有端口占用或构建错误
+
+### better-sqlite3 报 `ERR_DLOPEN_FAILED`
+
+这通常表示原生模块与当前 Node.js ABI 不匹配，最常见原因是：
+
+- VPS 上升级过 Node.js
+- `pm2` 守护进程仍由旧 Node.js 启动
+
+修复方式：
+
+```bash
+cd /opt/scheduling
+rm -rf node_modules
+npm ci --include=dev
+set -a
+source ./.env.production
+set +a
+npm run build
+pm2 kill || true
+pm2 start ecosystem.config.js --env production --update-env
+pm2 save
+```
 
 ### GitHub Actions 无法 SSH
 
