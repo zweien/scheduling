@@ -20,8 +20,10 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
   const [activeUserCount, setActiveUserCount] = useState(0);
 
   useEffect(() => {
-    getUsers().then(users => {
-      setActiveUserCount(users.filter(u => u.is_active).length);
+    queueMicrotask(() => {
+      getUsers().then(users => {
+        setActiveUserCount(users.filter(u => u.is_active).length);
+      });
     });
   }, []);
 

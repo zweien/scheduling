@@ -4,10 +4,12 @@
 import { generateSchedule as doGenerateSchedule } from '@/lib/schedule';
 import { getSchedulesByDateRange, setSchedule, getScheduleStats } from '@/lib/schedules';
 import { getUserById } from '@/lib/users';
+import { requireAdmin } from '@/lib/auth';
 import { addLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
 
 export async function generateScheduleAction(startDate: string, endDate?: string) {
+  await requireAdmin();
   try {
     doGenerateSchedule(startDate, endDate);
     revalidatePath('/dashboard');
@@ -22,6 +24,7 @@ export async function getSchedules(startDate: string, endDate: string) {
 }
 
 export async function replaceSchedule(date: string, newUserId: number) {
+  await requireAdmin();
   const oldSchedules = getSchedulesByDateRange(date, date);
   const oldSchedule = oldSchedules[0];
   const oldUser = oldSchedule ? getUserById(oldSchedule.user_id) : null;
@@ -40,6 +43,7 @@ export async function replaceSchedule(date: string, newUserId: number) {
 }
 
 export async function swapSchedules(date1: string, date2: string) {
+  await requireAdmin();
   const minDate = date1 < date2 ? date1 : date2;
   const maxDate = date1 > date2 ? date1 : date2;
   const schedules = getSchedulesByDateRange(minDate, maxDate);

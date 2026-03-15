@@ -1,44 +1,136 @@
 // src/lib/auth.ts
-import db from './db';
+import { redirect } from 'next/navigation';
+import { createAccount, getAccountById, getAccountByUsername, normalizeAccountUsername, updateAccountPassword, verifyAccountPassword } from './accounts';
+import { isRegistrationEnabled } from './config';
 import { getSession } from './session';
 import { addLog } from './logs';
+import type { Account, AccountRole } from '@/types';
 
 export async function checkAuth(): Promise<boolean> {
   const session = await getSession();
-  return session.isLoggedIn === true;
+  return session.isLoggedIn === true && typeof session.accountId === 'number';
 }
 
-export async function login(password: string): Promise<{ success: boolean; error?: string }> {
-  const config = db.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
+export async function getCurrentAccount(): Promise<Account | null> {
+  const session = await getSession();
 
-  if (!config || config.value !== password) {
-    return { success: false, error: '密码错误' };
+  if (!session.isLoggedIn || typeof session.accountId !== 'number') {
+    return null;
+  }
+
+  const account = getAccountById(session.accountId);
+  if (!account || !account.is_active) {
+    session.destroy();
+    return null;
+  }
+
+  return account;
+}
+
+export async function requireAuth() {
+  const account = await getCurrentAccount();
+  if (!account) {
+    redirect('/');
+  }
+
+  return account;
+}
+
+export async function requireAdmin() {
+  const account = await requireAuth();
+  if (account.role !== 'admin') {
+    redirect('/dashboard');
+  }
+
+  return account;
+}
+
+export async function login(username: string, password: string): Promise<{ success: boolean; error?: string }> {
+  const account = getAccountByUsername(username);
+
+  if (!account || !account.is_active || !verifyAccountPassword(account, password)) {
+    return { success: false, error: '用户名或密码错误' };
   }
 
   const session = await getSession();
   session.isLoggedIn = true;
+  session.accountId = account.id;
+  session.username = account.username;
+  session.displayName = account.display_name;
+  session.role = account.role;
   await session.save();
 
-  addLog('login', '系统', undefined, '用户登录');
+  addLog('login', `账号: ${account.username}`, undefined, `用户登录 (${account.role})`);
+
+  return { success: true };
+}
+
+export async function register(input: {
+  username: string;
+  displayName: string;
+  password: string;
+}): Promise<{ success: boolean; error?: string }> {
+  if (!isRegistrationEnabled()) {
+    return { success: false, error: '当前未开放注册' };
+  }
+
+  const username = normalizeAccountUsername(input.username);
+  if (!username || !input.displayName.trim() || !input.password.trim()) {
+    return { success: false, error: '请填写所有字段' };
+  }
+
+  if (input.password.length < 6) {
+    return { success: false, error: '密码长度不能少于6位' };
+  }
+
+  if (getAccountByUsername(username)) {
+    return { success: false, error: '用户名已存在' };
+  }
+
+  const account = createAccount({
+    username,
+    displayName: input.displayName.trim(),
+    password: input.password,
+    role: 'user',
+  });
+
+  addLog('register', `账号: ${account.username}`, undefined, '用户注册');
+
+  const session = await getSession();
+  session.isLoggedIn = true;
+  session.accountId = account.id;
+  session.username = account.username;
+  session.displayName = account.display_name;
+  session.role = account.role;
+  await session.save();
 
   return { success: true };
 }
 
 export async function logout(): Promise<void> {
   const session = await getSession();
-  addLog('logout', '系统', undefined, '用户退出');
+  addLog('logout', `账号: ${session.username ?? '未知'}`, undefined, '用户退出');
   session.destroy();
 }
 
 export async function updatePassword(oldPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
-  const config = db.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
+  const account = await requireAuth();
 
-  if (!config || config.value !== oldPassword) {
+  if (!verifyAccountPassword(account, oldPassword)) {
     return { success: false, error: '原密码错误' };
   }
 
-  db.prepare('UPDATE config SET value = ? WHERE key = ?').run(newPassword, 'password');
-  addLog('set_password', '系统', '******', '******');
+  if (newPassword.length < 6) {
+    return { success: false, error: '新密码长度不能少于6位' };
+  }
+
+  updateAccountPassword(account.id, newPassword);
+  addLog('set_password', `账号: ${account.username}`, '******', '******');
 
   return { success: true };
+}
+
+export async function getCurrentAccountRole(): Promise<AccountRole | null> {
+  const account = await getCurrentAccount();
+  return account?.role ?? null;
 }

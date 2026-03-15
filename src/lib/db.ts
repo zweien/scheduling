@@ -1,6 +1,7 @@
 // src/lib/db.ts
 import Database from 'better-sqlite3';
 import path from 'path';
+import { hashPassword } from './password';
 
 const dbPath = path.join(process.cwd(), 'data', 'scheduling.db');
 const db = new Database(dbPath);
@@ -50,6 +51,16 @@ db.exec(`
     last_used_at DATETIME,
     disabled_at DATETIME
   );
+
+  CREATE TABLE IF NOT EXISTS accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // 初始化默认密码
@@ -63,6 +74,34 @@ try {
   db.exec('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1');
 } catch {
   // 字段已存在，忽略错误
+}
+
+try {
+  db.exec("ALTER TABLE accounts ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec('ALTER TABLE accounts ADD COLUMN is_active INTEGER DEFAULT 1');
+} catch {
+  // 字段已存在，忽略错误
+}
+
+const registrationEnabled = db.prepare('SELECT value FROM config WHERE key = ?').get('registration_enabled') as { value: string } | undefined;
+if (!registrationEnabled) {
+  db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('registration_enabled', 'false');
+}
+
+const accountCount = db.prepare('SELECT COUNT(*) as count FROM accounts').get() as { count: number };
+if (accountCount.count === 0) {
+  const legacyPassword = db.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
+  const initialPassword = legacyPassword?.value || '123456';
+
+  db.prepare(`
+    INSERT INTO accounts (username, display_name, password_hash, role, is_active)
+    VALUES (?, ?, ?, 'admin', 1)
+  `).run('admin', '管理员', hashPassword(initialPassword));
 }
 
 export default db;

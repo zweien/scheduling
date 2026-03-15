@@ -3,6 +3,7 @@ import Database from 'better-sqlite3';
 import { expect, test } from 'playwright/test';
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+const username = process.env.PLAYWRIGHT_USERNAME || 'admin';
 const password = process.env.PLAYWRIGHT_PASSWORD || '123456';
 const db = new Database(path.join(process.cwd(), 'data', 'scheduling.db'));
 
@@ -23,7 +24,8 @@ function seedSchedules() {
 
 async function login(page: import('playwright/test').Page) {
   await page.goto(baseUrl);
-  await page.getByLabel('密码').fill(password);
+  await page.getByLabel('用户名').fill(username);
+  await page.getByLabel('登录密码').fill(password);
   await page.getByRole('button', { name: '登录系统' }).click();
   await page.waitForURL('**/dashboard');
 }

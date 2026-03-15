@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
+import { useDashboardAccount } from './DashboardAccountProvider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -13,6 +14,7 @@ import {
   History,
   Printer,
   Download,
+  LockKeyhole,
   LogOut,
   Calendar,
   List,
@@ -39,6 +41,7 @@ export function Header({
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { role } = useDashboardAccount();
   const showViewToggle = pathname === '/dashboard' && viewMode && onViewModeChange;
 
   const navItems = [
@@ -47,6 +50,9 @@ export function Header({
     { label: '日志', href: '/dashboard/logs', icon: History, match: (path: string) => path.startsWith('/dashboard/logs') },
     { label: '打印', href: '/dashboard/print', icon: Printer, match: (path: string) => path.startsWith('/dashboard/print') },
     { label: '导出', href: '/dashboard/export', icon: Download, match: (path: string) => path.startsWith('/dashboard/export') },
+    ...(role === 'admin'
+      ? [{ label: '用户', href: '/dashboard/users', icon: LockKeyhole, match: (path: string) => path.startsWith('/dashboard/users') }]
+      : []),
     { label: '设置', href: '/dashboard/settings', icon: Settings, match: (path: string) => path.startsWith('/dashboard/settings') },
   ];
 

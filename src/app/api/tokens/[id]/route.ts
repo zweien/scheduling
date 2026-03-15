@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAuth } from '@/lib/auth';
+import { getCurrentAccount } from '@/lib/auth';
 import { apiError } from '@/lib/api-errors';
 import { disableApiToken } from '@/lib/api-tokens';
 
@@ -8,8 +8,12 @@ export const dynamic = 'force-dynamic';
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {
-  if (!(await checkAuth())) {
+  const account = await getCurrentAccount();
+  if (!account) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
+  }
+  if (account.role !== 'admin') {
+    return apiError(403, 'FORBIDDEN', 'Admin role required');
   }
 
   const body = await request.json().catch(() => null) as { disabled?: boolean } | null;

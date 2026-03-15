@@ -12,9 +12,10 @@ import { Card } from '@/components/ui/card';
 
 interface ListViewProps {
   refreshKey: number;
+  canManage: boolean;
 }
 
-export function ListView({ refreshKey }: ListViewProps) {
+export function ListView({ refreshKey, canManage }: ListViewProps) {
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -33,10 +34,15 @@ export function ListView({ refreshKey }: ListViewProps) {
   }, []);
 
   useEffect(() => {
-    loadData();
+    queueMicrotask(() => {
+      void loadData();
+    });
   }, [loadData, refreshKey]);
 
   const handleRowClick = (date: string) => {
+    if (!canManage) {
+      return;
+    }
     setSelectedDate(date);
     setDialogOpen(true);
   };
@@ -63,7 +69,7 @@ export function ListView({ refreshKey }: ListViewProps) {
             <div
               key={schedule.id}
               onClick={() => handleRowClick(schedule.date)}
-              className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer"
+              className={`flex items-center justify-between p-3 ${canManage ? 'hover:bg-muted/50 cursor-pointer' : ''}`}
             >
               <div>
                 <div className="font-medium">
@@ -79,12 +85,14 @@ export function ListView({ refreshKey }: ListViewProps) {
         </Card>
       )}
 
-      <UserSelectDialog
-        open={dialogOpen}
-        users={users}
-        onSelect={handleReplace}
-        onClose={() => setDialogOpen(false)}
-      />
+      {canManage ? (
+        <UserSelectDialog
+          open={dialogOpen}
+          users={users}
+          onSelect={handleReplace}
+          onClose={() => setDialogOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

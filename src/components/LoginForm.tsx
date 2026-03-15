@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 
 const highlights = [
   {
@@ -26,7 +27,11 @@ const highlights = [
   },
 ];
 
-export function LoginForm() {
+interface LoginFormProps {
+  registrationEnabled: boolean;
+}
+
+export function LoginForm({ registrationEnabled }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -106,19 +111,33 @@ export function LoginForm() {
                   )}
 
                   <div className="space-y-2.5">
+                    <Label htmlFor="username" className="text-sm font-medium text-slate-800">
+                      用户名
+                    </Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      type="text"
+                      required
+                      placeholder="请输入用户名"
+                      className="h-12 rounded-xl border-slate-200 bg-white text-base shadow-none focus-visible:border-slate-400 focus-visible:ring-slate-200"
+                    />
+                  </div>
+
+                  <div className="space-y-2.5">
                     <Label htmlFor="password" className="text-sm font-medium text-slate-800">
-                      访问密码
+                      登录密码
                     </Label>
                     <Input
                       id="password"
                       name="password"
                       type="password"
                       required
-                      placeholder="请输入团队访问密码"
+                      placeholder="请输入登录密码"
                       className="h-12 rounded-xl border-slate-200 bg-white text-base shadow-none focus-visible:border-slate-400 focus-visible:ring-slate-200"
                     />
                     <p className="text-xs leading-5 text-slate-500">
-                      如果你不确定当前密码，请联系管理员确认。
+                      升级后的系统默认管理员账号为 `admin`，密码沿用原系统登录密码。
                     </p>
                   </div>
 
@@ -129,6 +148,17 @@ export function LoginForm() {
                   >
                     {loading ? '登录中...' : '登录系统'}
                   </Button>
+
+                  <div className="flex items-center justify-between text-sm text-slate-600">
+                    <span>还没有账号？</span>
+                    {registrationEnabled ? (
+                      <Link href="/register" className="font-medium text-slate-950 underline-offset-4 hover:underline">
+                        立即注册
+                      </Link>
+                    ) : (
+                      <span className="text-slate-400">当前未开放注册</span>
+                    )}
+                  </div>
                 </form>
               </CardContent>
             </Card>

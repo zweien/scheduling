@@ -6,6 +6,7 @@ import { buildCalendarWorkbook } from '../src/lib/export/calendar-xlsx';
 import { getSchedulesByDateRange } from '../src/lib/schedules';
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+const username = process.env.PLAYWRIGHT_USERNAME || 'admin';
 const password = process.env.PLAYWRIGHT_PASSWORD || '123456';
 const db = new Database(path.join(process.cwd(), 'data', 'scheduling.db'));
 
@@ -22,7 +23,8 @@ function seedSchedules() {
 
 async function login(page: import('playwright/test').Page) {
   await page.goto(baseUrl);
-  await page.getByLabel('密码').fill(password);
+  await page.getByLabel('用户名').fill(username);
+  await page.getByLabel('登录密码').fill(password);
   await page.getByRole('button', { name: '登录系统' }).click();
   await page.waitForURL('**/dashboard');
 }
@@ -59,7 +61,7 @@ test('月历工作簿按月份创建 sheet 并写入排班内容', async () => {
 test('导出弹窗展示 XLSX 导出入口', async ({ page }) => {
   await login(page);
 
-  await page.getByRole('button', { name: '导出' }).click();
+  await page.locator('a[href="/dashboard/export"]').first().click();
 
   await expect(page.getByText('导出排班表')).toBeVisible();
   await expect(page.getByRole('button', { name: '导出 XLSX' })).toBeVisible();

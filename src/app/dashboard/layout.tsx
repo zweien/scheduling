@@ -1,16 +1,21 @@
 // src/app/dashboard/layout.tsx
-import { checkAuth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/auth';
+import { DashboardAccountProvider } from '@/components/DashboardAccountProvider';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const isLoggedIn = await checkAuth();
-  if (!isLoggedIn) {
-    redirect('/');
-  }
+  const account = await requireAuth();
 
-  return <>{children}</>;
+  return (
+    <DashboardAccountProvider
+      role={account.role}
+      username={account.username}
+      displayName={account.display_name}
+    >
+      {children}
+    </DashboardAccountProvider>
+  );
 }

@@ -1,5 +1,6 @@
 // src/app/page.tsx
 import { checkAuth } from '@/lib/auth';
+import { isRegistrationEnabled } from '@/lib/config';
 import { redirect } from 'next/navigation';
 import { LoginForm } from '@/components/LoginForm';
 
@@ -9,5 +10,5 @@ export default async function Home() {
     redirect('/dashboard');
   }
 
-  return <LoginForm />;
+  return <LoginForm registrationEnabled={isRegistrationEnabled()} />;
 }

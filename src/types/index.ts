@@ -44,9 +44,22 @@ export interface ApiToken {
   disabled_at: string | null;
 }
 
+export type AccountRole = 'admin' | 'user';
+
+export interface Account {
+  id: number;
+  username: string;
+  display_name: string;
+  password_hash: string;
+  role: AccountRole;
+  is_active: boolean;
+  created_at: string;
+}
+
 export type Action =
   | 'login'
   | 'logout'
+  | 'register'
   | 'add_user'
   | 'delete_user'
   | 'reorder_users'
@@ -54,4 +67,8 @@ export type Action =
   | 'generate_schedule'
   | 'replace_schedule'
   | 'swap_schedule'
-  | 'set_password';
+  | 'set_password'
+  | 'add_account'
+  | 'toggle_account_active'
+  | 'change_account_role'
+  | 'toggle_registration';

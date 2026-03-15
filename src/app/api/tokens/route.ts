@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAuth } from '@/lib/auth';
+import { getCurrentAccount } from '@/lib/auth';
 import { apiError } from '@/lib/api-errors';
 import { createApiToken, listApiTokens } from '@/lib/api-tokens';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  if (!(await checkAuth())) {
+  const account = await getCurrentAccount();
+  if (!account) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
+  }
+  if (account.role !== 'admin') {
+    return apiError(403, 'FORBIDDEN', 'Admin role required');
   }
 
   return NextResponse.json(listApiTokens());
 }
 
 export async function POST(request: NextRequest) {
-  if (!(await checkAuth())) {
+  const account = await getCurrentAccount();
+  if (!account) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
+  }
+  if (account.role !== 'admin') {
+    return apiError(403, 'FORBIDDEN', 'Admin role required');
   }
 
   const body = await request.json().catch(() => null) as { name?: string } | null;

@@ -2,9 +2,14 @@
 import { getIronSession, IronSession } from 'iron-session';
 import { cookies } from 'next/headers';
 import { resolveSessionPassword } from './session-config';
+import type { AccountRole } from '@/types';
 
 interface SessionData {
   isLoggedIn: boolean;
+  accountId?: number;
+  username?: string;
+  displayName?: string;
+  role?: AccountRole;
 }
 
 const sessionOptions = {

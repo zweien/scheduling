@@ -17,6 +17,7 @@ interface CalendarCellProps {
   isDropTarget?: boolean;
   animationDelay?: number;
   displayMode?: 'avatar' | 'name';
+  canManage?: boolean;
 }
 
 export function CalendarCell({
@@ -31,6 +32,7 @@ export function CalendarCell({
   isDropTarget = false,
   animationDelay = 0,
   displayMode = 'avatar',
+  canManage = true,
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -38,18 +40,18 @@ export function CalendarCell({
   return (
     <div
       onClick={onClick}
-      draggable={!!schedule}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
+      draggable={canManage && !!schedule}
+      onDragStart={canManage ? onDragStart : undefined}
+      onDragOver={canManage ? onDragOver : undefined}
+      onDrop={canManage ? onDrop : undefined}
       className={`
-        relative min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded cursor-pointer
+        relative min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded ${canManage ? 'cursor-pointer' : 'cursor-default'}
         transition-all duration-150
         ${isToday
           ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow'
           : 'border-border'}
         ${isWeekend ? 'bg-muted/30' : 'bg-background'}
-        ${schedule ? 'hover:-translate-y-0.5 hover:shadow-md' : ''}
+        ${schedule && canManage ? 'hover:-translate-y-0.5 hover:shadow-md' : ''}
         ${isDragSource ? 'opacity-40' : ''}
         ${isDropTarget ? 'border-2 border-dashed border-primary bg-primary/10' : ''}
       `}
@@ -89,7 +91,7 @@ export function CalendarCell({
       )}
 
       {/* 空单元格 hover 提示 */}
-      {!schedule && (
+      {!schedule && canManage && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
           <Plus className="w-4 h-4 text-muted-foreground" />
         </div>

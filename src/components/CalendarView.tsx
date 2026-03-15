@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-
 
 interface CalendarViewProps {
   refreshKey: number;
+  canManage: boolean;
 }
 
 type DisplayMode = 'avatar' | 'name';
@@ -29,6 +30,7 @@ interface MonthCalendarProps {
   onDragStart: (date: string) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (date: string) => void;
+  canManage: boolean;
 }
 
 function MonthCalendar({
@@ -41,6 +43,7 @@ function MonthCalendar({
   onDragStart,
   onDragOver,
   onDrop,
+  canManage,
 }: MonthCalendarProps) {
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
@@ -88,6 +91,7 @@ function MonthCalendar({
               isDropTarget={dragDate !== null && dragDate !== dateStr}
               animationDelay={animationDelay}
               displayMode={displayMode}
+              canManage={canManage}
             />
           );
         })}
@@ -96,7 +100,7 @@ function MonthCalendar({
   );
 }
 
-export function CalendarView({ refreshKey }: CalendarViewProps) {
+export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -121,7 +125,9 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   }, [currentMonth]);
 
   useEffect(() => {
-    loadData();
+    queueMicrotask(() => {
+      void loadData();
+    });
   }, [loadData, refreshKey]);
 
   // 筛选本月和下月的排班
@@ -136,12 +142,18 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   });
 
   const handleCellClick = (date: Date) => {
+    if (!canManage) {
+      return;
+    }
     const dateStr = format(date, 'yyyy-MM-dd');
     setSelectedDate(dateStr);
     setDialogOpen(true);
   };
 
   const handleReplace = async (userId: number) => {
+    if (!canManage) {
+      return;
+    }
     if (!selectedDate) return;
     await replaceSchedule(selectedDate, userId);
     setDialogOpen(false);
@@ -149,6 +161,9 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   };
 
   const handleDragStart = (date: string) => {
+    if (!canManage) {
+      return;
+    }
     setDragDate(date);
   };
 
@@ -157,6 +172,9 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   };
 
   const handleDrop = async (targetDate: string) => {
+    if (!canManage) {
+      return;
+    }
     if (!dragDate || dragDate === targetDate) return;
     await swapSchedules(dragDate, targetDate);
     setDragDate(null);
@@ -219,6 +237,7 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          canManage={canManage}
         />
         <MonthCalendar
           month={nextMonth}
@@ -231,15 +250,18 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          canManage={canManage}
         />
       </div>
 
-      <UserSelectDialog
-        open={dialogOpen}
-        users={users}
-        onSelect={handleReplace}
-        onClose={() => setDialogOpen(false)}
-      />
+      {canManage ? (
+        <UserSelectDialog
+          open={dialogOpen}
+          users={users}
+          onSelect={handleReplace}
+          onClose={() => setDialogOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
