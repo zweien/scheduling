@@ -58,3 +58,6 @@ data/*.db-wal
 
 # OS
 Thumbs.db
+
+# worktrees
+.worktrees/
