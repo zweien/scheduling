@@ -10,13 +10,14 @@ import { getSchedules, replaceSchedule, swapSchedules } from '@/app/actions/sche
 import { getUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
 
 interface CalendarViewProps {
   refreshKey: number;
 }
 
 type SlideDirection = 'none' | 'left' | 'right';
+type DisplayMode = 'avatar' | 'name';
 
 export function CalendarView({ refreshKey }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -26,6 +27,7 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<SlideDirection>('none');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
 
   const today = new Date();
 
@@ -113,6 +115,18 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
           {format(currentMonth, 'yyyy年M月', { locale: zhCN })}
         </h2>
         <div className="flex gap-1 sm:gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDisplayMode(displayMode === 'avatar' ? 'name' : 'avatar')}
+            title={displayMode === 'avatar' ? '切换为姓名' : '切换为头像'}
+          >
+            {displayMode === 'avatar' ? (
+              <UserIcon className="w-4 h-4" />
+            ) : (
+              <UserCircle className="w-4 h-4" />
+            )}
+          </Button>
           <Button variant="outline" size="sm" onClick={goToPrevMonth}>
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline ml-1">上月</span>
@@ -161,6 +175,7 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
               isDragSource={dragDate === dateStr}
               isDropTarget={dragDate !== null && dragDate !== dateStr}
               animationDelay={animationDelay}
+              displayMode={displayMode}
             />
           );
         })}

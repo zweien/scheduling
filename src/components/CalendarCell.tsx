@@ -16,6 +16,7 @@ interface CalendarCellProps {
   isDragSource?: boolean;
   isDropTarget?: boolean;
   animationDelay?: number;
+  displayMode?: 'avatar' | 'name';
 }
 
 export function CalendarCell({
@@ -29,6 +30,7 @@ export function CalendarCell({
   isDragSource = false,
   isDropTarget = false,
   animationDelay = 0,
+  displayMode = 'avatar',
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -65,15 +67,24 @@ export function CalendarCell({
         <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" />
       )}
 
-      {/* 头像 */}
+      {/* 头像/姓名 */}
       {schedule && (
         <div className="flex items-center justify-center h-full pt-4">
-          <div
-            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm"
-            style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
-          >
-            {getAvatarInitial(schedule.user.name)}
-          </div>
+          {displayMode === 'avatar' ? (
+            <div
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm"
+              style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+            >
+              {getAvatarInitial(schedule.user.name)}
+            </div>
+          ) : (
+            <div
+              className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium text-white truncate max-w-full"
+              style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+            >
+              {schedule.user.name}
+            </div>
+          )}
         </div>
       )}
 
