@@ -35,8 +35,10 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 -p "${VPS_PORT}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" <<EOF
           set -euo pipefail
           cd "${{ secrets.VPS_APP_DIR }}"
+          DEPLOY_REF="${{ github.ref_name }}"
           git fetch --all
-          git reset --hard origin/master
+          git checkout "${DEPLOY_REF}"
+          git reset --hard "origin/${DEPLOY_REF}"
           npm ci --include=dev
           set -a
           source ./.env.production
