@@ -7,7 +7,7 @@ import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { UserSelectDialog } from './UserSelectDialog';
 import { getSchedules, moveSchedule, removeSchedule, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
-import { getUsers } from '@/app/actions/users';
+import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
@@ -119,7 +119,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     const end = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
     const [scheduleData, userData] = await Promise.all([
       getSchedules(start, end),
-      getUsers(),
+      getAssignableUsers(),
     ]);
     setSchedules(scheduleData);
     setUsers(userData);

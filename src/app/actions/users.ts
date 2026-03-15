@@ -1,13 +1,17 @@
 // src/app/actions/users.ts
 'use server';
 
-import { getAllUsers, createUser, deleteUser, reorderUsers, setUserActive, getUserById } from '@/lib/users';
+import { getActiveUsers, getAllUsers, createUser, deleteUser, reorderUsers, setUserActive, getUserById } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
 
 export async function getUsers() {
   return getAllUsers();
+}
+
+export async function getAssignableUsers() {
+  return getActiveUsers();
 }
 
 export async function addUser(name: string) {

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { getSchedules, replaceSchedule } from '@/app/actions/schedule';
-import { getUsers } from '@/app/actions/users';
+import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { UserSelectDialog } from './UserSelectDialog';
 import { Card } from '@/components/ui/card';
@@ -27,7 +27,7 @@ export function ListView({ refreshKey, canManage }: ListViewProps) {
     const end = format(new Date(today.getFullYear(), today.getMonth() + 1, 0), 'yyyy-MM-dd');
     const [scheduleData, userData] = await Promise.all([
       getSchedules(start, end),
-      getUsers(),
+      getAssignableUsers(),
     ]);
     setSchedules(scheduleData);
     setUsers(userData);
