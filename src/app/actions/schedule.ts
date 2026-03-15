@@ -68,6 +68,38 @@ export async function removeSchedule(date: string) {
   return { success: true };
 }
 
+export async function moveSchedule(fromDate: string, toDate: string) {
+  const account = await requireAdmin();
+  const schedules = getSchedulesByDateRange(
+    fromDate < toDate ? fromDate : toDate,
+    fromDate > toDate ? fromDate : toDate
+  );
+  const source = schedules.find(schedule => schedule.date === fromDate);
+  const target = schedules.find(schedule => schedule.date === toDate);
+
+  if (!source) {
+    return { success: false, error: '起始日期没有排班记录' };
+  }
+
+  if (target) {
+    return { success: false, error: '目标日期已有排班记录' };
+  }
+
+  setSchedule(toDate, source.user_id, true);
+  deleteSchedule(fromDate);
+
+  await addWebLog(
+    'move_schedule',
+    `移动: ${fromDate} -> ${toDate}`,
+    `${fromDate}: ${source.user.name}`,
+    `${toDate}: ${source.user.name}`,
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
 export async function swapSchedules(date1: string, date2: string) {
   const account = await requireAdmin();
   const minDate = date1 < date2 ? date1 : date2;

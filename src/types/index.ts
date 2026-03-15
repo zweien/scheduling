@@ -72,6 +72,7 @@ export type Action =
   | 'generate_schedule'
   | 'replace_schedule'
   | 'delete_schedule'
+  | 'move_schedule'
   | 'swap_schedule'
   | 'set_password'
   | 'add_account'
