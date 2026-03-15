@@ -5,18 +5,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { getStats } from '@/app/actions/schedule';
 import { getUsers } from '@/app/actions/users';
 import { getAvatarColor, getAvatarInitial } from '@/lib/avatar';
-import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { ArrowLeft, BarChart3, CalendarDays, Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, BarChart3, CalendarDays, Users, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface StatItem {
   userId: number;
   userName: string;
   count: number;
+  dates: string[];
 }
 
 type TimeRange = 'month' | 'lastMonth' | 'year' | 'all' | 'custom';
@@ -29,6 +30,7 @@ export default function StatisticsPage() {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [selectedUser, setSelectedUser] = useState<number | null>(null);
+  const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set());
 
   const loadUsers = useCallback(async () => {
     const userData = await getUsers();
@@ -86,6 +88,18 @@ export default function StatisticsPage() {
     loadStats();
   }, [loadStats]);
 
+  const toggleUserExpand = (userId: number) => {
+    setExpandedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
   const maxCount = Math.max(...stats.map(s => s.count), 1);
   const totalCount = stats.reduce((sum, s) => sum + s.count, 0);
 
@@ -109,6 +123,13 @@ export default function StatisticsPage() {
       default:
         return '全部时间';
     }
+  };
+
+  const formatDateList = (dates: string[]) => {
+    return dates.map(date => {
+      const d = parseISO(date);
+      return format(d, 'M/d', { locale: zhCN });
+    }).join('、');
   };
 
   return (
@@ -253,7 +274,10 @@ export default function StatisticsPage() {
             <div className="space-y-4">
               {stats.map(stat => (
                 <div key={stat.userId} className="space-y-2">
-                  <div className="flex justify-between items-center text-sm">
+                  <div
+                    className="flex justify-between items-center text-sm cursor-pointer hover:bg-muted/30 p-1 rounded"
+                    onClick={() => toggleUserExpand(stat.userId)}
+                  >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-sm"
@@ -262,6 +286,11 @@ export default function StatisticsPage() {
                         {getAvatarInitial(stat.userName)}
                       </div>
                       <span className="font-medium">{stat.userName}</span>
+                      {expandedUsers.has(stat.userId) ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="font-bold text-lg tabular-nums">{stat.count}</span>
@@ -280,6 +309,26 @@ export default function StatisticsPage() {
                       }}
                     />
                   </div>
+
+                  {/* 展开的值班日期列表 */}
+                  {expandedUsers.has(stat.userId) && stat.dates.length > 0 && (
+                    <div className="mt-2 p-3 bg-muted/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        值班日期 ({stat.dates.length}天)：
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {stat.dates.map((date, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 text-xs rounded-full text-white font-medium"
+                            style={{ backgroundColor: getAvatarColor(stat.userName) }}
+                          >
+                            {format(parseISO(date), 'M月d日', { locale: zhCN })}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

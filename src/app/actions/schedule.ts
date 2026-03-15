@@ -70,5 +70,6 @@ export async function getStats(startDate?: string, endDate?: string) {
     userId: s.userId,
     userName: getUserById(s.userId)?.name ?? '未知',
     count: s.count,
+    dates: s.dates,
   }));
 }

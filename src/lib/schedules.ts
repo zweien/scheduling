@@ -33,9 +33,9 @@ export function deleteSchedule(date: string): void {
   db.prepare('DELETE FROM schedules WHERE date = ?').run(date);
 }
 
-export function getScheduleStats(startDate?: string, endDate?: string): { userId: number; count: number }[] {
+export function getScheduleStats(startDate?: string, endDate?: string): { userId: number; count: number; dates: string[] }[] {
   let query = `
-    SELECT user_id as userId, COUNT(*) as count
+    SELECT user_id as userId, COUNT(*) as count, GROUP_CONCAT(date, ',') as dates
     FROM schedules
   `;
   const params: string[] = [];
@@ -47,5 +47,10 @@ export function getScheduleStats(startDate?: string, endDate?: string): { userId
 
   query += ' GROUP BY user_id ORDER BY count DESC';
 
-  return db.prepare(query).all(...params) as { userId: number; count: number }[];
+  const results = db.prepare(query).all(...params) as { userId: number; count: number; dates: string }[];
+  return results.map(r => ({
+    userId: r.userId,
+    count: r.count,
+    dates: r.dates ? r.dates.split(',').sort() : [],
+  }));
 }
