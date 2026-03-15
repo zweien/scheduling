@@ -13,7 +13,11 @@ interface PasswordDialogProps {
   onClose: () => void;
 }
 
-export function PasswordDialog({ open, onClose }: PasswordDialogProps) {
+interface PasswordFormProps {
+  onClose?: () => void;
+}
+
+export function PasswordForm({ onClose }: PasswordFormProps) {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -49,70 +53,79 @@ export function PasswordDialog({ open, onClose }: PasswordDialogProps) {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-      }, 1500);
+      if (onClose) {
+        setTimeout(() => {
+          setSuccess(false);
+          onClose();
+        }, 1500);
+      }
     } else {
       setError(result.error ?? '修改失败');
     }
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</div>
+      )}
+      {success && (
+        <div className="text-sm text-green-500 bg-green-500/10 p-2 rounded">密码修改成功！</div>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="oldPassword">原密码</Label>
+        <Input
+          id="oldPassword"
+          type="password"
+          value={oldPassword}
+          onChange={e => setOldPassword(e.target.value)}
+          placeholder="请输入原密码"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="newPassword">新密码</Label>
+        <Input
+          id="newPassword"
+          type="password"
+          value={newPassword}
+          onChange={e => setNewPassword(e.target.value)}
+          placeholder="请输入新密码"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">确认新密码</Label>
+        <Input
+          id="confirmPassword"
+          type="password"
+          value={confirmPassword}
+          onChange={e => setConfirmPassword(e.target.value)}
+          placeholder="请再次输入新密码"
+        />
+      </div>
+
+      <div className="flex gap-2 justify-end">
+        {onClose ? (
+          <Button type="button" variant="outline" onClick={onClose}>取消</Button>
+        ) : null}
+        <Button type="submit" disabled={loading}>
+          {loading ? '修改中...' : '确认修改'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export function PasswordDialog({ open, onClose }: PasswordDialogProps) {
+  return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm w-[calc(100%-2rem)]">
         <DialogHeader>
           <DialogTitle>修改密码</DialogTitle>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</div>
-          )}
-          {success && (
-            <div className="text-sm text-green-500 bg-green-500/10 p-2 rounded">密码修改成功！</div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="oldPassword">原密码</Label>
-            <Input
-              id="oldPassword"
-              type="password"
-              value={oldPassword}
-              onChange={e => setOldPassword(e.target.value)}
-              placeholder="请输入原密码"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">新密码</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              placeholder="请输入新密码"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">确认新密码</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="请再次输入新密码"
-            />
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={onClose}>取消</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? '修改中...' : '确认修改'}
-            </Button>
-          </div>
-        </form>
+        <PasswordForm onClose={onClose} />
       </DialogContent>
     </Dialog>
   );

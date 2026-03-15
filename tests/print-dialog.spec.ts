@@ -13,13 +13,14 @@ async function login(page: import('@playwright/test').Page) {
 test('打印弹窗支持切换到日历模式预览', async ({ page }) => {
   await login(page);
 
-  await page.getByRole('button', { name: '打印' }).click();
-  await expect(page.getByText('打印排班表')).toBeVisible();
+  await page.getByRole('link', { name: '打印' }).click();
+  await page.waitForURL('**/dashboard/print');
+  await expect(page.getByRole('heading', { name: '打印排班表' })).toBeVisible();
 
   await page.getByRole('button', { name: '日历模式' }).click();
   await page.getByRole('button', { name: '预览' }).click();
 
   await expect(page.getByTestId('print-calendar-preview')).toBeVisible();
   await expect(page.getByText('预览模式')).toBeVisible();
-  await expect(page.getByText('日历模式')).toBeVisible();
+  await expect(page.getByText('日历模式', { exact: true })).toBeVisible();
 });

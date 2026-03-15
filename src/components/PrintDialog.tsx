@@ -99,7 +99,11 @@ function CalendarMonthPreview({
   );
 }
 
-export function PrintDialog({ open, onClose }: PrintDialogProps) {
+interface PrintPanelProps {
+  onClose?: () => void;
+}
+
+export function PrintPanel({ onClose }: PrintPanelProps) {
   const defaultDates = getDefaultPrintDates();
   const [startDate, setStartDate] = useState(defaultDates.startDate);
   const [endDate, setEndDate] = useState(defaultDates.endDate);
@@ -154,7 +158,7 @@ export function PrintDialog({ open, onClose }: PrintDialogProps) {
     setSchedules([]);
     setPreview(false);
     setPrintMode('list');
-    onClose();
+    onClose?.();
   }
 
   const dateRange = startDate && endDate
@@ -168,128 +172,137 @@ export function PrintDialog({ open, onClose }: PrintDialogProps) {
   const rangeEnd = endDate ? parseISO(endDate) : null;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <>
+      {!preview ? (
+        <div className="space-y-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>开始日期</Label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-background"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>结束日期</Label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="w-full border rounded px-3 py-2 bg-background"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>打印模式</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={printMode === 'list' ? 'default' : 'outline'}
+                onClick={() => setPrintMode('list')}
+              >
+                列表模式
+              </Button>
+              <Button
+                type="button"
+                variant={printMode === 'calendar' ? 'default' : 'outline'}
+                onClick={() => setPrintMode('calendar')}
+              >
+                日历模式
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            {onClose ? (
+              <Button variant="outline" onClick={handleClose}>取消</Button>
+            ) : null}
+            <Button onClick={handlePreview}>预览</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          <div className="print-area print:p-4">
+            <div className="hidden print:block mb-4">
+              <h2 className="text-xl font-bold text-center">值班排班表</h2>
+              <p className="text-center text-muted-foreground">
+                {startDate} 至 {endDate}
+              </p>
+            </div>
+            <div className="mb-4 flex items-center justify-between print:hidden">
+              <div>
+                <p className="text-sm font-medium">预览模式</p>
+                <p className="text-sm text-muted-foreground">
+                  {printMode === 'list' ? '列表模式' : '日历模式'}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setPreview(false)}>
+                返回设置
+              </Button>
+            </div>
+
+            {printMode === 'list' ? (
+              <table className="w-full border-collapse print:border text-sm">
+                <thead>
+                  <tr className="bg-muted print:bg-gray-200">
+                    <th className="border px-2 py-1 text-left">日期</th>
+                    <th className="border px-2 py-1 text-left">星期</th>
+                    <th className="border px-2 py-1 text-left">值班人员</th>
+                    <th className="border px-2 py-1 text-left">备注</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dateRange.map(date => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const schedule = schedulesByDate.get(dateStr);
+                    return (
+                      <tr key={dateStr} className="print:h-8">
+                        <td className="border px-2 py-1">{format(date, 'M月d日')}</td>
+                        <td className="border px-2 py-1">{format(date, 'EEEE', { locale: zhCN })}</td>
+                        <td className="border px-2 py-1">{schedule?.user.name || '-'}</td>
+                        <td className="border px-2 py-1">{schedule?.is_manual ? '手动调整' : ''}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : rangeStart && rangeEnd ? (
+              <div className="-mx-2 overflow-x-auto px-2 pb-2" data-testid="print-calendar-preview">
+                <div className="print-calendar-layout min-w-[980px] grid grid-cols-1 gap-6 xl:grid-cols-2">
+                  {monthRange.map(month => (
+                    <CalendarMonthPreview
+                      key={format(month, 'yyyy-MM')}
+                      month={month}
+                      schedulesByDate={schedulesByDate}
+                      rangeStart={rangeStart}
+                      rangeEnd={rangeEnd}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex gap-2 justify-end mt-4 print:hidden">
+            <Button onClick={handlePrint}>打印</Button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function PrintDialog({ open, onClose }: PrintDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="print-dialog-content max-w-6xl w-[calc(100%-2rem)] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>打印排班表</DialogTitle>
         </DialogHeader>
-
-        {!preview ? (
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>开始日期</Label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2 bg-background"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>结束日期</Label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2 bg-background"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>打印模式</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={printMode === 'list' ? 'default' : 'outline'}
-                  onClick={() => setPrintMode('list')}
-                >
-                  列表模式
-                </Button>
-                <Button
-                  type="button"
-                  variant={printMode === 'calendar' ? 'default' : 'outline'}
-                  onClick={() => setPrintMode('calendar')}
-                >
-                  日历模式
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={handleClose}>取消</Button>
-              <Button onClick={handlePreview}>预览</Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-auto">
-            <div className="print-area print:p-4">
-              <div className="hidden print:block mb-4">
-                <h2 className="text-xl font-bold text-center">值班排班表</h2>
-                <p className="text-center text-muted-foreground">
-                  {startDate} 至 {endDate}
-                </p>
-              </div>
-              <div className="mb-4 flex items-center justify-between print:hidden">
-                <div>
-                  <p className="text-sm font-medium">预览模式</p>
-                  <p className="text-sm text-muted-foreground">
-                    {printMode === 'list' ? '列表模式' : '日历模式'}
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setPreview(false)}>
-                  返回设置
-                </Button>
-              </div>
-
-              {printMode === 'list' ? (
-                <table className="w-full border-collapse print:border text-sm">
-                  <thead>
-                    <tr className="bg-muted print:bg-gray-200">
-                      <th className="border px-2 py-1 text-left">日期</th>
-                      <th className="border px-2 py-1 text-left">星期</th>
-                      <th className="border px-2 py-1 text-left">值班人员</th>
-                      <th className="border px-2 py-1 text-left">备注</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dateRange.map(date => {
-                      const dateStr = format(date, 'yyyy-MM-dd');
-                      const schedule = schedulesByDate.get(dateStr);
-                      return (
-                        <tr key={dateStr} className="print:h-8">
-                          <td className="border px-2 py-1">{format(date, 'M月d日')}</td>
-                          <td className="border px-2 py-1">{format(date, 'EEEE', { locale: zhCN })}</td>
-                          <td className="border px-2 py-1">{schedule?.user.name || '-'}</td>
-                          <td className="border px-2 py-1">{schedule?.is_manual ? '手动调整' : ''}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : rangeStart && rangeEnd ? (
-                <div className="-mx-2 overflow-x-auto px-2 pb-2" data-testid="print-calendar-preview">
-                  <div className="print-calendar-layout min-w-[980px] grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    {monthRange.map(month => (
-                      <CalendarMonthPreview
-                        key={format(month, 'yyyy-MM')}
-                        month={month}
-                        schedulesByDate={schedulesByDate}
-                        rangeStart={rangeStart}
-                        rangeEnd={rangeEnd}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex gap-2 justify-end mt-4 print:hidden">
-              <Button onClick={handlePrint}>打印</Button>
-            </div>
-          </div>
-        )}
+        <PrintPanel onClose={onClose} />
       </DialogContent>
     </Dialog>
   );

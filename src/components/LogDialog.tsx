@@ -25,14 +25,14 @@ const actionConfig: Record<string, { label: string; colorClass: string }> = {
   set_password: { label: '修改密码', colorClass: 'text-primary' },
 };
 
-export function LogDialog({ open, onClose }: LogDialogProps) {
+export function LogContent({ active = true }: { active?: boolean }) {
   const [logs, setLogs] = useState<Log[]>([]);
 
   useEffect(() => {
-    if (open) {
+    if (active) {
       getLogList().then(setLogs);
     }
-  }, [open]);
+  }, [active]);
 
   const groupedLogs = useMemo(() => {
     const groups: { label: string; logs: Log[] }[] = [
@@ -56,65 +56,67 @@ export function LogDialog({ open, onClose }: LogDialogProps) {
   }, [logs]);
 
   return (
+    <div className="flex-1 overflow-y-auto py-2">
+      {logs.length === 0 ? (
+        <div className="text-center text-muted-foreground py-10">
+          <div className="border-2 border-dashed rounded-lg p-6">
+            暂无操作记录
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {groupedLogs.map(group => (
+            <div key={group.label}>
+              <div className="text-xs font-medium text-muted-foreground mb-3 sticky top-0 bg-background py-1 z-10">
+                {group.label}
+              </div>
+
+              <div className="relative pl-6 space-y-4">
+                <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border" />
+
+                {group.logs.map(log => {
+                  const config = actionConfig[log.action] || { label: log.action, colorClass: 'text-primary' };
+                  return (
+                    <div key={log.id} className="relative">
+                      <div className="absolute -left-4 top-1.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background" />
+
+                      <div className="border rounded-lg p-3 text-sm">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className={`font-medium ${config.colorClass}`}>
+                            {config.label}
+                          </div>
+                          <div className="text-muted-foreground text-xs shrink-0">
+                            {format(parseISO(log.created_at), 'HH:mm', { locale: zhCN })}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-foreground">{log.target}</div>
+                        {log.old_value && log.new_value && (
+                          <div className="mt-2 bg-muted/50 p-2 rounded text-xs space-y-1">
+                            <div><span className="text-destructive">旧值：</span>{log.old_value}</div>
+                            <div><span className="text-success">新值：</span>{log.new_value}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function LogDialog({ open, onClose }: LogDialogProps) {
+  return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg w-[calc(100%-2rem)] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>操作日志</DialogTitle>
         </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto py-2">
-          {logs.length === 0 ? (
-            <div className="text-center text-muted-foreground py-10">
-              <div className="border-2 border-dashed rounded-lg p-6">
-                暂无操作记录
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {groupedLogs.map(group => (
-                <div key={group.label}>
-                  <div className="text-xs font-medium text-muted-foreground mb-3 sticky top-0 bg-background py-1 z-10">
-                    {group.label}
-                  </div>
-
-                  {/* 时间线 */}
-                  <div className="relative pl-6 space-y-4">
-                    {/* 竖线 */}
-                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border" />
-
-                    {group.logs.map(log => {
-                      const config = actionConfig[log.action] || { label: log.action, colorClass: 'text-primary' };
-                      return (
-                        <div key={log.id} className="relative">
-                          {/* 圆点 */}
-                          <div className="absolute -left-4 top-1.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background" />
-
-                          <div className="border rounded-lg p-3 text-sm">
-                            <div className="flex justify-between items-start gap-2">
-                              <div className={`font-medium ${config.colorClass}`}>
-                                {config.label}
-                              </div>
-                              <div className="text-muted-foreground text-xs shrink-0">
-                                {format(parseISO(log.created_at), 'HH:mm', { locale: zhCN })}
-                              </div>
-                            </div>
-                            <div className="mt-1 text-foreground">{log.target}</div>
-                            {log.old_value && log.new_value && (
-                              <div className="mt-2 bg-muted/50 p-2 rounded text-xs space-y-1">
-                                <div><span className="text-destructive">旧值：</span>{log.old_value}</div>
-                                <div><span className="text-success">新值：</span>{log.new_value}</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <LogContent active={open} />
       </DialogContent>
     </Dialog>
   );

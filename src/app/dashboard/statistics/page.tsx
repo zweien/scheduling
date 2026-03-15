@@ -9,9 +9,8 @@ import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, pa
 import { zhCN } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
-import { ArrowLeft, BarChart3, CalendarDays, Users, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Header } from '@/components/Header';
+import { BarChart3, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface StatItem {
   userId: number;
@@ -81,11 +80,15 @@ export default function StatisticsPage() {
   }, [timeRange, customStart, customEnd, selectedUser]);
 
   useEffect(() => {
-    loadUsers();
+    queueMicrotask(() => {
+      void loadUsers();
+    });
   }, [loadUsers]);
 
   useEffect(() => {
-    loadStats();
+    queueMicrotask(() => {
+      void loadStats();
+    });
   }, [loadStats]);
 
   const toggleUserExpand = (userId: number) => {
@@ -125,32 +128,23 @@ export default function StatisticsPage() {
     }
   };
 
-  const formatDateList = (dates: string[]) => {
-    return dates.map(date => {
-      const d = parseISO(date);
-      return format(d, 'M/d', { locale: zhCN });
-    }).join('、');
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* 头部 */}
-      <header className="h-14 border-b bg-background flex items-center justify-between px-4 gap-4 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <h1 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            值班统计
-          </h1>
-        </div>
-        <ThemeToggle />
-      </header>
+    <div className="h-screen flex flex-col bg-background">
+      <Header currentSection="统计" />
 
-      <main className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+      <main className="flex-1 overflow-y-auto bg-muted/30">
+        <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+        <section className="rounded-2xl border bg-card p-4 sm:p-6">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-primary/10 p-2 text-primary">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">值班统计</h2>
+              <p className="text-sm text-muted-foreground">按时间范围和人员查看值班次数与日期明细。</p>
+            </div>
+          </div>
+        </section>
         {/* 筛选区域 */}
         <div className="bg-card border rounded-lg p-4 space-y-4">
           <div className="text-sm font-medium text-muted-foreground">筛选条件</div>
@@ -361,6 +355,7 @@ export default function StatisticsPage() {
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );

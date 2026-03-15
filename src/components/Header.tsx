@@ -6,62 +6,65 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Menu,
   BarChart3,
   History,
   Printer,
   Download,
-  Key,
-  LockKeyhole,
   LogOut,
   Calendar,
   List,
   MoreVertical,
   X,
+  LayoutGrid,
+  Settings,
 } from 'lucide-react';
 
 type ViewMode = 'calendar' | 'list';
 
 interface HeaderProps {
-  onToggleSidebar: () => void;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-  onShowLogs: () => void;
-  onShowPassword: () => void;
-  onShowPrint: () => void;
-  onShowExport: () => void;
-  onShowTokens: () => void;
+  onToggleSidebar?: () => void;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  currentSection?: string;
 }
 
 export function Header({
   onToggleSidebar,
   viewMode,
   onViewModeChange,
-  onShowLogs,
-  onShowPassword,
-  onShowPrint,
-  onShowExport,
-  onShowTokens,
+  currentSection = '排班',
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const showViewToggle = pathname === '/dashboard' && viewMode && onViewModeChange;
 
-  const menuItems = [
-    { label: '日志', icon: History, onClick: onShowLogs },
-    { label: '打印', icon: Printer, onClick: onShowPrint },
-    { label: '导出', icon: Download, onClick: onShowExport },
-    { label: 'Token', icon: LockKeyhole, onClick: onShowTokens },
-    { label: '改密', icon: Key, onClick: onShowPassword },
+  const navItems = [
+    { label: '排班', href: '/dashboard', icon: LayoutGrid, match: (path: string) => path === '/dashboard' },
+    { label: '统计', href: '/dashboard/statistics', icon: BarChart3, match: (path: string) => path.startsWith('/dashboard/statistics') },
+    { label: '日志', href: '/dashboard/logs', icon: History, match: (path: string) => path.startsWith('/dashboard/logs') },
+    { label: '打印', href: '/dashboard/print', icon: Printer, match: (path: string) => path.startsWith('/dashboard/print') },
+    { label: '导出', href: '/dashboard/export', icon: Download, match: (path: string) => path.startsWith('/dashboard/export') },
+    { label: '设置', href: '/dashboard/settings', icon: Settings, match: (path: string) => path.startsWith('/dashboard/settings') },
   ];
 
   return (
     <header className="h-14 border-b bg-background flex items-center justify-between px-4 gap-4">
       {/* 品牌区 */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="h-8 w-8">
-          <Menu className="w-5 h-5" />
-        </Button>
-        <h1 className="text-base sm:text-lg font-semibold truncate">值班排班系统</h1>
+        {onToggleSidebar ? (
+          <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="h-8 w-8">
+            <Menu className="w-5 h-5" />
+          </Button>
+        ) : (
+          <div className="w-8" />
+        )}
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-lg font-semibold truncate">值班排班系统</h1>
+          <p className="hidden sm:block text-xs text-muted-foreground">{currentSection}</p>
+        </div>
       </div>
 
       {/* 桌面端：视图切换 + 操作区 */}
@@ -70,49 +73,46 @@ export function Header({
         <ThemeToggle />
 
         {/* 视图切换 */}
-        <div className="flex border rounded-lg overflow-hidden">
-          <Button
-            variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewModeChange('calendar')}
-            className="rounded-none gap-1"
-          >
-            <Calendar className="w-4 h-4" />
-            月历
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewModeChange('list')}
-            className="rounded-none gap-1"
-          >
-            <List className="w-4 h-4" />
-            列表
-          </Button>
-        </div>
+        {showViewToggle ? (
+          <div className="flex border rounded-lg overflow-hidden">
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('calendar')}
+              className="rounded-none gap-1"
+            >
+              <Calendar className="w-4 h-4" />
+              月历
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('list')}
+              className="rounded-none gap-1"
+            >
+              <List className="w-4 h-4" />
+              列表
+            </Button>
+          </div>
+        ) : null}
 
         {/* 分隔线 */}
         <div className="w-px h-6 bg-border" />
 
         {/* 操作按钮 */}
-        <Link
-          href="/dashboard/statistics"
-          className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'gap-1.5' })}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span className="hidden lg:inline">统计</span>
-        </Link>
-        {menuItems.map(item => (
-          <Button
+        {navItems.map(item => (
+          <Link
             key={item.label}
-            variant="ghost"
-            size="sm"
-            onClick={item.onClick}
-            className="gap-1.5"
+            href={item.href}
+            className={buttonVariants({
+              variant: item.match(pathname) ? 'default' : 'ghost',
+              size: 'sm',
+              className: 'gap-1.5',
+            })}
           >
             <item.icon className="w-4 h-4" />
             <span className="hidden lg:inline">{item.label}</span>
-          </Button>
+          </Link>
         ))}
 
         {/* 退出 */}
@@ -129,24 +129,26 @@ export function Header({
         <ThemeToggle />
 
         {/* 视图切换 */}
-        <div className="flex border rounded overflow-hidden">
-          <Button
-            variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => onViewModeChange('calendar')}
-            className="rounded-none h-8 w-8"
-          >
-            <Calendar className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => onViewModeChange('list')}
-            className="rounded-none h-8 w-8"
-          >
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
+        {showViewToggle ? (
+          <div className="flex border rounded overflow-hidden">
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => onViewModeChange('calendar')}
+              className="rounded-none h-8 w-8"
+            >
+              <Calendar className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => onViewModeChange('list')}
+              className="rounded-none h-8 w-8"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : null}
 
         {/* 更多菜单 */}
         <div className="relative">
@@ -171,23 +173,16 @@ export function Header({
               {/* 菜单面板 */}
               <div className="fixed bottom-0 left-0 right-0 bg-background border-t rounded-t-2xl p-4 z-50 animate-fade-in">
                 <div className="grid grid-cols-3 gap-4 mb-4">
-                  <Link
-                    href="/dashboard/statistics"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-muted transition-colors"
-                  >
-                    <BarChart3 className="w-6 h-6 text-primary" />
-                    <span className="text-sm">统计</span>
-                  </Link>
-                  {menuItems.map(item => (
-                    <button
+                  {navItems.map(item => (
+                    <Link
                       key={item.label}
-                      onClick={() => { item.onClick(); setMenuOpen(false); }}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
                       className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-muted transition-colors"
                     >
                       <item.icon className="w-6 h-6 text-primary" />
                       <span className="text-sm">{item.label}</span>
-                    </button>
+                    </Link>
                   ))}
                 </div>
 

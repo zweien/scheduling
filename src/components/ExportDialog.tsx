@@ -12,7 +12,7 @@ interface ExportDialogProps {
   onClose: () => void;
 }
 
-export function ExportDialog({ open, onClose }: ExportDialogProps) {
+export function ExportPanel() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,60 +84,65 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
   }
 
   return (
+    <div className="space-y-4 py-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>开始日期</Label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="w-full border rounded px-3 py-2 bg-background"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>结束日期</Label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            className="w-full border rounded px-3 py-2 bg-background"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <Button
+          onClick={handleExportCSV}
+          disabled={loading}
+          className="flex-1"
+        >
+          导出 CSV
+        </Button>
+        <Button
+          onClick={handleExportJSON}
+          disabled={loading}
+          variant="outline"
+          className="flex-1"
+        >
+          导出 JSON
+        </Button>
+        <Button
+          onClick={handleExportXLSX}
+          disabled={loading}
+          variant="outline"
+          className="flex-1"
+        >
+          导出 XLSX
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function ExportDialog({ open, onClose }: ExportDialogProps) {
+  return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm w-[calc(100%-2rem)]">
         <DialogHeader>
           <DialogTitle>导出排班表</DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>开始日期</Label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className="w-full border rounded px-3 py-2 bg-background"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>结束日期</Label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="w-full border rounded px-3 py-2 bg-background"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Button
-              onClick={handleExportCSV}
-              disabled={loading}
-              className="flex-1"
-            >
-              导出 CSV
-            </Button>
-            <Button
-              onClick={handleExportJSON}
-              disabled={loading}
-              variant="outline"
-              className="flex-1"
-            >
-              导出 JSON
-            </Button>
-            <Button
-              onClick={handleExportXLSX}
-              disabled={loading}
-              variant="outline"
-              className="flex-1"
-            >
-              导出 XLSX
-            </Button>
-          </div>
-        </div>
+        <ExportPanel />
       </DialogContent>
     </Dialog>
   );
