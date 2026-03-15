@@ -6,6 +6,13 @@ import { hashPassword } from './password';
 const dbPath = path.join(process.cwd(), 'data', 'scheduling.db');
 const db = new Database(dbPath);
 
+export function ensureDefaultAdminAccount(database: Database.Database, initialPassword: string) {
+  database.prepare(`
+    INSERT OR IGNORE INTO accounts (username, display_name, password_hash, role, is_active)
+    VALUES (?, ?, ?, 'admin', 1)
+  `).run('admin', '管理员', hashPassword(initialPassword));
+}
+
 // 启用 WAL 模式
 db.pragma('journal_mode = WAL');
 
@@ -121,15 +128,8 @@ if (!registrationEnabled) {
   db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('registration_enabled', 'false');
 }
 
-const accountCount = db.prepare('SELECT COUNT(*) as count FROM accounts').get() as { count: number };
-if (accountCount.count === 0) {
-  const legacyPassword = db.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
-  const initialPassword = legacyPassword?.value || '123456';
-
-  db.prepare(`
-    INSERT INTO accounts (username, display_name, password_hash, role, is_active)
-    VALUES (?, ?, ?, 'admin', 1)
-  `).run('admin', '管理员', hashPassword(initialPassword));
-}
+const legacyPassword = db.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
+const initialPassword = legacyPassword?.value || '123456';
+ensureDefaultAdminAccount(db, initialPassword);
 
 export default db;
