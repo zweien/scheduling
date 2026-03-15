@@ -177,7 +177,7 @@ export function Header({
                   >
                     <BarChart3 className="w-6 h-6 text-primary" />
                     <span className="text-sm">统计</span>
-                  </button>
+                </button>
                   {menuItems.map(item => (
                     <button
                       key={item.label}
