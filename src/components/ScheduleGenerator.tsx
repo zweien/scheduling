@@ -1,11 +1,12 @@
 // src/components/ScheduleGenerator.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { generateScheduleAction } from '@/app/actions/schedule';
+import { getUsers } from '@/app/actions/users';
 
 interface ScheduleGeneratorProps {
   onGenerated: () => void;
@@ -16,14 +17,21 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeUserCount, setActiveUserCount] = useState(0);
+
+  useEffect(() => {
+    getUsers().then(users => {
+      setActiveUserCount(users.filter(u => u.is_active).length);
+    });
+  }, []);
 
   async function handleGenerate() {
-    if (!startDate || !endDate) {
-      setError('请选择日期范围');
+    if (!startDate) {
+      setError('请选择开始日期');
       return;
     }
 
-    if (startDate > endDate) {
+    if (endDate && startDate > endDate) {
       setError('开始日期不能晚于结束日期');
       return;
     }
@@ -31,7 +39,7 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
     setLoading(true);
     setError(null);
 
-    const result = await generateScheduleAction(startDate, endDate);
+    const result = await generateScheduleAction(startDate, endDate || undefined);
 
     if (result.success) {
       onGenerated();
@@ -58,7 +66,7 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="endDate" className="text-xs">结束日期</Label>
+        <Label htmlFor="endDate" className="text-xs">结束日期（可选）</Label>
         <Input
           id="endDate"
           type="date"
@@ -66,6 +74,9 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
           onChange={e => setEndDate(e.target.value)}
           className="h-8"
         />
+        {!endDate && activeUserCount > 0 && (
+          <p className="text-xs text-muted-foreground">不填将排 {activeUserCount} 天</p>
+        )}
       </div>
 
       <Button onClick={handleGenerate} disabled={loading} className="w-full h-8">
