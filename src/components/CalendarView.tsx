@@ -16,8 +16,85 @@ interface CalendarViewProps {
   refreshKey: number;
 }
 
-type SlideDirection = 'none' | 'left' | 'right';
 type DisplayMode = 'avatar' | 'name';
+
+interface MonthCalendarProps {
+  month: Date;
+  schedules: ScheduleWithUser[];
+  users: User[];
+  today: Date;
+  displayMode: DisplayMode;
+  dragDate: string | null;
+  onCellClick: (date: Date) => void;
+  onDragStart: (date: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (date: string) => void;
+}
+
+function MonthCalendar({
+  month,
+  schedules,
+  today,
+  displayMode,
+  dragDate,
+  onCellClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
+}: MonthCalendarProps) {
+  const monthStart = startOfMonth(month);
+  const monthEnd = endOfMonth(month);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-base font-medium text-center">
+        {format(month, 'yyyy年M月', { locale: zhCN })}
+      </h3>
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+        {['一', '二', '三', '四', '五', '六', '日'].map(day => (
+          <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">
+            {day}
+          </div>
+        ))}
+
+        {days.map((day, index) => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const schedule = schedules.find(s => s.date === dateStr);
+          const isCurrentMonth = isSameMonth(day, month);
+          const animationDelay = Math.min(index * 5, 150);
+
+          if (!isCurrentMonth) {
+            return (
+              <div key={dateStr} className="min-h-[40px] sm:min-h-[60px] p-1 border rounded border-border bg-muted/20 opacity-40">
+                <div className="text-xs text-muted-foreground">{format(day, 'd')}</div>
+              </div>
+            );
+          }
+
+          return (
+            <CalendarCell
+              key={dateStr}
+              date={day}
+              schedule={schedule}
+              isToday={isSameDay(day, today)}
+              onClick={() => onCellClick(day)}
+              onDragStart={() => onDragStart(dateStr)}
+              onDragOver={onDragOver}
+              onDrop={() => onDrop(dateStr)}
+              isDragSource={dragDate === dateStr}
+              isDropTarget={dragDate !== null && dragDate !== dateStr}
+              animationDelay={animationDelay}
+              displayMode={displayMode}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function CalendarView({ refreshKey }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -26,31 +103,37 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
-  const [slideDirection, setSlideDirection] = useState<SlideDirection>('none');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
 
   const today = new Date();
+  const nextMonth = addMonths(currentMonth, 1);
 
   const loadData = useCallback(async () => {
+    // 加载本月和下月的数据
     const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-    const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+    const end = format(endOfMonth(nextMonth), 'yyyy-MM-dd');
     const [scheduleData, userData] = await Promise.all([
       getSchedules(start, end),
       getUsers(),
     ]);
     setSchedules(scheduleData);
     setUsers(userData);
-  }, [currentMonth]);
+  }, [currentMonth, nextMonth]);
 
   useEffect(() => {
     loadData();
   }, [loadData, refreshKey]);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  // 筛选本月和下月的排班
+  const currentMonthSchedules = schedules.filter(s => {
+    const date = new Date(s.date);
+    return isSameMonth(date, currentMonth);
+  });
+
+  const nextMonthSchedules = schedules.filter(s => {
+    const date = new Date(s.date);
+    return isSameMonth(date, nextMonth);
+  });
 
   const handleCellClick = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -81,39 +164,21 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   };
 
   const goToPrevMonth = () => {
-    setSlideDirection('right');
-    setTimeout(() => {
-      setCurrentMonth(subMonths(currentMonth, 1));
-      setSlideDirection('none');
-    }, 50);
+    setCurrentMonth(subMonths(currentMonth, 1));
   };
 
   const goToNextMonth = () => {
-    setSlideDirection('left');
-    setTimeout(() => {
-      setCurrentMonth(addMonths(currentMonth, 1));
-      setSlideDirection('none');
-    }, 50);
+    setCurrentMonth(addMonths(currentMonth, 1));
   };
 
   const goToToday = () => {
-    const direction = currentMonth < today ? 'left' : 'right';
-    setSlideDirection(direction);
-    setTimeout(() => {
-      setCurrentMonth(today);
-      setSlideDirection('none');
-    }, 50);
+    setCurrentMonth(today);
   };
-
-  const slideClass = slideDirection === 'left' ? 'animate-slide-left' :
-                     slideDirection === 'right' ? 'animate-slide-right' : '';
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg font-semibold">
-          {format(currentMonth, 'yyyy年M月', { locale: zhCN })}
-        </h2>
+        <h2 className="text-lg font-semibold">值班日历</h2>
         <div className="flex gap-1 sm:gap-2">
           <Button
             variant="outline"
@@ -141,44 +206,32 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
         </div>
       </div>
 
-      <div className={`grid grid-cols-7 gap-0.5 sm:gap-1 ${slideClass}`}>
-        {['一', '二', '三', '四', '五', '六', '日'].map(day => (
-          <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
-            {day}
-          </div>
-        ))}
-
-        {days.map((day, index) => {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          const schedule = schedules.find(s => s.date === dateStr);
-          const isCurrentMonth = isSameMonth(day, currentMonth);
-          const animationDelay = Math.min(index * 8, 200);
-
-          if (!isCurrentMonth) {
-            return (
-              <div key={dateStr} className="min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded border-border bg-muted/30 opacity-50">
-                <div className="text-xs sm:text-sm text-muted-foreground">{format(day, 'd')}</div>
-              </div>
-            );
-          }
-
-          return (
-            <CalendarCell
-              key={dateStr}
-              date={day}
-              schedule={schedule}
-              isToday={isSameDay(day, today)}
-              onClick={() => handleCellClick(day)}
-              onDragStart={() => handleDragStart(dateStr)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(dateStr)}
-              isDragSource={dragDate === dateStr}
-              isDropTarget={dragDate !== null && dragDate !== dateStr}
-              animationDelay={animationDelay}
-              displayMode={displayMode}
-            />
-          );
-        })}
+      {/* 双月日历布局 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MonthCalendar
+          month={currentMonth}
+          schedules={currentMonthSchedules}
+          users={users}
+          today={today}
+          displayMode={displayMode}
+          dragDate={dragDate}
+          onCellClick={handleCellClick}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        />
+        <MonthCalendar
+          month={nextMonth}
+          schedules={nextMonthSchedules}
+          users={users}
+          today={today}
+          displayMode={displayMode}
+          dragDate={dragDate}
+          onCellClick={handleCellClick}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        />
       </div>
 
       <UserSelectDialog
