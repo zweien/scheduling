@@ -32,10 +32,19 @@ function SortableItem({ user, onDelete }: { user: User; onDelete: (id: number, n
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-move hover:bg-muted">
-      <span className="text-sm">{user.name}</span>
-      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(user.id, user.name); }} className="h-6 w-6 p-0 text-red-500">
+    <div ref={setNodeRef} style={style} {...attributes}
+      className="flex items-center justify-between p-2 bg-muted/50 rounded hover:bg-muted group">
+      <span className="text-sm cursor-move flex-1" {...listeners}>{user.name}</span>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDelete(user.id, user.name);
+        }}
+        className="h-6 w-6 p-0 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
         ×
       </Button>
     </div>

@@ -18,7 +18,13 @@ export function createUser(name: string): User {
 }
 
 export function deleteUser(id: number): void {
-  db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  const transaction = db.transaction(() => {
+    // 先删除该用户的所有排班记录
+    db.prepare('DELETE FROM schedules WHERE user_id = ?').run(id);
+    // 再删除用户
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  });
+  transaction();
 }
 
 export function reorderUsers(userIds: number[]): void {
