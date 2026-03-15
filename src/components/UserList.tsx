@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getUsers, addUser, removeUser, updateUserOrder } from '@/app/actions/users';
+import { Switch } from '@/components/ui/switch';
+import { getUsers, addUser, removeUser, updateUserOrder, updateUserActiveAction } from '@/app/actions/users';
 import type { User } from '@/types';
 import {
   DndContext,
@@ -23,7 +24,15 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortableItem({ user, onDelete }: { user: User; onDelete: (id: number, name: string) => void }) {
+function SortableItem({
+  user,
+  onDelete,
+  onToggleActive
+}: {
+  user: User;
+  onDelete: (id: number, name: string) => void;
+  onToggleActive: (id: number, isActive: boolean) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: user.id });
 
   const style = {
@@ -33,20 +42,27 @@ function SortableItem({ user, onDelete }: { user: User; onDelete: (id: number, n
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}
-      className="flex items-center justify-between p-2 bg-muted/50 rounded hover:bg-muted group">
+      className={`flex items-center justify-between p-2 bg-muted/50 rounded hover:bg-muted group ${!user.is_active ? 'opacity-50' : ''}`}>
       <span className="text-sm cursor-move flex-1" {...listeners}>{user.name}</span>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onDelete(user.id, user.name);
-        }}
-        className="h-6 w-6 p-0 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        ×
-      </Button>
+      <div className="flex items-center gap-2">
+        <Switch
+          checked={user.is_active}
+          onCheckedChange={(checked) => onToggleActive(user.id, checked)}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(user.id, user.name);
+          }}
+          className="h-6 w-6 p-0 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          ×
+        </Button>
+      </div>
     </div>
   );
 }
@@ -76,6 +92,11 @@ export function UserList() {
     setUsers(users.filter(u => u.id !== id));
   }
 
+  async function handleToggleActive(id: number, isActive: boolean) {
+    await updateUserActiveAction(id, isActive);
+    setUsers(users.map(u => u.id === id ? { ...u, is_active: isActive } : u));
+  }
+
   async function handleDragEnd(event: { active: any; over: any }) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -98,7 +119,7 @@ export function UserList() {
               </div>
             ) : (
               users.map(user => (
-                <SortableItem key={user.id} user={user} onDelete={handleDelete} />
+                <SortableItem key={user.id} user={user} onDelete={handleDelete} onToggleActive={handleToggleActive} />
               ))
             )}
           </div>
