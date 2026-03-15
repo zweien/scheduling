@@ -6,7 +6,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOf
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { UserSelectDialog } from './UserSelectDialog';
-import { getSchedules, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
+import { getSchedules, removeSchedule, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
 import { getUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -105,6 +105,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
@@ -146,6 +147,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
     const dateStr = format(date, 'yyyy-MM-dd');
+    setSelectedHasSchedule(schedules.some(schedule => schedule.date === dateStr));
     setSelectedDate(dateStr);
     setDialogOpen(true);
   };
@@ -157,7 +159,19 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     if (!selectedDate) return;
     await replaceSchedule(selectedDate, userId);
     setDialogOpen(false);
+    setSelectedHasSchedule(false);
     loadData();
+  };
+
+  const handleDelete = async () => {
+    if (!canManage || !selectedDate) {
+      return;
+    }
+
+    await removeSchedule(selectedDate);
+    setDialogOpen(false);
+    setSelectedHasSchedule(false);
+    await loadData();
   };
 
   const handleDragStart = (date: string) => {
@@ -259,6 +273,8 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           open={dialogOpen}
           users={users}
           onSelect={handleReplace}
+          onDelete={handleDelete}
+          canDelete={selectedHasSchedule}
           onClose={() => setDialogOpen(false)}
         />
       ) : null}

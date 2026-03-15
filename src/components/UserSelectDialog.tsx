@@ -9,10 +9,19 @@ interface UserSelectDialogProps {
   open: boolean;
   users: User[];
   onSelect: (userId: number) => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
   onClose: () => void;
 }
 
-export function UserSelectDialog({ open, users, onSelect, onClose }: UserSelectDialogProps) {
+export function UserSelectDialog({
+  open,
+  users,
+  onSelect,
+  onDelete,
+  canDelete = false,
+  onClose,
+}: UserSelectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto">
@@ -31,6 +40,17 @@ export function UserSelectDialog({ open, users, onSelect, onClose }: UserSelectD
             </Button>
           ))}
         </div>
+        {canDelete && onDelete ? (
+          <div className="border-t pt-4">
+            <Button
+              variant="destructive"
+              onClick={onDelete}
+              className="w-full"
+            >
+              删除当天值班
+            </Button>
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

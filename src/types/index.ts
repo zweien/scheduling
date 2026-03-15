@@ -71,6 +71,7 @@ export type Action =
   | 'toggle_user_active'
   | 'generate_schedule'
   | 'replace_schedule'
+  | 'delete_schedule'
   | 'swap_schedule'
   | 'set_password'
   | 'add_account'

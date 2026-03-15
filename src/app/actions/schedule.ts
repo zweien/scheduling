@@ -2,7 +2,7 @@
 'use server';
 
 import { generateSchedule as doGenerateSchedule } from '@/lib/schedule';
-import { getSchedulesByDateRange, setSchedule, getScheduleStats } from '@/lib/schedules';
+import { deleteSchedule, getSchedulesByDateRange, setSchedule, getScheduleStats } from '@/lib/schedules';
 import { getUserById } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
@@ -45,6 +45,27 @@ export async function replaceSchedule(date: string, newUserId: number) {
   );
 
   revalidatePath('/dashboard');
+}
+
+export async function removeSchedule(date: string) {
+  const account = await requireAdmin();
+  const current = getSchedulesByDateRange(date, date)[0];
+
+  if (!current) {
+    return { success: false, error: '找不到排班记录' };
+  }
+
+  deleteSchedule(date);
+  await addWebLog(
+    'delete_schedule',
+    `日期: ${date}`,
+    current.user.name,
+    '已删除',
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard');
+  return { success: true };
 }
 
 export async function swapSchedules(date1: string, date2: string) {
