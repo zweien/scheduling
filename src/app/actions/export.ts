@@ -2,7 +2,7 @@
 'use server';
 
 import { getSchedulesByDateRange } from '@/lib/schedules';
-import { getUserById } from '@/lib/users';
+import { buildCalendarWorkbook } from '@/lib/export/calendar-xlsx';
 
 export async function exportToCSV(startDate: string, endDate: string): Promise<string> {
   const schedules = getSchedulesByDateRange(startDate, endDate);
@@ -21,4 +21,15 @@ export async function exportToCSV(startDate: string, endDate: string): Promise<s
 export async function exportToJSON(startDate: string, endDate: string): Promise<string> {
   const schedules = getSchedulesByDateRange(startDate, endDate);
   return JSON.stringify(schedules, null, 2);
+}
+
+export async function exportToXLSX(startDate: string, endDate: string) {
+  const schedules = getSchedulesByDateRange(startDate, endDate);
+  const workbook = await buildCalendarWorkbook(startDate, endDate, schedules);
+
+  return {
+    fileName: `排班日历_${startDate}_${endDate}.xlsx`,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    content: workbook.toString('base64'),
+  };
 }
