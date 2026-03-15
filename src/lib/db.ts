@@ -14,6 +14,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     sort_order INTEGER NOT NULL,
+    is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -45,6 +46,13 @@ db.exec(`
 const defaultPassword = db.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
 if (!defaultPassword) {
   db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('password', '123456');
+}
+
+// 检查并添加 is_active 字段（兼容已存在的数据库）
+try {
+  db.exec('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1');
+} catch {
+  // 字段已存在，忽略错误
 }
 
 export default db;
