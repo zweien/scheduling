@@ -1,0 +1,80 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="64" x2="1184" y2="576" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FAFF"/>
+      <stop offset="0.5" stop-color="#EEF4FF"/>
+      <stop offset="1" stop-color="#F7FCFB"/>
+    </linearGradient>
+    <linearGradient id="line" x1="142" y1="116" x2="1118" y2="510" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F6FF8"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <filter id="shadow" x="744" y="125" width="346" height="261" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="20"/>
+      <feGaussianBlur stdDeviation="18"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0588235 0 0 0 0 0.0941176 0 0 0 0 0.164706 0 0 0 0.14 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_2" result="shape"/>
+    </filter>
+    <filter id="soft" x="835" y="329" width="285" height="150" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="16"/>
+      <feGaussianBlur stdDeviation="16"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0588235 0 0 0 0 0.0941176 0 0 0 0 0.164706 0 0 0 0.12 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_2" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" rx="32" fill="url(#bg)"/>
+  <rect x="48" y="48" width="1184" height="544" rx="28" stroke="#D9E3F3"/>
+
+  <circle cx="1096" cy="134" r="74" fill="#DCE8FF"/>
+  <circle cx="1057" cy="118" r="42" fill="#BFE7E0"/>
+  <circle cx="185" cy="518" r="88" fill="#E5EEF9"/>
+
+  <path d="M137 466C223 404 273 405 360 456C445 506 499 505 595 438C708 359 784 361 874 420C960 477 1017 480 1125 411" stroke="url(#line)" stroke-width="8" stroke-linecap="round"/>
+
+  <text x="142" y="148" fill="#0F172A" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" font-weight="700" letter-spacing="6">TEAM SCHEDULING PLATFORM</text>
+  <text x="142" y="236" fill="#0F172A" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="64" font-weight="800">值班安排，更清晰地协作</text>
+  <text x="142" y="292" fill="#334155" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="26" font-weight="500">排班、统计、REST API 与日历导出，组织成一个闭环。</text>
+  <text x="142" y="344" fill="#475569" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="24">为小团队提供可靠的值班编排、变更追踪与集成能力。</text>
+
+  <rect x="142" y="390" width="176" height="48" rx="24" fill="#0F172A"/>
+  <text x="177" y="421" fill="white" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="22" font-weight="700">Calendar + API</text>
+
+  <rect x="332" y="390" width="152" height="48" rx="24" fill="white" stroke="#CBD5E1"/>
+  <text x="373" y="421" fill="#0F172A" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="22" font-weight="700">XLSX Export</text>
+
+  <g filter="url(#shadow)">
+    <rect x="780" y="161" width="274" height="189" rx="24" fill="white"/>
+    <rect x="804" y="187" width="108" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="928" y="187" width="102" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="804" y="216" width="226" height="10" rx="5" fill="#F1F5F9"/>
+    <rect x="804" y="242" width="30" height="24" rx="8" fill="#0F172A"/>
+    <rect x="842" y="242" width="30" height="24" rx="8" fill="#0F172A"/>
+    <rect x="880" y="242" width="30" height="24" rx="8" fill="#0F172A"/>
+    <rect x="918" y="242" width="30" height="24" rx="8" fill="#E2E8F0"/>
+    <rect x="956" y="242" width="30" height="24" rx="8" fill="#E2E8F0"/>
+    <rect x="994" y="242" width="36" height="24" rx="8" fill="#E2E8F0"/>
+    <g>
+      <rect x="804" y="286" width="28" height="28" rx="8" fill="#EEF2FF"/>
+      <rect x="838" y="286" width="28" height="28" rx="8" fill="#EEF2FF"/>
+      <rect x="872" y="286" width="28" height="28" rx="8" fill="#EEF2FF"/>
+      <rect x="906" y="286" width="28" height="28" rx="8" fill="#EEF2FF"/>
+      <rect x="940" y="286" width="28" height="28" rx="8" fill="#DCFCE7"/>
+      <rect x="974" y="286" width="28" height="28" rx="8" fill="#EEF2FF"/>
+      <rect x="1008" y="286" width="28" height="28" rx="8" fill="#EEF2FF"/>
+    </g>
+  </g>
+
+  <g filter="url(#soft)">
+    <rect x="867" y="361" width="221" height="86" rx="22" fill="white"/>
+    <text x="891" y="392" fill="#0F172A" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="18" font-weight="700">REST API</text>
+    <text x="891" y="420" fill="#475569" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="15">Bearer Token 查询排班、人员</text>
+    <text x="891" y="443" fill="#475569" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="15">并修改指定日期值班人</text>
+  </g>
+</svg>

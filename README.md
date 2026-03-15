@@ -1,6 +1,26 @@
-# 值班排班系统
+<p align="center">
+  <img src="docs/readme-banner.svg" alt="值班排班系统 Banner" width="100%" />
+</p>
 
-一个面向小团队的值班排班应用，提供月历排班、列表查看、统计分析、日志追踪、REST API 集成与多格式导出，适合内部值班、轮岗与轻量排班协作场景。
+<p align="center">
+  <a href="https://github.com/zweien/scheduling/stargazers"><img src="https://img.shields.io/github/stars/zweien/scheduling?style=for-the-badge" alt="GitHub stars" /></a>
+  <a href="https://github.com/zweien/scheduling/network/members"><img src="https://img.shields.io/github/forks/zweien/scheduling?style=for-the-badge" alt="GitHub forks" /></a>
+  <a href="https://github.com/zweien/scheduling/blob/master/LICENSE"><img src="https://img.shields.io/github/license/zweien/scheduling?style=for-the-badge" alt="GitHub license" /></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js 16" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 5" />
+  <img src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/API-REST-0F766E?style=for-the-badge" alt="REST API" />
+  <img src="https://img.shields.io/badge/Export-CSV%20%7C%20JSON%20%7C%20XLSX-7C3AED?style=for-the-badge" alt="Export formats" />
+</p>
+
+<p align="center">
+  一个面向小团队的值班排班应用，提供月历排班、列表查看、统计分析、日志追踪、REST API 集成与多格式导出。
+</p>
+
+适合内部值班、轮岗与轻量排班协作场景，强调排班、集成与导出的完整闭环。
 
 ## 为什么使用它
 
