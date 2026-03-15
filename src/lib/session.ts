@@ -1,13 +1,14 @@
 // src/lib/session.ts
 import { getIronSession, IronSession } from 'iron-session';
 import { cookies } from 'next/headers';
+import { resolveSessionPassword } from './session-config';
 
 interface SessionData {
   isLoggedIn: boolean;
 }
 
 const sessionOptions = {
-  password: process.env.SESSION_SECRET || 'complex_password_at_least_32_characters_long_for_security',
+  password: resolveSessionPassword(process.env),
   cookieName: 'scheduling_session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
