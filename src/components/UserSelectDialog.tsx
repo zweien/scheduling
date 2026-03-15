@@ -12,7 +12,9 @@ interface UserSelectDialogProps {
   users: User[];
   onSelect: (userId: number) => void;
   onDelete?: () => void;
+  onMove?: () => void;
   canDelete?: boolean;
+  canMove?: boolean;
   onClose: () => void;
 }
 
@@ -21,7 +23,9 @@ export function UserSelectDialog({
   users,
   onSelect,
   onDelete,
+  onMove,
   canDelete = false,
+  canMove = false,
   onClose,
 }: UserSelectDialogProps) {
   const [keyword, setKeyword] = useState('');
@@ -73,15 +77,26 @@ export function UserSelectDialog({
             </div>
           )}
         </div>
-        {canDelete && onDelete ? (
-          <div className="border-t pt-4">
-            <Button
-              variant="destructive"
-              onClick={onDelete}
-              className="w-full"
-            >
-              删除当天值班
-            </Button>
+        {(canMove && onMove) || (canDelete && onDelete) ? (
+          <div className="space-y-2 border-t pt-4">
+            {canMove && onMove ? (
+              <Button
+                variant="outline"
+                onClick={onMove}
+                className="w-full"
+              >
+                移动到其他日期
+              </Button>
+            ) : null}
+            {canDelete && onDelete ? (
+              <Button
+                variant="destructive"
+                onClick={onDelete}
+                className="w-full"
+              >
+                删除当天值班
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </DialogContent>

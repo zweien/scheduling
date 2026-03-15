@@ -108,6 +108,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
+  const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
 
   const today = new Date();
@@ -147,6 +148,27 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
     const dateStr = format(date, 'yyyy-MM-dd');
+
+    if (moveSourceDate) {
+      if (moveSourceDate === dateStr) {
+        setMoveSourceDate(null);
+        return;
+      }
+
+      void (async () => {
+        const targetHasSchedule = schedules.some(schedule => schedule.date === dateStr);
+        if (targetHasSchedule) {
+          await swapSchedules(moveSourceDate, dateStr);
+        } else {
+          await moveSchedule(moveSourceDate, dateStr);
+        }
+
+        setMoveSourceDate(null);
+        await loadData();
+      })();
+      return;
+    }
+
     setSelectedHasSchedule(schedules.some(schedule => schedule.date === dateStr));
     setSelectedDate(dateStr);
     setDialogOpen(true);
@@ -172,6 +194,15 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     await loadData();
+  };
+
+  const handleMoveStart = () => {
+    if (!canManage || !selectedDate || !selectedHasSchedule) {
+      return;
+    }
+
+    setMoveSourceDate(selectedDate);
+    setDialogOpen(false);
   };
 
   const handleDragStart = (date: string) => {
@@ -216,6 +247,17 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
   return (
     <div className="space-y-4">
+      {moveSourceDate ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-foreground">
+            正在移动 <span className="font-medium">{moveSourceDate}</span> 的排班，请点击目标日期。
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setMoveSourceDate(null)}>
+            取消移动
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">值班日历</h2>
         <div className="flex gap-1 sm:gap-2">
@@ -280,8 +322,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           open={dialogOpen}
           users={users}
           onSelect={handleReplace}
+          onMove={handleMoveStart}
           onDelete={handleDelete}
           canDelete={selectedHasSchedule}
+          canMove={selectedHasSchedule}
           onClose={() => setDialogOpen(false)}
         />
       ) : null}
