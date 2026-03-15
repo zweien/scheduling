@@ -3,6 +3,8 @@ import { checkAuth } from '@/lib/auth';
 import { apiError } from '@/lib/api-errors';
 import { createApiToken, listApiTokens } from '@/lib/api-tokens';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   if (!(await checkAuth())) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');

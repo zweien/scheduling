@@ -5,6 +5,8 @@ import { addLog } from '@/lib/logs';
 import { getScheduleByDate, setSchedule } from '@/lib/schedules';
 import { getUserById } from '@/lib/users';
 
+export const dynamic = 'force-dynamic';
+
 type Params = { params: Promise<{ date: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {

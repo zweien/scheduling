@@ -3,6 +3,8 @@ import { authenticateApiRequest } from '@/lib/api-auth';
 import { apiError } from '@/lib/api-errors';
 import { getSchedulesByDateRange } from '@/lib/schedules';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   if (!authenticateApiRequest(request)) {
     return apiError(401, 'UNAUTHORIZED', 'Invalid or disabled token');

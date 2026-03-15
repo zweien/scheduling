@@ -3,6 +3,8 @@ import { checkAuth } from '@/lib/auth';
 import { apiError } from '@/lib/api-errors';
 import { disableApiToken } from '@/lib/api-tokens';
 
+export const dynamic = 'force-dynamic';
+
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {
