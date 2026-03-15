@@ -111,14 +111,14 @@ export function CalendarView({ refreshKey }: CalendarViewProps) {
   const loadData = useCallback(async () => {
     // 加载本月和下月的数据
     const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-    const end = format(endOfMonth(nextMonth), 'yyyy-MM-dd');
+    const end = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
     const [scheduleData, userData] = await Promise.all([
       getSchedules(start, end),
       getUsers(),
     ]);
     setSchedules(scheduleData);
     setUsers(userData);
-  }, [currentMonth, nextMonth]);
+  }, [currentMonth]);
 
   useEffect(() => {
     loadData();

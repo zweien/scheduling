@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
@@ -43,7 +42,6 @@ export function Header({
   onShowExport,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const router = useRouter();
 
   const menuItems = [
     { label: '日志', icon: History, onClick: onShowLogs },
@@ -93,15 +91,13 @@ export function Header({
         <div className="w-px h-6 bg-border" />
 
         {/* 操作按钮 */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/dashboard/statistics')}
-          className="gap-1.5"
+        <Link
+          href="/dashboard/statistics"
+          className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'gap-1.5' })}
         >
           <BarChart3 className="w-4 h-4" />
           <span className="hidden lg:inline">统计</span>
-        </Button>
+        </Link>
         {menuItems.map(item => (
           <Button
             key={item.label}
@@ -171,13 +167,14 @@ export function Header({
               {/* 菜单面板 */}
               <div className="fixed bottom-0 left-0 right-0 bg-background border-t rounded-t-2xl p-4 z-50 animate-fade-in">
                 <div className="grid grid-cols-3 gap-4 mb-4">
-                  <button
-                    onClick={() => { router.push('/dashboard/statistics'); setMenuOpen(false); }}
+                  <Link
+                    href="/dashboard/statistics"
+                    onClick={() => setMenuOpen(false)}
                     className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-muted transition-colors"
                   >
                     <BarChart3 className="w-6 h-6 text-primary" />
                     <span className="text-sm">统计</span>
-                </button>
+                  </Link>
                   {menuItems.map(item => (
                     <button
                       key={item.label}
