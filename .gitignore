@@ -48,7 +48,12 @@ next-env.d.ts
 # database
 data/*.db
 data/*.db-journal
+data/*.db-shm
 data/*.db-wal
+
+# test artifacts
+.playwright-mcp/
+test-results/
 
 # IDE
 .idea/
