@@ -21,6 +21,9 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    organization TEXT NOT NULL DEFAULT 'W',
+    category TEXT NOT NULL DEFAULT 'W',
+    notes TEXT DEFAULT '',
     sort_order INTEGER NOT NULL,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -83,6 +86,24 @@ if (!defaultPassword) {
 // 检查并添加 is_active 字段（兼容已存在的数据库）
 try {
   db.exec('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1');
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN organization TEXT NOT NULL DEFAULT 'W'");
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN category TEXT NOT NULL DEFAULT 'W'");
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec("ALTER TABLE users ADD COLUMN notes TEXT DEFAULT ''");
 } catch {
   // 字段已存在，忽略错误
 }

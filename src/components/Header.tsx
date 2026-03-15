@@ -14,13 +14,14 @@ import {
   History,
   Printer,
   Download,
-  LockKeyhole,
+  Building2,
   LogOut,
   Calendar,
   List,
   MoreVertical,
   X,
   LayoutGrid,
+  LockKeyhole,
   Settings,
 } from 'lucide-react';
 
@@ -47,11 +48,12 @@ export function Header({
   const navItems = [
     { label: '排班', href: '/dashboard', icon: LayoutGrid, match: (path: string) => path === '/dashboard' },
     { label: '统计', href: '/dashboard/statistics', icon: BarChart3, match: (path: string) => path.startsWith('/dashboard/statistics') },
+    { label: '值班人员', href: '/dashboard/users', icon: Building2, match: (path: string) => path.startsWith('/dashboard/users') },
     { label: '日志', href: '/dashboard/logs', icon: History, match: (path: string) => path.startsWith('/dashboard/logs') },
     { label: '打印', href: '/dashboard/print', icon: Printer, match: (path: string) => path.startsWith('/dashboard/print') },
     { label: '导出', href: '/dashboard/export', icon: Download, match: (path: string) => path.startsWith('/dashboard/export') },
     ...(role === 'admin'
-      ? [{ label: '用户', href: '/dashboard/users', icon: LockKeyhole, match: (path: string) => path.startsWith('/dashboard/users') }]
+      ? [{ label: '账号管理', href: '/dashboard/accounts', icon: LockKeyhole, match: (path: string) => path.startsWith('/dashboard/accounts') }]
       : []),
     { label: '设置', href: '/dashboard/settings', icon: Settings, match: (path: string) => path.startsWith('/dashboard/settings') },
   ];

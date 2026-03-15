@@ -1,10 +1,11 @@
 // src/app/actions/users.ts
 'use server';
 
-import { getActiveUsers, getAllUsers, createUser, deleteUser, reorderUsers, setUserActive, getUserById } from '@/lib/users';
+import { getActiveUsers, getAllUsers, createUser, deleteUser, getUserById, getUsersByFilters, reorderUsers, setUserActive, updateUserProfile } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
+import type { UserCategory, UserOrganization } from '@/types';
 
 export async function getUsers() {
   return getAllUsers();
@@ -12,6 +13,16 @@ export async function getUsers() {
 
 export async function getAssignableUsers() {
   return getActiveUsers();
+}
+
+export async function getDutyUsers(filters?: {
+  search?: string;
+  organization?: UserOrganization | '';
+  category?: UserCategory | '';
+  status?: 'active' | 'inactive' | '';
+}) {
+  await requireAdmin();
+  return getUsersByFilters(filters);
 }
 
 export async function addUser(name: string) {
@@ -23,6 +34,33 @@ export async function addUser(name: string) {
   });
   revalidatePath('/dashboard');
   return user;
+}
+
+export async function createDutyUser(input: {
+  name: string;
+  organization: UserOrganization;
+  category: UserCategory;
+  notes: string;
+}) {
+  const account = await requireAdmin();
+
+  if (!input.name.trim()) {
+    return { success: false, error: '姓名不能为空' };
+  }
+
+  const user = createUser(input.name.trim(), {
+    organization: input.organization,
+    category: input.category,
+    notes: input.notes,
+  });
+
+  await addWebLog('add_user', `人员: ${user.name}`, undefined, `${user.organization}/${user.category}`, {
+    username: account.username,
+    role: account.role,
+  });
+
+  revalidatePath('/dashboard/users');
+  return { success: true, user };
 }
 
 export async function removeUser(id: number, name: string) {
@@ -57,4 +95,42 @@ export async function updateUserActiveAction(id: number, isActive: boolean) {
     role: account.role,
   });
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/users');
+}
+
+export async function updateDutyUserProfile(input: {
+  id: number;
+  name: string;
+  organization: UserOrganization;
+  category: UserCategory;
+  notes: string;
+}) {
+  const account = await requireAdmin();
+  const current = getUserById(input.id);
+
+  if (!current) {
+    return { success: false, error: '人员不存在' };
+  }
+
+  if (!input.name.trim()) {
+    return { success: false, error: '姓名不能为空' };
+  }
+
+  const updated = updateUserProfile(input.id, {
+    name: input.name.trim(),
+    organization: input.organization,
+    category: input.category,
+    notes: input.notes,
+  });
+
+  await addWebLog(
+    'update_user_profile',
+    `人员: ${current.name}`,
+    `${current.organization}/${current.category}/${current.notes ?? ''}`,
+    `${updated?.organization}/${updated?.category}/${updated?.notes ?? ''}`,
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard/users');
+  return { success: true, user: updated };
 }

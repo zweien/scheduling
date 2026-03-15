@@ -12,7 +12,9 @@ function seedCalendarData() {
   db.prepare('DELETE FROM users').run();
   db.prepare('DELETE FROM logs').run();
 
-  db.prepare('INSERT INTO users (id, name, sort_order, is_active) VALUES (1, ?, 1, 1)').run('张三');
+  db.prepare(
+    "INSERT INTO users (id, name, sort_order, is_active, organization, category, notes) VALUES (1, ?, 1, 1, 'W', 'W', '')"
+  ).run('张三');
   db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run('2026-03-16', 1);
 }
 
@@ -32,11 +34,15 @@ test('新增人员后月历弹窗立即显示新人员', async ({ page }) => {
   await login(page);
 
   const newUserName = `王五${Date.now()}`;
-  await page.getByPlaceholder('添加人员').fill(newUserName);
-  await page.getByRole('button', { name: '添加' }).click();
-
+  await page.goto(`${baseUrl}/dashboard/users`);
+  await page.getByLabel('姓名').fill(newUserName);
+  await page.getByLabel('所属单位').last().selectOption('X');
+  await page.getByLabel('人员类别').last().selectOption('J');
+  await page.getByLabel('备注').fill('新加入');
+  await page.getByRole('button', { name: '新增人员' }).click();
   await expect(page.getByText(newUserName)).toBeVisible();
 
+  await page.goto(`${baseUrl}/dashboard`);
   await page.getByText('张', { exact: true }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('button', { name: newUserName })).toBeVisible();

@@ -2,18 +2,16 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserList } from '@/components/UserList';
 import { ScheduleGenerator } from '@/components/ScheduleGenerator';
-import { Users, CalendarPlus } from 'lucide-react';
+import { CalendarPlus } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onScheduleGenerated: () => void;
-  onUsersChanged: () => void;
   onClose?: () => void;
 }
 
-export function Sidebar({ isOpen, onScheduleGenerated, onUsersChanged, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onScheduleGenerated, onClose }: SidebarProps) {
   return (
     <>
       {/* 侧边栏 */}
@@ -27,18 +25,6 @@ export function Sidebar({ isOpen, onScheduleGenerated, onUsersChanged, onClose }
         `}
       >
         <div className="p-4 space-y-4 overflow-y-auto h-full">
-          <Card className="rounded-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
-                人员管理
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <UserList onUsersChanged={onUsersChanged} />
-            </CardContent>
-          </Card>
-
           <Card className="rounded-lg">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">

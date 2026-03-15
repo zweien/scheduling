@@ -18,9 +18,14 @@ test('右上角导航可进入独立功能页面', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '值班日历' })).toBeVisible();
 
   await expect(header.getByRole('link', { name: '统计', exact: true })).toBeVisible();
+  await expect(header.getByRole('link', { name: '值班人员', exact: true })).toBeVisible();
   await page.goto(`${baseUrl}/dashboard/statistics`);
   await expect(page).toHaveURL(/\/dashboard\/statistics$/);
   await expect(page.getByRole('heading', { name: '值班统计' })).toBeVisible();
+
+  await page.goto(`${baseUrl}/dashboard/users`);
+  await expect(page).toHaveURL(/\/dashboard\/users$/);
+  await expect(page.getByRole('heading', { name: '值班人员管理' })).toBeVisible();
 
   await expect(header.getByRole('link', { name: '日志', exact: true })).toBeVisible();
   await page.goto(`${baseUrl}/dashboard/logs`);
@@ -41,4 +46,9 @@ test('右上角导航可进入独立功能页面', async ({ page }) => {
   await page.goto(`${baseUrl}/dashboard/settings`);
   await expect(page).toHaveURL(/\/dashboard\/settings$/);
   await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible();
+
+  await expect(header.getByRole('link', { name: '账号管理', exact: true })).toBeVisible();
+  await page.goto(`${baseUrl}/dashboard/accounts`);
+  await expect(page).toHaveURL(/\/dashboard\/accounts$/);
+  await expect(page.getByRole('heading', { name: '系统用户管理' })).toBeVisible();
 });

@@ -21,7 +21,7 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
 
   await page.goto(`${baseUrl}/dashboard/settings`);
   await expect(page.getByRole('heading', { name: '注册设置' })).toBeVisible();
-  await expect(page.locator('a[href="/dashboard/users"]').first()).toBeVisible();
+  await expect(page.locator('a[href="/dashboard/accounts"]').first()).toBeVisible();
 
   const registrationSwitch = page.getByRole('switch');
   const wasEnabled = (await registrationSwitch.getAttribute('aria-checked')) === 'true';
@@ -42,14 +42,14 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
   await page.getByRole('button', { name: '注册并进入系统' }).click();
   await page.waitForURL('**/dashboard');
 
-  await expect(page.locator('a[href="/dashboard/users"]')).toHaveCount(0);
+  await expect(page.locator('a[href="/dashboard/accounts"]')).toHaveCount(0);
 
   await page.goto(`${baseUrl}/dashboard/settings`);
   await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '注册设置' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'API Token 配置' })).toHaveCount(0);
 
-  await page.goto(`${baseUrl}/dashboard/users`);
+  await page.goto(`${baseUrl}/dashboard/accounts`);
   await page.waitForURL('**/dashboard');
 
   if (!wasEnabled) {

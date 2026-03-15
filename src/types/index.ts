@@ -1,8 +1,14 @@
 // src/types/index.ts
 
+export type UserOrganization = 'W' | 'X' | 'Z';
+export type UserCategory = 'J' | 'W';
+
 export interface User {
   id: number;
   name: string;
+  organization: UserOrganization;
+  category: UserCategory;
+  notes: string | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;
@@ -69,6 +75,7 @@ export type Action =
   | 'delete_user'
   | 'reorder_users'
   | 'toggle_user_active'
+  | 'update_user_profile'
   | 'generate_schedule'
   | 'replace_schedule'
   | 'delete_schedule'
