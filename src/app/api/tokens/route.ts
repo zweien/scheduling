@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAccount } from '@/lib/auth';
 import { apiError } from '@/lib/api-errors';
 import { createApiToken, listApiTokens } from '@/lib/api-tokens';
+import { addWebLog } from '@/lib/logs';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,5 +34,11 @@ export async function POST(request: NextRequest) {
     return apiError(400, 'INVALID_INPUT', 'Token name is required');
   }
 
-  return NextResponse.json(createApiToken(name));
+  const token = createApiToken(name);
+  await addWebLog('create_token', `Token: ${token.name}`, undefined, token.prefix, {
+    username: account.username,
+    role: account.role,
+  });
+
+  return NextResponse.json(token);
 }

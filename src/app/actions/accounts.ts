@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { countAdminAccounts, createAccount, listAccounts, updateAccountActive, updateAccountRole } from '@/lib/accounts';
 import { requireAdmin } from '@/lib/auth';
-import { addLog } from '@/lib/logs';
+import { addWebLog } from '@/lib/logs';
 import type { AccountRole } from '@/types';
 
 export async function getAccounts() {
@@ -17,7 +17,7 @@ export async function createAccountAction(input: {
   password: string;
   role: AccountRole;
 }) {
-  await requireAdmin();
+  const current = await requireAdmin();
 
   if (!input.username.trim() || !input.displayName.trim() || !input.password.trim()) {
     return { success: false, error: '请填写所有字段' };
@@ -29,7 +29,10 @@ export async function createAccountAction(input: {
 
   try {
     const account = createAccount(input);
-    addLog('add_account', `账号: ${account.username}`, undefined, account.role);
+    await addWebLog('add_account', `账号: ${account.username}`, undefined, account.role, {
+      username: current.username,
+      role: current.role,
+    });
     revalidatePath('/dashboard/users');
     return { success: true, account };
   } catch (error) {
@@ -52,7 +55,10 @@ export async function updateAccountRoleAction(accountId: number, role: AccountRo
     }
   }
 
-  addLog('change_account_role', `账号: ${updated.username}`, undefined, updated.role);
+  await addWebLog('change_account_role', `账号: ${updated.username}`, undefined, updated.role, {
+    username: current.username,
+    role: current.role,
+  });
   revalidatePath('/dashboard/users');
   return { success: true, account: updated };
 }
@@ -75,8 +81,10 @@ export async function updateAccountActiveAction(accountId: number, isActive: boo
     return { success: false, error: '系统至少需要一位管理员' };
   }
 
-  addLog('toggle_account_active', `账号: ${updated.username}`, isActive ? '停用' : '启用', isActive ? '启用' : '停用');
+  await addWebLog('toggle_account_active', `账号: ${updated.username}`, isActive ? '停用' : '启用', isActive ? '启用' : '停用', {
+    username: current.username,
+    role: current.role,
+  });
   revalidatePath('/dashboard/users');
   return { success: true, account: updated };
 }
-

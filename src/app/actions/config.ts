@@ -3,7 +3,7 @@
 
 import { requireAdmin, updatePassword as doUpdatePassword } from '@/lib/auth';
 import { isRegistrationEnabled, setRegistrationEnabled } from '@/lib/config';
-import { addLog } from '@/lib/logs';
+import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
 
 export async function updatePasswordAction(oldPassword: string, newPassword: string) {
@@ -15,9 +15,12 @@ export async function getRegistrationEnabledAction() {
 }
 
 export async function updateRegistrationEnabledAction(enabled: boolean) {
-  await requireAdmin();
+  const account = await requireAdmin();
   setRegistrationEnabled(enabled);
-  addLog('toggle_registration', '用户注册', enabled ? '关闭' : '开启', enabled ? '开启' : '关闭');
+  await addWebLog('toggle_registration', '用户注册', enabled ? '关闭' : '开启', enabled ? '开启' : '关闭', {
+    username: account.username,
+    role: account.role,
+  });
   revalidatePath('/dashboard/settings');
   revalidatePath('/');
   revalidatePath('/register');

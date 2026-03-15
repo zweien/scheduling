@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createAccount, getAccountById, getAccountByUsername, normalizeAccountUsername, updateAccountPassword, verifyAccountPassword } from './accounts';
 import { isRegistrationEnabled } from './config';
 import { getSession } from './session';
-import { addLog } from './logs';
+import { addWebLog } from './logs';
 import type { Account, AccountRole } from '@/types';
 
 export async function checkAuth(): Promise<boolean> {
@@ -60,7 +60,10 @@ export async function login(username: string, password: string): Promise<{ succe
   session.role = account.role;
   await session.save();
 
-  addLog('login', `账号: ${account.username}`, undefined, `用户登录 (${account.role})`);
+  await addWebLog('login', `账号: ${account.username}`, undefined, `用户登录 (${account.role})`, {
+    username: account.username,
+    role: account.role,
+  });
 
   return { success: true };
 }
@@ -94,8 +97,6 @@ export async function register(input: {
     role: 'user',
   });
 
-  addLog('register', `账号: ${account.username}`, undefined, '用户注册');
-
   const session = await getSession();
   session.isLoggedIn = true;
   session.accountId = account.id;
@@ -104,12 +105,20 @@ export async function register(input: {
   session.role = account.role;
   await session.save();
 
+  await addWebLog('register', `账号: ${account.username}`, undefined, '用户注册', {
+    username: account.username,
+    role: account.role,
+  });
+
   return { success: true };
 }
 
 export async function logout(): Promise<void> {
   const session = await getSession();
-  addLog('logout', `账号: ${session.username ?? '未知'}`, undefined, '用户退出');
+  await addWebLog('logout', `账号: ${session.username ?? '未知'}`, undefined, '用户退出', {
+    username: session.username ?? null,
+    role: session.role ?? null,
+  });
   session.destroy();
 }
 
@@ -125,7 +134,10 @@ export async function updatePassword(oldPassword: string, newPassword: string): 
   }
 
   updateAccountPassword(account.id, newPassword);
-  addLog('set_password', `账号: ${account.username}`, '******', '******');
+  await addWebLog('set_password', `账号: ${account.username}`, '******', '******', {
+    username: account.username,
+    role: account.role,
+  });
 
   return { success: true };
 }

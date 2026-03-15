@@ -26,6 +26,10 @@ export interface Log {
   target: string;
   old_value: string | null;
   new_value: string | null;
+  operator_username: string | null;
+  operator_role: AccountRole | null;
+  ip_address: string | null;
+  source: LogSource | null;
   created_at: string;
 }
 
@@ -45,6 +49,7 @@ export interface ApiToken {
 }
 
 export type AccountRole = 'admin' | 'user';
+export type LogSource = 'web' | 'api' | 'system';
 
 export interface Account {
   id: number;
@@ -71,4 +76,6 @@ export type Action =
   | 'add_account'
   | 'toggle_account_active'
   | 'change_account_role'
-  | 'toggle_registration';
+  | 'toggle_registration'
+  | 'create_token'
+  | 'disable_token';

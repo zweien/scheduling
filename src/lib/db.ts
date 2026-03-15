@@ -34,6 +34,10 @@ db.exec(`
     target TEXT NOT NULL,
     old_value TEXT,
     new_value TEXT,
+    operator_username TEXT,
+    operator_role TEXT,
+    ip_address TEXT,
+    source TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -84,6 +88,30 @@ try {
 
 try {
   db.exec('ALTER TABLE accounts ADD COLUMN is_active INTEGER DEFAULT 1');
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec('ALTER TABLE logs ADD COLUMN operator_username TEXT');
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec('ALTER TABLE logs ADD COLUMN operator_role TEXT');
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec('ALTER TABLE logs ADD COLUMN ip_address TEXT');
+} catch {
+  // 字段已存在，忽略错误
+}
+
+try {
+  db.exec('ALTER TABLE logs ADD COLUMN source TEXT');
 } catch {
   // 字段已存在，忽略错误
 }

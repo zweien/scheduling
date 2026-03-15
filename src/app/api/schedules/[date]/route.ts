@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiRequest } from '@/lib/api-auth';
 import { apiError } from '@/lib/api-errors';
-import { addLog } from '@/lib/logs';
+import { addApiLog } from '@/lib/logs';
 import { getScheduleByDate, setSchedule } from '@/lib/schedules';
 import { getUserById } from '@/lib/users';
 
@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 type Params = { params: Promise<{ date: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {
-  if (!authenticateApiRequest(request)) {
+  const token = authenticateApiRequest(request);
+  if (!token) {
     return apiError(401, 'UNAUTHORIZED', 'Invalid or disabled token');
   }
 
@@ -27,7 +28,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const previous = getScheduleByDate(date);
   setSchedule(date, user.id, true);
-  addLog('replace_schedule', `API 日期: ${date}`, previous?.user.name ?? '无', user.name);
+  addApiLog('replace_schedule', `日期: ${date}`, previous?.user.name ?? '无', user.name, request, {
+    username: `token:${token.name}`,
+    role: null,
+  });
 
   const updated = getScheduleByDate(date);
   if (!updated) {

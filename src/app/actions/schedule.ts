@@ -5,13 +5,17 @@ import { generateSchedule as doGenerateSchedule } from '@/lib/schedule';
 import { getSchedulesByDateRange, setSchedule, getScheduleStats } from '@/lib/schedules';
 import { getUserById } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
-import { addLog } from '@/lib/logs';
+import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
 
 export async function generateScheduleAction(startDate: string, endDate?: string) {
-  await requireAdmin();
+  const account = await requireAdmin();
   try {
     doGenerateSchedule(startDate, endDate);
+    await addWebLog('generate_schedule', `日期: ${startDate} ~ ${endDate ?? '自动推导'}`, undefined, '已生成', {
+      username: account.username,
+      role: account.role,
+    });
     revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
@@ -24,7 +28,7 @@ export async function getSchedules(startDate: string, endDate: string) {
 }
 
 export async function replaceSchedule(date: string, newUserId: number) {
-  await requireAdmin();
+  const account = await requireAdmin();
   const oldSchedules = getSchedulesByDateRange(date, date);
   const oldSchedule = oldSchedules[0];
   const oldUser = oldSchedule ? getUserById(oldSchedule.user_id) : null;
@@ -32,18 +36,19 @@ export async function replaceSchedule(date: string, newUserId: number) {
 
   setSchedule(date, newUserId, true);
 
-  addLog(
+  await addWebLog(
     'replace_schedule',
     `日期: ${date}`,
     oldUser?.name ?? '无',
-    newUser?.name ?? '无'
+    newUser?.name ?? '无',
+    { username: account.username, role: account.role }
   );
 
   revalidatePath('/dashboard');
 }
 
 export async function swapSchedules(date1: string, date2: string) {
-  await requireAdmin();
+  const account = await requireAdmin();
   const minDate = date1 < date2 ? date1 : date2;
   const maxDate = date1 > date2 ? date1 : date2;
   const schedules = getSchedulesByDateRange(minDate, maxDate);
@@ -57,11 +62,12 @@ export async function swapSchedules(date1: string, date2: string) {
   setSchedule(date1, s2.user_id, true);
   setSchedule(date2, s1.user_id, true);
 
-  addLog(
+  await addWebLog(
     'swap_schedule',
     `交换: ${date1} <-> ${date2}`,
     `${s1.user.name} <-> ${s2.user.name}`,
-    `${s2.user.name} <-> ${s1.user.name}`
+    `${s2.user.name} <-> ${s1.user.name}`,
+    { username: account.username, role: account.role }
   );
 
   revalidatePath('/dashboard');

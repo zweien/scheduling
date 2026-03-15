@@ -1,7 +1,6 @@
 // src/lib/schedule.ts
 import { getActiveUsers } from './users';
 import { setSchedule, getSchedulesByDateRange } from './schedules';
-import { addLog } from './logs';
 import { format, eachDayOfInterval, parseISO, addDays } from 'date-fns';
 
 export function generateSchedule(startDate: string, endDate?: string) {
@@ -39,6 +38,4 @@ export function generateSchedule(startDate: string, endDate?: string) {
     assigned.push(`${dateStr}: ${user.name}`);
     userIndex++;
   });
-
-  addLog('generate_schedule', `日期: ${startDate} ~ ${endDateStr}`, undefined, assigned.join(', '));
 }

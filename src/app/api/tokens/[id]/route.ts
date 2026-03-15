@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAccount } from '@/lib/auth';
 import { apiError } from '@/lib/api-errors';
 import { disableApiToken } from '@/lib/api-tokens';
+import { addWebLog } from '@/lib/logs';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!token) {
     return apiError(404, 'NOT_FOUND', 'Token not found');
   }
+
+  await addWebLog('disable_token', `Token: ${token.name}`, undefined, token.prefix, {
+    username: account.username,
+    role: account.role,
+  });
 
   return NextResponse.json(token);
 }
