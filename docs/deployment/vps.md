@@ -87,10 +87,10 @@ cat ~/.ssh/github-actions-scheduling.pub
 
 ```bash
 cd /opt/scheduling
+npm ci --include=dev
 set -a
 source ./.env.production
 set +a
-npm ci
 npm run build
 pm2 startOrReload ecosystem.config.js --env production
 pm2 save
@@ -111,7 +111,7 @@ pm2 logs scheduling
 2. 进入部署目录
 3. 执行 `git fetch --all`
 4. 执行 `git reset --hard origin/master`
-5. 执行 `npm ci`
+5. 执行 `npm ci --include=dev`
 6. 加载 `.env.production`
 7. 执行 `npm run build`
 8. 执行 `pm2 startOrReload ecosystem.config.js --env production`
@@ -154,10 +154,10 @@ sudo systemctl reload nginx
 cd /opt/scheduling
 git log --oneline -n 5
 git reset --hard <commit>
+npm ci --include=dev
 set -a
 source ./.env.production
 set +a
-npm ci
 npm run build
 pm2 startOrReload ecosystem.config.js --env production
 pm2 save

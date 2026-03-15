@@ -36,10 +36,10 @@ jobs:
           cd "${{ secrets.VPS_APP_DIR }}"
           git fetch --all
           git reset --hard origin/master
+          npm ci --include=dev
           set -a
           source ./.env.production
           set +a
-          npm ci
           npm run build
           pm2 startOrReload ecosystem.config.js --env production
           pm2 save

@@ -76,7 +76,7 @@ main() {
   write_env_template
 
   cd "${APP_DIR}"
-  npm ci
+  npm ci --include=dev
 
   sudo env "PATH=${PATH}" pm2 startup systemd -u "${APP_USER}" --hp "${APP_HOME}"
   pm2 save
@@ -89,7 +89,7 @@ main() {
 2. 将部署公钥加入服务器用户的 ~/.ssh/authorized_keys
 3. 手动配置 Nginx 反代到 127.0.0.1:3018
 4. 首次部署时执行：
-   cd "${APP_DIR}" && set -a && source ./.env.production && set +a && npm run build && pm2 startOrReload ecosystem.config.js --env production && pm2 save
+   cd "${APP_DIR}" && npm ci --include=dev && set -a && source ./.env.production && set +a && npm run build && pm2 startOrReload ecosystem.config.js --env production && pm2 save
 EOF
 }
 
