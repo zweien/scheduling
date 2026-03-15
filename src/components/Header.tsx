@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
 import Link from 'next/link';
@@ -91,11 +91,12 @@ export function Header({
         <div className="w-px h-6 bg-border" />
 
         {/* 操作按钮 */}
-        <Link href="/dashboard/statistics">
-          <Button variant="ghost" size="sm" className="gap-1.5">
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden lg:inline">统计</span>
-          </Button>
+        <Link
+          href="/dashboard/statistics"
+          className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'gap-1.5' })}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span className="hidden lg:inline">统计</span>
         </Link>
         {menuItems.map(item => (
           <Button
