@@ -106,20 +106,35 @@ pm2 logs scheduling
 
 ## GitHub Actions 自动部署流程
 
-当 `master` 分支收到新的 push 时，workflow 会：
+当前 workflow 不是由 `master` push 触发，而是由以下两种方式触发：
+
+1. 发布 GitHub Release
+2. 在 Actions 页面手动运行 `Deploy to VPS`，并指定 `tag`
+
+自动部署时，workflow 会：
 
 1. 通过 SSH 登录 VPS
 2. 进入部署目录
-3. 执行 `git fetch --all`
-4. 执行 `git reset --hard origin/master`
+3. 执行 `git fetch --all --tags`
+4. 执行 `git checkout "tags/<release-tag>" -B release-deploy`
 5. 执行 `npm ci --include=dev`
 6. 加载 `.env.production`
 7. 执行 `npm run build`
 8. 执行 `pm2 kill || true`
 9. 执行 `pm2 start ecosystem.config.js --env production --update-env`
-9. 执行 `pm2 save`
+10. 执行 `pm2 save`
 
-这个流程假设 VPS 部署目录只用于部署，不在服务器上直接修改代码。
+也就是说，线上部署版本严格对应指定 tag，而不是自动跟随 `master` 最新提交。
+
+### 手动按 Tag 部署
+
+在 GitHub Actions 页面手动运行 `Deploy to VPS` 时，填写：
+
+```text
+tag=v1.0.1
+```
+
+workflow 会部署这个 tag 对应的代码版本。
 
 ## Nginx 配置示例
 
@@ -150,12 +165,12 @@ sudo systemctl reload nginx
 
 ## 回滚
 
-如果最新部署有问题，可在 VPS 上手动回滚到上一个提交：
+如果最新部署有问题，优先回滚到上一个稳定 tag：
 
 ```bash
 cd /opt/scheduling
-git log --oneline -n 5
-git reset --hard <commit>
+git fetch --all --tags
+git checkout "tags/v1.0.0" -B release-deploy
 npm ci --include=dev
 set -a
 source ./.env.production
@@ -165,6 +180,8 @@ pm2 kill || true
 pm2 start ecosystem.config.js --env production --update-env
 pm2 save
 ```
+
+也可以在 GitHub Actions 页面手动运行 `Deploy to VPS`，直接填旧 tag 完成回滚。
 
 ## 常见问题
 

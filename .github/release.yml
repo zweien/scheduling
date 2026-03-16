@@ -1,0 +1,18 @@
+changelog:
+  categories:
+    - title: 功能
+      labels:
+        - feat
+        - enhancement
+    - title: 修复
+      labels:
+        - fix
+        - bug
+    - title: 文档与运维
+      labels:
+        - docs
+        - ci
+        - chore
+  exclude:
+    labels:
+      - skip-changelog
