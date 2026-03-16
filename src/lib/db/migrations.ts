@@ -23,7 +23,15 @@ function addColumnIfMissing(database: Database.Database, tableName: string, colu
     return;
   }
 
-  database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  try {
+    database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes(`duplicate column name: ${columnName}`)) {
+      return;
+    }
+
+    throw error;
+  }
 }
 
 export const MIGRATIONS: Migration[] = [
@@ -123,7 +131,7 @@ export function applyMigrations(database: Database.Database) {
 
     const transaction = database.transaction(() => {
       migration.up(database);
-      database.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(migration.version);
+      database.prepare('INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)').run(migration.version);
     });
 
     transaction();

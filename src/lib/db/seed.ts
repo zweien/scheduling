@@ -5,10 +5,7 @@ type SeedDependencies = {
 };
 
 function ensureConfigValue(database: Database.Database, key: string, value: string) {
-  const existing = database.prepare('SELECT value FROM config WHERE key = ?').get(key) as { value: string } | undefined;
-  if (!existing) {
-    database.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run(key, value);
-  }
+  database.prepare('INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)').run(key, value);
 }
 
 export function ensureDefaultAdminAccount(database: Database.Database, initialPassword: string, dependencies: SeedDependencies = {}) {
