@@ -88,6 +88,41 @@ export interface DutyUserImportPreview {
   rows: DutyUserImportRow[];
 }
 
+export type ScheduleImportStrategy = 'skip' | 'overwrite' | 'mark_conflicts';
+
+export interface ScheduleImportRow {
+  date: string;
+  userName: string;
+  userId: number;
+  isManual: boolean;
+  notes: string;
+}
+
+export interface ScheduleImportIssue {
+  row: number;
+  field: string;
+  message: string;
+}
+
+export interface ScheduleImportConflict {
+  row: number;
+  date: string;
+  incomingUserName: string;
+  existingUserName: string;
+}
+
+export interface ScheduleImportPreview {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  duplicateRows: number;
+  conflictRows: number;
+  cleanRows: number;
+  rows: ScheduleImportRow[];
+  issues: ScheduleImportIssue[];
+  conflicts: ScheduleImportConflict[];
+}
+
 export type Action =
   | 'login'
   | 'logout'
@@ -109,5 +144,6 @@ export type Action =
   | 'change_account_role'
   | 'toggle_registration'
   | 'import_users'
+  | 'import_schedules'
   | 'create_token'
   | 'disable_token';

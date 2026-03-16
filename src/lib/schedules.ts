@@ -22,6 +22,23 @@ export function getSchedulesByDateRange(startDate: string, endDate: string): Sch
   })).filter(s => s.user);
 }
 
+export function getSchedulesByDates(dates: string[]): ScheduleWithUser[] {
+  if (dates.length === 0) {
+    return [];
+  }
+
+  const placeholders = dates.map(() => '?').join(', ');
+  const schedules = db.prepare(
+    `SELECT * FROM schedules WHERE date IN (${placeholders}) ORDER BY date`
+  ).all(...dates) as Schedule[];
+
+  return schedules.map(schedule => ({
+    ...schedule,
+    is_manual: Boolean(schedule.is_manual),
+    user: getUserById(schedule.user_id)!,
+  })).filter(schedule => schedule.user);
+}
+
 export function setSchedule(date: string, userId: number, isManual: boolean = false): void {
   db.prepare(`
     INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, ?)
