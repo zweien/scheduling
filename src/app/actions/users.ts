@@ -2,7 +2,7 @@
 'use server';
 
 import { createOrUpdateUserByName, getActiveUsers, getAllUsers, createUser, deleteUser, getUserById, getUsersByFilters, reorderUsers, setUserActive, updateUserProfile } from '@/lib/users';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin, requireAuth } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
 import { buildDutyUsersTemplateWorkbook } from '@/lib/imports/duty-users-template';
@@ -35,6 +35,16 @@ export async function getDutyUsers(filters?: {
   status?: 'active' | 'inactive' | '';
 }) {
   await requireAdmin();
+  return getUsersByFilters(filters);
+}
+
+export async function getDutyUsersForView(filters?: {
+  search?: string;
+  organization?: UserOrganization | '';
+  category?: UserCategory | '';
+  status?: 'active' | 'inactive' | '';
+}) {
+  await requireAuth();
   return getUsersByFilters(filters);
 }
 

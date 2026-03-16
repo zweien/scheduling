@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createDutyUser, downloadDutyUsersTemplate, getDutyUsers, importDutyUsersAction, previewDutyUsersImportAction, removeUser, updateDutyUserProfile, updateUserActiveAction } from '@/app/actions/users';
+import { useCallback, useEffect, useState } from 'react';
+import { createDutyUser, downloadDutyUsersTemplate, getDutyUsers, getDutyUsersForView, importDutyUsersAction, previewDutyUsersImportAction, removeUser, updateDutyUserProfile, updateUserActiveAction } from '@/app/actions/users';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,16 +46,18 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
 
-  async function loadUsers(nextFilters: FiltersState) {
-    const items = await getDutyUsers(nextFilters);
+  const loadUsers = useCallback(async (nextFilters: FiltersState) => {
+    const items = canManage
+      ? await getDutyUsers(nextFilters)
+      : await getDutyUsersForView(nextFilters);
     setUsers(items);
-  }
+  }, [canManage]);
 
   useEffect(() => {
     queueMicrotask(() => {
       void loadUsers(filters);
     });
-  }, [filters]);
+  }, [filters, loadUsers]);
 
   function updateFilter<K extends keyof FiltersState>(key: K, value: FiltersState[K]) {
     setFilters(current => ({ ...current, [key]: value }));
