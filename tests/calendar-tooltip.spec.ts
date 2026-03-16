@@ -55,7 +55,7 @@ test('月历视图悬停排班日期时显示人员详情 tooltip', async ({ pag
   const tooltip = page.getByTestId('schedule-tooltip');
 
   await expect(tooltip).toHaveCount(1);
-  await expect(tooltip).not.toBeVisible();
+  await expect(tooltip).toHaveCSS('opacity', '0');
 
   await page.locator('[draggable="true"]').first().hover();
 
@@ -63,4 +63,19 @@ test('月历视图悬停排班日期时显示人员详情 tooltip', async ({ pag
   await expect(tooltip).toContainText('张三');
   await expect(tooltip).toContainText('X');
   await expect(tooltip).toContainText('J');
+});
+
+test('深色主题下 tooltip 不应使用白色背景', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('theme', 'dark');
+  });
+
+  await login(page);
+
+  const tooltip = page.getByTestId('schedule-tooltip');
+  await page.locator('[draggable="true"]').first().hover();
+  await expect(tooltip).toBeVisible();
+
+  const backgroundColor = await tooltip.evaluate(element => window.getComputedStyle(element).backgroundColor);
+  expect(backgroundColor).not.toBe('rgb(255, 255, 255)');
 });

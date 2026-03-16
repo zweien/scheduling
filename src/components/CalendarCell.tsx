@@ -98,9 +98,9 @@ export function CalendarCell({
           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10
             opacity-0 group-hover:opacity-100 pointer-events-none
             transition-opacity duration-150
-            bg-white border border-border rounded-lg shadow-lg p-2 min-w-[120px]"
+            bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-2 min-w-[120px]"
         >
-          <div className="text-sm font-medium text-foreground">{schedule.user.name}</div>
+          <div className="text-sm font-medium">{schedule.user.name}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {schedule.user.organization} · {schedule.user.category}
           </div>
