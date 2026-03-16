@@ -50,6 +50,24 @@ export function deleteSchedule(date: string): void {
   db.prepare('DELETE FROM schedules WHERE date = ?').run(date);
 }
 
+export function batchDeleteSchedules(dates: string[]): number {
+  const uniqueDates = [...new Set(dates)].sort();
+
+  if (uniqueDates.length === 0) {
+    return 0;
+  }
+
+  const placeholders = uniqueDates.map(() => '?').join(', ');
+  const statement = db.prepare(`DELETE FROM schedules WHERE date IN (${placeholders})`);
+
+  const transaction = db.transaction((targetDates: string[]) => {
+    const result = statement.run(...targetDates);
+    return result.changes;
+  });
+
+  return transaction(uniqueDates);
+}
+
 export function getScheduleStats(startDate?: string, endDate?: string): { userId: number; count: number; dates: string[] }[] {
   let query = `
     SELECT user_id as userId, COUNT(*) as count, GROUP_CONCAT(date, ',') as dates

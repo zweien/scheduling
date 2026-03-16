@@ -1,15 +1,19 @@
 // src/components/CalendarCell.tsx
 'use client';
 
+import type React from 'react';
 import type { ScheduleWithUser } from '@/types';
 import { getAvatarColor, getAvatarInitial } from '@/lib/avatar';
+import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface CalendarCellProps {
   date: Date;
   schedule?: ScheduleWithUser;
   isToday: boolean;
-  onClick: () => void;
+  isSelected?: boolean;
+  onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: () => void;
@@ -24,6 +28,7 @@ export function CalendarCell({
   date,
   schedule,
   isToday,
+  isSelected = false,
   onClick,
   onDragStart,
   onDragOver,
@@ -39,23 +44,24 @@ export function CalendarCell({
 
   return (
     <div
+      data-calendar-date={format(date, 'yyyy-MM-dd')}
+      data-selected={isSelected ? 'true' : 'false'}
       onClick={onClick}
       draggable={canManage && !!schedule}
       onDragStart={canManage ? onDragStart : undefined}
       onDragOver={canManage ? onDragOver : undefined}
       onDrop={canManage ? onDrop : undefined}
-      className={`
-        relative min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded ${canManage ? 'cursor-pointer' : 'cursor-default'}
-        transition-all duration-150
-        ${schedule ? 'group' : ''}
-        ${isToday
-          ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow'
-          : 'border-border'}
-        ${isWeekend ? 'bg-muted/30' : 'bg-background'}
-        ${schedule && canManage ? 'hover:-translate-y-0.5 hover:shadow-md' : ''}
-        ${isDragSource ? 'opacity-40' : ''}
-        ${isDropTarget ? 'border-2 border-dashed border-primary bg-primary/10' : ''}
-      `}
+      className={cn(
+        'relative min-h-[50px] rounded border p-1 transition-all duration-150 sm:min-h-[80px] sm:p-2',
+        canManage ? 'cursor-pointer' : 'cursor-default',
+        schedule ? 'group' : '',
+        isToday ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow' : 'border-border',
+        isWeekend ? 'bg-muted/30' : 'bg-background',
+        schedule && canManage ? 'hover:-translate-y-0.5 hover:shadow-md' : '',
+        isSelected ? 'ring-2 ring-primary ring-offset-1 ring-offset-background border-primary shadow-sm' : '',
+        isDragSource ? 'opacity-40' : '',
+        isDropTarget ? 'border-2 border-dashed border-primary bg-primary/10' : ''
+      )}
       style={{ animationDelay: `${animationDelay}ms` }}
     >
       {/* 日期 */}

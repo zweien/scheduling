@@ -2,7 +2,14 @@
 'use server';
 
 import { generateSchedule as doGenerateSchedule } from '@/lib/schedule';
-import { deleteSchedule, getSchedulesByDateRange, getSchedulesByDates, setSchedule, getScheduleStats } from '@/lib/schedules';
+import {
+  batchDeleteSchedules as doBatchDeleteSchedules,
+  deleteSchedule,
+  getSchedulesByDateRange,
+  getSchedulesByDates,
+  getScheduleStats,
+  setSchedule,
+} from '@/lib/schedules';
 import { getUserById, getUserByName } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
@@ -80,6 +87,35 @@ export async function removeSchedule(date: string) {
 
   revalidatePath('/dashboard');
   return { success: true };
+}
+
+export async function batchDeleteSchedules(dates: string[]) {
+  const account = await requireAdmin();
+  const uniqueDates = [...new Set(dates)].sort();
+
+  if (uniqueDates.length === 0) {
+    return { success: false, error: '请选择要删除的日期' };
+  }
+
+  const schedules = getSchedulesByDates(uniqueDates);
+
+  if (schedules.length === 0) {
+    return { success: false, error: '所选日期没有排班记录' };
+  }
+
+  const deletedCount = doBatchDeleteSchedules(schedules.map(schedule => schedule.date));
+  const summary = schedules.map(schedule => `${schedule.date}: ${schedule.user.name}`).join('，');
+
+  await addWebLog(
+    'batch_delete_schedules',
+    `批量删除日期: ${schedules.map(schedule => schedule.date).join(', ')}`,
+    summary,
+    `已删除 ${deletedCount} 条排班`,
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard');
+  return { success: true, deletedCount };
 }
 
 export async function moveSchedule(fromDate: string, toDate: string) {
