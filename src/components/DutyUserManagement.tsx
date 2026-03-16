@@ -57,6 +57,17 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
     const items = canManage
       ? await getDutyUsers(nextFilters)
       : await getDutyUsersForView(nextFilters);
+
+    const visibleUserIds = new Set(items.map(user => user.id));
+    setSelectedUserIds(current => {
+      const next = new Set<number>();
+      current.forEach(userId => {
+        if (visibleUserIds.has(userId)) {
+          next.add(userId);
+        }
+      });
+      return next;
+    });
     setUsers(items);
   }, [canManage]);
 
