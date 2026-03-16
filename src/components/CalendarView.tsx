@@ -1,12 +1,13 @@
 // src/components/CalendarView.tsx
 'use client';
 
+import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { UserSelectDialog } from './UserSelectDialog';
-import { getSchedules, moveSchedule, removeSchedule, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
+import { batchDeleteSchedules, getSchedules, moveSchedule, removeSchedule, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
 import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,8 @@ interface MonthCalendarProps {
   today: Date;
   displayMode: DisplayMode;
   dragDate: string | null;
-  onCellClick: (date: Date) => void;
+  selectedDates: Set<string>;
+  onCellClick: (date: Date, event: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart: (date: string) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (date: string) => void;
@@ -39,6 +41,7 @@ function MonthCalendar({
   today,
   displayMode,
   dragDate,
+  selectedDates,
   onCellClick,
   onDragStart,
   onDragOver,
@@ -83,7 +86,8 @@ function MonthCalendar({
               date={day}
               schedule={schedule}
               isToday={isSameDay(day, today)}
-              onClick={() => onCellClick(day)}
+              isSelected={selectedDates.has(dateStr)}
+              onClick={event => onCellClick(day, event)}
               onDragStart={() => onDragStart(dateStr)}
               onDragOver={onDragOver}
               onDrop={() => onDrop(dateStr)}
@@ -105,6 +109,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
@@ -123,6 +128,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       getAssignableUsers(),
     ]);
     setSchedules(scheduleData);
+    setSelectedDates(current => {
+      const availableDates = new Set(scheduleData.map(schedule => schedule.date));
+      return new Set([...current].filter(date => availableDates.has(date)));
+    });
     setUsers(userData);
   }, [currentMonth]);
 
@@ -143,11 +152,13 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     return isSameMonth(date, nextMonth);
   });
 
-  const handleCellClick = (date: Date) => {
+  const handleCellClick = (date: Date, event: React.MouseEvent<HTMLDivElement>) => {
     if (!canManage) {
       return;
     }
     const dateStr = format(date, 'yyyy-MM-dd');
+    const hasSchedule = schedules.some(schedule => schedule.date === dateStr);
+    const isMultiSelect = event.metaKey || event.ctrlKey;
 
     if (moveSourceDate) {
       if (moveSourceDate === dateStr) {
@@ -169,7 +180,28 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
-    setSelectedHasSchedule(schedules.some(schedule => schedule.date === dateStr));
+    if (isMultiSelect) {
+      if (!hasSchedule) {
+        return;
+      }
+
+      setDialogOpen(false);
+      setSelectedDate(null);
+      setSelectedHasSchedule(false);
+      setSelectedDates(current => {
+        const next = new Set(current);
+        if (next.has(dateStr)) {
+          next.delete(dateStr);
+        } else {
+          next.add(dateStr);
+        }
+        return next;
+      });
+      return;
+    }
+
+    setSelectedDates(new Set());
+    setSelectedHasSchedule(hasSchedule);
     setSelectedDate(dateStr);
     setDialogOpen(true);
   };
@@ -192,6 +224,44 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
     await removeSchedule(selectedDate);
     setDialogOpen(false);
+    setSelectedHasSchedule(false);
+    await loadData();
+  };
+
+  const handleSelectCurrentMonth = () => {
+    if (!canManage) {
+      return;
+    }
+
+    setSelectedDates(new Set(currentMonthSchedules.map(schedule => schedule.date)));
+    setDialogOpen(false);
+    setSelectedDate(null);
+    setSelectedHasSchedule(false);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedDates(new Set());
+  };
+
+  const handleBatchDelete = async () => {
+    if (!canManage || selectedDates.size === 0) {
+      return;
+    }
+
+    const targetDates = [...selectedDates].sort();
+    const confirmed = window.confirm(`确认删除已选择的 ${targetDates.length} 条排班吗？此操作不可撤销。`);
+    if (!confirmed) {
+      return;
+    }
+
+    const result = await batchDeleteSchedules(targetDates);
+    if (!result.success) {
+      return;
+    }
+
+    setSelectedDates(new Set());
+    setDialogOpen(false);
+    setSelectedDate(null);
     setSelectedHasSchedule(false);
     await loadData();
   };
@@ -234,16 +304,23 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   };
 
   const goToPrevMonth = () => {
+    setSelectedDates(new Set());
     setCurrentMonth(subMonths(currentMonth, 1));
   };
 
   const goToNextMonth = () => {
+    setSelectedDates(new Set());
     setCurrentMonth(addMonths(currentMonth, 1));
   };
 
   const goToToday = () => {
+    setSelectedDates(new Set());
     setCurrentMonth(today);
   };
+
+  const selectedCount = selectedDates.size;
+  const hasCurrentMonthSchedules = currentMonthSchedules.length > 0;
+  const hasSelectedSchedules = selectedCount > 0;
 
   return (
     <div className="space-y-4">
@@ -260,7 +337,36 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">值班日历</h2>
-        <div className="flex gap-1 sm:gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
+          {canManage ? (
+            <>
+              <span className="mr-1 text-sm text-muted-foreground">已选择 {selectedCount} 天</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectCurrentMonth}
+                disabled={!hasCurrentMonthSchedules}
+              >
+                全选当月
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearSelection}
+                disabled={!hasSelectedSchedules}
+              >
+                取消选择
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBatchDelete}
+                disabled={!hasSelectedSchedules}
+              >
+                批量删除
+              </Button>
+            </>
+          ) : null}
           <Button
             variant="outline"
             size="sm"
@@ -296,6 +402,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           today={today}
           displayMode={displayMode}
           dragDate={dragDate}
+          selectedDates={selectedDates}
           onCellClick={handleCellClick}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
@@ -309,6 +416,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           today={today}
           displayMode={displayMode}
           dragDate={dragDate}
+          selectedDates={selectedDates}
           onCellClick={handleCellClick}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}

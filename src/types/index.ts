@@ -136,6 +136,7 @@ export type Action =
   | 'generate_schedule'
   | 'replace_schedule'
   | 'delete_schedule'
+  | 'batch_delete_schedules'
   | 'move_schedule'
   | 'swap_schedule'
   | 'set_password'
