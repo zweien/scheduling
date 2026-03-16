@@ -55,6 +55,24 @@ export function deleteUser(id: number): void {
   transaction();
 }
 
+export function deleteUsers(userIds: number[]): void {
+  if (userIds.length === 0) {
+    return;
+  }
+
+  const deleteSchedules = db.prepare('DELETE FROM schedules WHERE user_id = ?');
+  const deleteUsersStatement = db.prepare('DELETE FROM users WHERE id = ?');
+
+  const transaction = db.transaction(() => {
+    userIds.forEach(userId => {
+      deleteSchedules.run(userId);
+      deleteUsersStatement.run(userId);
+    });
+  });
+
+  transaction();
+}
+
 export function reorderUsers(userIds: number[]): void {
   const update = db.prepare('UPDATE users SET sort_order = ? WHERE id = ?');
   const transaction = db.transaction(() => {

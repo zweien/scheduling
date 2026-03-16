@@ -94,6 +94,7 @@ export type Action =
   | 'register'
   | 'add_user'
   | 'delete_user'
+  | 'delete_users'
   | 'reorder_users'
   | 'toggle_user_active'
   | 'update_user_profile'

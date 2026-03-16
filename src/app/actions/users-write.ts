@@ -1,6 +1,6 @@
 'use server';
 
-import { createUser, deleteUser, getUserById, reorderUsers, setUserActive, updateUserProfile } from '@/lib/users';
+import { createUser, deleteUser, deleteUsers, getUserById, reorderUsers, setUserActive, updateUserProfile } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
@@ -52,6 +52,33 @@ export async function removeUser(id: number, name: string) {
     role: account.role,
   });
   revalidatePath('/dashboard');
+}
+
+export async function removeUsers(ids: number[]) {
+  const account = await requireAdmin();
+  const users = ids
+    .map(id => getUserById(id))
+    .filter((user): user is NonNullable<typeof user> => Boolean(user));
+
+  if (users.length === 0) {
+    return { success: true, deletedCount: 0 };
+  }
+
+  deleteUsers(users.map(user => user.id));
+  await addWebLog(
+    'delete_users',
+    `批量删除人员 ${users.length} 名`,
+    undefined,
+    users.map(user => user.name).join('、'),
+    {
+      username: account.username,
+      role: account.role,
+    }
+  );
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/users');
+
+  return { success: true, deletedCount: users.length };
 }
 
 export async function updateUserOrder(userIds: number[]) {

@@ -30,6 +30,7 @@ const actionConfig: Record<string, { label: string; badgeClass: string }> = {
   register: { label: '注册', badgeClass: 'bg-sky-100 text-sky-800' },
   add_user: { label: '添加人员', badgeClass: 'bg-blue-100 text-blue-800' },
   delete_user: { label: '删除人员', badgeClass: 'bg-red-100 text-red-800' },
+  delete_users: { label: '批量删除人员', badgeClass: 'bg-rose-100 text-rose-800' },
   reorder_users: { label: '调整排序', badgeClass: 'bg-indigo-100 text-indigo-800' },
   toggle_user_active: { label: '人员启停', badgeClass: 'bg-amber-100 text-amber-800' },
   generate_schedule: { label: '生成排班', badgeClass: 'bg-violet-100 text-violet-800' },
