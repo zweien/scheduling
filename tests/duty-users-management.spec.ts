@@ -63,3 +63,37 @@ test('管理员可进入值班人员页面并按条件筛选检索', async ({ pa
   await expect(page.getByText('王五')).toBeVisible();
   await expect(page.getByText('张三')).toHaveCount(0);
 });
+
+test('管理员可全选并批量删除值班人员，筛选变化会清空已选项', async ({ page }) => {
+  await login(page);
+  await page.goto(`${baseUrl}/dashboard/users`);
+
+  const batchDeleteButton = page.getByRole('button', { name: '删除选中人员' });
+  await expect(batchDeleteButton).toBeDisabled();
+
+  await page.getByLabel('全选当前列表').click();
+  await expect(batchDeleteButton).toBeEnabled();
+  await expect(batchDeleteButton).toContainText('删除选中人员 (3)');
+
+  await page.locator('#duty-user-organization').selectOption('X');
+  await expect(batchDeleteButton).toBeDisabled();
+  await expect(batchDeleteButton).toContainText('删除选中人员');
+
+  await page.getByLabel('全选当前列表').click();
+  await expect(batchDeleteButton).toContainText('删除选中人员 (1)');
+
+  let confirmMessage = '';
+  page.on('dialog', async dialog => {
+    confirmMessage = dialog.message();
+    await dialog.accept();
+  });
+
+  await batchDeleteButton.click();
+
+  expect(confirmMessage).toContain('确认删除选中的 1 名值班人员吗？');
+  await expect(page.getByText('李四')).toHaveCount(0);
+
+  const deletedUser = db.prepare('SELECT COUNT(*) AS count FROM users WHERE name = ?')
+    .get('李四') as { count: number };
+  expect(deletedUser.count).toBe(0);
+});

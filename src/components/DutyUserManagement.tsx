@@ -9,6 +9,7 @@ import {
   importDutyUsersAction,
   previewDutyUsersImportAction,
   removeUser,
+  removeUsers,
   updateDutyUserProfile,
   updateUserActiveAction,
 } from '@/app/actions/users';
@@ -50,6 +51,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
 
   const loadUsers = useCallback(async (nextFilters: DutyUserFiltersState) => {
     const items = canManage
@@ -65,6 +67,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   }, [filters, loadUsers]);
 
   function updateFilter<K extends keyof DutyUserFiltersState>(key: K, value: DutyUserFiltersState[K]) {
+    setSelectedUserIds(new Set());
     setFilters(current => ({ ...current, [key]: value }));
   }
 
@@ -109,6 +112,52 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
 
   async function handleDelete(user: User) {
     await removeUser(user.id, user.name);
+    setSelectedUserIds(current => {
+      const next = new Set(current);
+      next.delete(user.id);
+      return next;
+    });
+    await loadUsers(filters);
+  }
+
+  function handleToggleSelect(userId: number) {
+    setSelectedUserIds(current => {
+      const next = new Set(current);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  }
+
+  function handleToggleSelectAll() {
+    setSelectedUserIds(current => {
+      const visibleUserIds = users.map(user => user.id);
+      const shouldSelectAll = visibleUserIds.some(userId => !current.has(userId));
+
+      if (!shouldSelectAll) {
+        return new Set<number>();
+      }
+
+      return new Set(visibleUserIds);
+    });
+  }
+
+  async function handleDeleteSelected() {
+    const selectedUsers = users.filter(user => selectedUserIds.has(user.id));
+    if (selectedUsers.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(`确认删除选中的 ${selectedUsers.length} 名值班人员吗？此操作不可撤销。`);
+    if (!confirmed) {
+      return;
+    }
+
+    await removeUsers(selectedUsers.map(user => user.id));
+    setSelectedUserIds(new Set());
     await loadUsers(filters);
   }
 
@@ -235,13 +284,21 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
       <DutyUserFilters
         filters={filters}
         onFilterChange={updateFilter}
-        onReset={() => setFilters(initialFilters)}
+        onReset={() => {
+          setSelectedUserIds(new Set());
+          setFilters(initialFilters);
+        }}
       />
 
       <DutyUserList
         users={users}
         canManage={canManage}
+        selectedUserIds={selectedUserIds}
+        allVisibleSelected={users.length > 0 && users.every(user => selectedUserIds.has(user.id))}
         onEdit={startEdit}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
+        onDeleteSelected={() => void handleDeleteSelected()}
         onToggleActive={user => void handleToggleActive(user)}
         onDelete={user => void handleDelete(user)}
       />
