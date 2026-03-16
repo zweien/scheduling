@@ -1,6 +1,6 @@
 // src/lib/users.ts
 import db from './db';
-import type { User, UserCategory, UserOrganization } from '@/types';
+import type { DutyUserImportRow, User, UserCategory, UserOrganization } from '@/types';
 
 export interface UserFilters {
   search?: string;
@@ -19,6 +19,10 @@ export function getActiveUsers(): User[] {
 
 export function getUserById(id: number): User | undefined {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as User | undefined;
+}
+
+export function getUserByName(name: string): User | undefined {
+  return db.prepare('SELECT * FROM users WHERE name = ?').get(name.trim()) as User | undefined;
 }
 
 export function createUser(name: string, details?: {
@@ -78,6 +82,34 @@ export function updateUserProfile(id: number, input: {
   `).run(input.name, input.organization, input.category, input.notes.trim(), id);
 
   return getUserById(id);
+}
+
+export function createOrUpdateUserByName(input: DutyUserImportRow) {
+  const existing = getUserByName(input.name);
+  if (existing) {
+    db.prepare(`
+      UPDATE users
+      SET organization = ?, category = ?, notes = ?, is_active = ?
+      WHERE id = ?
+    `).run(
+      input.organization,
+      input.category,
+      input.notes.trim(),
+      input.isActive ? 1 : 0,
+      existing.id
+    );
+
+    return { type: 'updated' as const, user: getUserById(existing.id)! };
+  }
+
+  const created = createUser(input.name, {
+    organization: input.organization,
+    category: input.category,
+    notes: input.notes,
+  });
+  setUserActive(created.id, input.isActive);
+
+  return { type: 'created' as const, user: getUserById(created.id)! };
 }
 
 export function getUsersByFilters(filters: UserFilters = {}) {

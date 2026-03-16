@@ -67,6 +67,27 @@ export interface Account {
   created_at: string;
 }
 
+export interface DutyUserImportRow {
+  name: string;
+  organization: UserOrganization;
+  category: UserCategory;
+  isActive: boolean;
+  notes: string;
+}
+
+export interface DutyUserImportIssue {
+  row: number;
+  field: string;
+  message: string;
+}
+
+export interface DutyUserImportPreview {
+  totalRows: number;
+  validRows: number;
+  issues: DutyUserImportIssue[];
+  rows: DutyUserImportRow[];
+}
+
 export type Action =
   | 'login'
   | 'logout'
@@ -86,5 +107,6 @@ export type Action =
   | 'toggle_account_active'
   | 'change_account_role'
   | 'toggle_registration'
+  | 'import_users'
   | 'create_token'
   | 'disable_token';

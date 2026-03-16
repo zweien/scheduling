@@ -49,6 +49,16 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
   await expect(page.getByRole('heading', { name: '注册设置' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'API Token 配置' })).toHaveCount(0);
 
+  await page.goto(`${baseUrl}/dashboard/users`);
+  await expect(page.getByRole('heading', { name: '值班人员管理' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '检索与筛选' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '下载模板' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '开始导入' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '新增人员' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '编辑' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '停用' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '删除' })).toHaveCount(0);
+
   await page.goto(`${baseUrl}/dashboard/accounts`);
   await page.waitForURL('**/dashboard');
 

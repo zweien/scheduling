@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createDutyUser, getDutyUsers, removeUser, updateDutyUserProfile, updateUserActiveAction } from '@/app/actions/users';
+import { createDutyUser, downloadDutyUsersTemplate, getDutyUsers, importDutyUsersAction, previewDutyUsersImportAction, removeUser, updateDutyUserProfile, updateUserActiveAction } from '@/app/actions/users';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { User, UserCategory, UserOrganization } from '@/types';
+import type { DutyUserImportPreview, User, UserCategory, UserOrganization } from '@/types';
 
 type FiltersState = {
   search: string;
@@ -21,6 +21,10 @@ const initialFilters: FiltersState = {
   status: '',
 };
 
+interface DutyUserManagementProps {
+  canManage: boolean;
+}
+
 const initialForm = {
   name: '',
   organization: 'W' as UserOrganization,
@@ -28,13 +32,19 @@ const initialForm = {
   notes: '',
 };
 
-export function DutyUserManagement() {
+export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<DutyUserImportPreview | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSummary, setImportSummary] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   async function loadUsers(nextFilters: FiltersState) {
     const items = await getDutyUsers(nextFilters);
@@ -96,12 +106,219 @@ export function DutyUserManagement() {
     await loadUsers(filters);
   }
 
+  async function fileToBase64(file: File) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = '';
+    bytes.forEach(byte => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+  }
+
+  function downloadBinaryFile(base64: string, filename: string, type: string) {
+    const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+    const blob = new Blob([bytes], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleDownloadTemplate() {
+    const file = await downloadDutyUsersTemplate();
+    downloadBinaryFile(file.content, file.fileName, file.mimeType);
+  }
+
+  async function handlePreviewImport() {
+    if (!selectedFile) {
+      setImportError('请先选择导入文件');
+      return;
+    }
+
+    setValidating(true);
+    setImportError(null);
+    setImportSummary(null);
+
+    const base64 = await fileToBase64(selectedFile);
+    const result = await previewDutyUsersImportAction(base64);
+    setPreview(result);
+    setValidating(false);
+
+    if (result.issues.length > 0) {
+      setImportError('导入文件存在错误，请先修正');
+      return;
+    }
+
+    setImportSummary(`共 ${result.totalRows} 行，全部通过校验，可直接导入`);
+  }
+
+  async function handleImport() {
+    if (!selectedFile) {
+      setImportError('请先选择导入文件');
+      return;
+    }
+
+    setImporting(true);
+    setImportError(null);
+
+    const base64 = await fileToBase64(selectedFile);
+    const result = await importDutyUsersAction(base64);
+    setImporting(false);
+
+    if (!result.success) {
+      setPreview(result.preview ?? null);
+      setImportError(result.error ?? '导入失败');
+      setImportSummary(null);
+      return;
+    }
+
+    setImportSummary(`导入完成：新增 ${result.createdCount} 人，更新 ${result.updatedCount} 人`);
+    setPreview(null);
+    setSelectedFile(null);
+    await loadUsers(filters);
+  }
+
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-muted/30 p-4">
+      <section className="rounded-2xl border border-border bg-card p-4">
         <div className="mb-4 space-y-1">
           <h2 className="text-xl font-semibold">值班人员管理</h2>
           <p className="text-sm text-muted-foreground">维护值班人员资料、参与状态、所属单位与人员类别。</p>
+        </div>
+      </section>
+
+      {canManage ? (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <div className="mb-4 space-y-1">
+            <p className="text-sm text-muted-foreground">下载模板后填写值班人员信息，上传前会检查必填字段和枚举值。</p>
+            <h3 className="text-lg font-semibold">批量导入</h3>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[auto_1fr_auto_auto] lg:items-end">
+            <div>
+              <Button variant="outline" onClick={() => void handleDownloadTemplate()}>
+                下载模板
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="duty-user-import-file">导入文件</Label>
+              <Input
+                id="duty-user-import-file"
+                type="file"
+                accept=".xlsx"
+                onChange={event => {
+                  const file = event.target.files?.[0] ?? null;
+                  setSelectedFile(file);
+                  setPreview(null);
+                  setImportError(null);
+                  setImportSummary(null);
+                }}
+              />
+            </div>
+            <Button variant="outline" onClick={() => void handlePreviewImport()} disabled={validating}>
+              {validating ? '校验中...' : '校验文件'}
+            </Button>
+            <Button onClick={() => void handleImport()} disabled={importing || !preview || preview.issues.length > 0}>
+              {importing ? '导入中...' : '开始导入'}
+            </Button>
+          </div>
+
+          <div className="mt-4 space-y-2 text-sm">
+            {selectedFile ? <div className="text-muted-foreground">已选择文件：{selectedFile.name}</div> : null}
+            {importError ? <div className="text-destructive">{importError}</div> : null}
+            {importSummary ? <div className="text-emerald-700">{importSummary}</div> : null}
+          </div>
+
+          {preview ? (
+            <div className="mt-4 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+              <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+                <div>总行数：{preview.totalRows}</div>
+                <div>可导入：{preview.validRows}</div>
+                <div>错误数：{preview.issues.length}</div>
+              </div>
+
+              {preview.issues.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="font-medium text-destructive">校验错误</div>
+                  <div className="space-y-2">
+                    {preview.issues.map(issue => (
+                      <div key={`${issue.row}-${issue.field}-${issue.message}`} className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                        第 {issue.row} 行，{issue.field}：{issue.message}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-emerald-700">文件校验通过，可以开始导入</div>
+              )}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {canManage ? (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <div className="mb-4 space-y-1">
+            <h3 className="text-lg font-semibold">{editingId === null ? '新增值班人员' : '编辑值班人员'}</h3>
+            <p className="text-sm text-muted-foreground">填写人员基础资料，供排班和筛选使用。</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="duty-user-name">姓名</Label>
+              <Input id="duty-user-name" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="duty-user-form-organization">所属单位</Label>
+              <select
+                id="duty-user-form-organization"
+                className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                value={form.organization}
+                onChange={event => setForm(current => ({ ...current, organization: event.target.value as UserOrganization }))}
+              >
+                <option value="W">W</option>
+                <option value="X">X</option>
+                <option value="Z">Z</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="duty-user-form-category">人员类别</Label>
+              <select
+                id="duty-user-form-category"
+                className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                value={form.category}
+                onChange={event => setForm(current => ({ ...current, category: event.target.value as UserCategory }))}
+              >
+                <option value="J">J</option>
+                <option value="W">W</option>
+              </select>
+            </div>
+            <div className="space-y-2 lg:col-span-2">
+              <Label htmlFor="duty-user-notes">备注</Label>
+              <Input id="duty-user-notes" value={form.notes} onChange={event => setForm(current => ({ ...current, notes: event.target.value }))} />
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-4">
+            {error ? <div className="text-sm text-destructive">{error}</div> : <div />}
+            <div className="flex gap-2">
+              {editingId !== null ? (
+                <Button variant="outline" onClick={resetForm}>取消编辑</Button>
+              ) : null}
+              <Button onClick={() => void handleSubmit()} disabled={loading}>
+                {loading ? '保存中...' : editingId === null ? '新增人员' : '保存修改'}
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="rounded-2xl border border-border bg-muted/30 p-4">
+        <div className="mb-4 space-y-1">
+          <h3 className="text-lg font-semibold">检索与筛选</h3>
+          <p className="text-sm text-muted-foreground">按姓名、备注、所属单位、人员类别和参与状态筛选当前列表。</p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -166,61 +383,6 @@ export function DutyUserManagement() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
-        <div className="mb-4 space-y-1">
-          <h3 className="text-lg font-semibold">{editingId === null ? '新增值班人员' : '编辑值班人员'}</h3>
-          <p className="text-sm text-muted-foreground">填写人员基础资料，供排班和筛选使用。</p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="duty-user-name">姓名</Label>
-            <Input id="duty-user-name" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="duty-user-form-organization">所属单位</Label>
-            <select
-              id="duty-user-form-organization"
-              className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
-              value={form.organization}
-              onChange={event => setForm(current => ({ ...current, organization: event.target.value as UserOrganization }))}
-            >
-              <option value="W">W</option>
-              <option value="X">X</option>
-              <option value="Z">Z</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="duty-user-form-category">人员类别</Label>
-            <select
-              id="duty-user-form-category"
-              className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
-              value={form.category}
-              onChange={event => setForm(current => ({ ...current, category: event.target.value as UserCategory }))}
-            >
-              <option value="J">J</option>
-              <option value="W">W</option>
-            </select>
-          </div>
-          <div className="space-y-2 lg:col-span-2">
-            <Label htmlFor="duty-user-notes">备注</Label>
-            <Input id="duty-user-notes" value={form.notes} onChange={event => setForm(current => ({ ...current, notes: event.target.value }))} />
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between gap-4">
-          {error ? <div className="text-sm text-destructive">{error}</div> : <div />}
-          <div className="flex gap-2">
-            {editingId !== null ? (
-              <Button variant="outline" onClick={resetForm}>取消编辑</Button>
-            ) : null}
-            <Button onClick={() => void handleSubmit()} disabled={loading}>
-              {loading ? '保存中...' : editingId === null ? '新增人员' : '保存修改'}
-            </Button>
-          </div>
-        </div>
-      </section>
-
       <section className="space-y-3">
         {users.map(user => (
           <div key={user.id} className="rounded-2xl border border-border bg-card p-4">
@@ -237,13 +399,15 @@ export function DutyUserManagement() {
                 <div className="text-sm text-muted-foreground">{user.notes || '无备注'}</div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => startEdit(user)}>编辑</Button>
-                <Button variant="outline" size="sm" onClick={() => void handleToggleActive(user)}>
-                  {user.is_active ? '停用' : '启用'}
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => void handleDelete(user)}>删除</Button>
-              </div>
+              {canManage ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => startEdit(user)}>编辑</Button>
+                  <Button variant="outline" size="sm" onClick={() => void handleToggleActive(user)}>
+                    {user.is_active ? '停用' : '启用'}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => void handleDelete(user)}>删除</Button>
+                </div>
+              ) : null}
             </div>
           </div>
         ))}
