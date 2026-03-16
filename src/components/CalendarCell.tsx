@@ -47,6 +47,7 @@ export function CalendarCell({
       className={`
         relative min-h-[50px] sm:min-h-[80px] p-1 sm:p-2 border rounded ${canManage ? 'cursor-pointer' : 'cursor-default'}
         transition-all duration-150
+        ${schedule ? 'group' : ''}
         ${isToday
           ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow'
           : 'border-border'}
@@ -87,6 +88,22 @@ export function CalendarCell({
               {schedule.user.name}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 悬停显示人员详情 tooltip */}
+      {schedule && (
+        <div
+          data-testid="schedule-tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10
+            opacity-0 group-hover:opacity-100 pointer-events-none
+            transition-opacity duration-150
+            bg-white border border-border rounded-lg shadow-lg p-2 min-w-[120px]"
+        >
+          <div className="text-sm font-medium text-foreground">{schedule.user.name}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {schedule.user.organization} · {schedule.user.category}
+          </div>
         </div>
       )}
 
