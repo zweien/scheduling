@@ -37,7 +37,7 @@ function validateHeaders(headers: string[]) {
 export async function previewDutyUsersImport(fileBuffer: Buffer): Promise<DutyUserImportPreview> {
   const workbook = new ExcelJS.Workbook();
   try {
-    await workbook.xlsx.load(fileBuffer);
+    await workbook.xlsx.load(fileBuffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   } catch {
     return {
       totalRows: 0,
