@@ -5,14 +5,28 @@ on:
     types:
       - published
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to deploy (for example: v1.0.0)"
+        required: true
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate deployment tag
+        run: |
+          if [ -z "${DEPLOY_TAG}" ]; then
+            echo "DEPLOY_TAG is empty"
+            exit 1
+          fi
 
       - name: Deploy application
         uses: appleboy/ssh-action@v1
@@ -26,7 +40,7 @@ jobs:
             set -euo pipefail
             cd "${{ secrets.VPS_APP_DIR }}"
             git fetch --all --tags
-            git checkout "tags/${{ github.event.release.tag_name }}" -B release-deploy
+            git checkout "tags/${{ env.DEPLOY_TAG }}" -B release-deploy
             npm ci --include=dev
             set -a
             source ./.env.production
