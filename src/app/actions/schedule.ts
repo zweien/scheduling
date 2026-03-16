@@ -2,11 +2,25 @@
 'use server';
 
 import { generateSchedule as doGenerateSchedule } from '@/lib/schedule';
-import { deleteSchedule, getSchedulesByDateRange, setSchedule, getScheduleStats } from '@/lib/schedules';
-import { getUserById } from '@/lib/users';
+import { deleteSchedule, getSchedulesByDateRange, getSchedulesByDates, setSchedule, getScheduleStats } from '@/lib/schedules';
+import { getUserById, getUserByName } from '@/lib/users';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import { revalidatePath } from 'next/cache';
+import { buildScheduleImportTemplateWorkbook } from '@/lib/imports/schedule-import-template';
+import { importScheduleRows, previewScheduleImport } from '@/lib/imports/schedule-import';
+import type { ScheduleImportStrategy } from '@/types';
+
+type BinaryExportResponse = {
+  fileName: string;
+  mimeType: string;
+  content: string;
+};
+
+function decodeBase64File(fileBase64: string) {
+  const content = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+  return Buffer.from(content, 'base64');
+}
 
 export async function generateScheduleAction(startDate: string, endDate?: string) {
   const account = await requireAdmin();
@@ -135,4 +149,64 @@ export async function getStats(startDate?: string, endDate?: string) {
     count: s.count,
     dates: s.dates,
   }));
+}
+
+export async function downloadScheduleTemplateAction(): Promise<BinaryExportResponse> {
+  await requireAdmin();
+  const workbook = await buildScheduleImportTemplateWorkbook();
+
+  return {
+    fileName: '排班导入模板.xlsx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    content: workbook.toString('base64'),
+  };
+}
+
+export async function previewScheduleImportAction(fileBase64: string) {
+  await requireAdmin();
+  const fileBuffer = decodeBase64File(fileBase64);
+
+  return previewScheduleImport(fileBuffer, {
+    getUserByName,
+    getSchedulesByDates,
+  });
+}
+
+export async function importScheduleAction(fileBase64: string, strategy: ScheduleImportStrategy) {
+  const account = await requireAdmin();
+  const fileBuffer = decodeBase64File(fileBase64);
+  const result = await importScheduleRows(fileBuffer, strategy, {
+    getUserByName,
+    getSchedulesByDates,
+    setSchedule,
+  });
+
+  if (!result.success) {
+    return {
+      success: false,
+      error: '导入文件校验失败，请先修正后再导入',
+      preview: result.preview,
+    };
+  }
+
+  const summaryText = result.markedOnly
+    ? `仅标记冲突 ${result.conflictCount} 条，未执行导入`
+    : `成功 ${result.importedCount} 条，跳过 ${result.skippedCount} 条，覆盖 ${result.overwrittenCount} 条，冲突 ${result.conflictCount} 条`;
+
+  await addWebLog(
+    'import_schedules',
+    '排班批量导入',
+    undefined,
+    `${strategy}: ${summaryText}`,
+    { username: account.username, role: account.role }
+  );
+
+  if (!result.markedOnly) {
+    revalidatePath('/dashboard');
+  }
+
+  return {
+    success: true,
+    ...result,
+  };
 }
