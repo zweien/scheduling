@@ -7,16 +7,6 @@ const username = process.env.PLAYWRIGHT_USERNAME || 'admin';
 const password = process.env.PLAYWRIGHT_PASSWORD || '123456';
 const db = new Database(path.join(process.cwd(), 'data', 'scheduling.db'));
 
-function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 function seedCalendarData() {
   db.prepare('DELETE FROM schedules').run();
   db.prepare('DELETE FROM users').run();
@@ -26,10 +16,10 @@ function seedCalendarData() {
   db.prepare('INSERT INTO users (id, name, sort_order, is_active) VALUES (2, ?, 2, 1)').run('李四');
   db.prepare('INSERT INTO users (id, name, sort_order, is_active) VALUES (3, ?, 3, 1)').run('王五');
 
-  const today = new Date();
-  const date1 = formatDate(today);
-  const date2 = formatDate(addDays(today, 1));
-  const date3 = formatDate(addDays(today, 2));
+  // 使用固定的月内日期，避免月末边界问题
+  const date1 = '2026-03-16';
+  const date2 = '2026-03-17';
+  const date3 = '2026-03-18';
 
   db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run(date1, 1);
   db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run(date2, 2);

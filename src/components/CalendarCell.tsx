@@ -6,6 +6,7 @@ import type { ScheduleWithUser } from '@/types';
 import { getAvatarColor, getAvatarInitial } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface CalendarCellProps {
   date: Date;
@@ -43,7 +44,7 @@ export function CalendarCell({
 
   return (
     <div
-      data-calendar-date={date.toISOString().slice(0, 10)}
+      data-calendar-date={format(date, 'yyyy-MM-dd')}
       data-selected={isSelected ? 'true' : 'false'}
       onClick={onClick}
       draggable={canManage && !!schedule}
