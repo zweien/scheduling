@@ -150,3 +150,34 @@ test('普通用户 API 写操作被拒绝时不记录成功写日志', async ({ 
 
   expect(forbiddenLog.count).toBe(0);
 });
+
+test('日志页面显示换班理由', async ({ page }) => {
+  db.prepare(`
+    INSERT INTO logs (
+      action,
+      target,
+      old_value,
+      new_value,
+      reason,
+      operator_username,
+      operator_role,
+      ip_address,
+      source
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'swap_schedule',
+    '交换: 2026-03-16 <-> 2026-03-17',
+    '张三 <-> 李四',
+    '李四 <-> 张三',
+    '临时互换白夜班安排说明',
+    adminUsername,
+    'admin',
+    '127.0.0.1',
+    'web'
+  );
+
+  await login(page, adminUsername, adminPassword);
+  await page.goto(`${baseUrl}/dashboard/logs`);
+
+  await expect(page.getByText('临时互换白夜班安排说明')).toBeVisible();
+});

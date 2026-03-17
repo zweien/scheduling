@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -32,14 +32,6 @@ export function ScheduleAdjustmentReasonDialog({
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!open) {
-      setReason('');
-      setError('');
-      setSubmitting(false);
-    }
-  }, [open]);
 
   const title = actionType === 'move' ? '确认移动排班' : '确认交换排班';
 
