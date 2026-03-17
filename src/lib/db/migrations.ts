@@ -114,6 +114,12 @@ export const MIGRATIONS: Migration[] = [
       addColumnIfMissing(database, 'logs', 'source', 'TEXT');
     },
   },
+  {
+    version: '005_api_tokens_account_binding',
+    up(database) {
+      addColumnIfMissing(database, 'api_tokens', 'account_id', 'INTEGER');
+    },
+  },
 ];
 
 export function applyMigrations(database: Database.Database) {

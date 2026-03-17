@@ -18,3 +18,9 @@ export function authenticateApiRequest(request: NextRequest) {
 
   return verifyApiToken(token);
 }
+
+export function canWriteWithApiToken(
+  context: ReturnType<typeof authenticateApiRequest>
+) {
+  return context?.account.role === 'admin';
+}

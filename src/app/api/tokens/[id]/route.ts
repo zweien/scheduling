@@ -13,9 +13,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!account) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
   }
-  if (account.role !== 'admin') {
-    return apiError(403, 'FORBIDDEN', 'Admin role required');
-  }
 
   const body = await request.json().catch(() => null) as { disabled?: boolean } | null;
   if (body?.disabled !== true) {
@@ -23,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  const token = disableApiToken(Number(id));
+  const token = disableApiToken(Number(id), account);
   if (!token) {
     return apiError(404, 'NOT_FOUND', 'Token not found');
   }
