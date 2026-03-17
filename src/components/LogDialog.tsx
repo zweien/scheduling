@@ -257,11 +257,11 @@ export function LogContent({ active = true }: { active?: boolean }) {
       </section>
 
       <section className="rounded-2xl border border-border bg-card">
-        <div className="grid grid-cols-[180px_140px_1fr_160px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
+        <div className="grid grid-cols-[180px_140px_1fr_200px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
           <div>时间</div>
           <div>操作类型</div>
           <div>操作对象</div>
-          <div>旧值 / 新值</div>
+          <div>旧值 / 新值 / 理由</div>
           <div>操作用户</div>
           <div>IP 地址</div>
           <div>来源</div>
@@ -276,7 +276,7 @@ export function LogContent({ active = true }: { active?: boolean }) {
             tableRows.map(log => (
               <div
                 key={log.id}
-                className="grid grid-cols-[180px_140px_1fr_160px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-sm last:border-b-0"
+                className="grid grid-cols-[180px_140px_1fr_200px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-sm last:border-b-0"
               >
                 <div className="text-muted-foreground">{log.createdAtLabel}</div>
                 <div>
@@ -288,6 +288,7 @@ export function LogContent({ active = true }: { active?: boolean }) {
                 <div className="space-y-1 text-xs">
                   <div><span className="text-muted-foreground">旧：</span>{log.old_value ?? '-'}</div>
                   <div><span className="text-muted-foreground">新：</span>{log.new_value ?? '-'}</div>
+                  <div><span className="text-muted-foreground">理由：</span>{log.reason ?? '-'}</div>
                 </div>
                 <div className="space-y-1 text-xs">
                   <div className="font-medium">{log.operator_username ?? '-'}</div>

@@ -37,6 +37,8 @@ test('月历视图中可将排班从有人的日期拖到空日期', async ({ pa
   const targetCell = page.locator('[data-calendar-date="2026-03-17"]').first();
 
   await sourceCell.dragTo(targetCell);
+  await page.getByLabel('调整理由').fill('临时移动到空白日期值班说明');
+  await page.getByRole('button', { name: '确认调整' }).click();
 
   await expect
     .poll(() => db.prepare('SELECT date FROM schedules WHERE user_id = 1').get()?.date)

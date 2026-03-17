@@ -3,12 +3,21 @@ import db from './db';
 import type { Schedule, ScheduleWithUser } from '@/types';
 import { getUserById } from './users';
 
+type SetScheduleOptions = {
+  originalUserId?: number | null;
+  adjustReason?: string | null;
+};
+
 export function getScheduleByDate(date: string): ScheduleWithUser | undefined {
   const schedule = db.prepare('SELECT * FROM schedules WHERE date = ?').get(date) as Schedule | undefined;
   if (!schedule) return undefined;
   const user = getUserById(schedule.user_id);
   if (!user) return undefined;
-  return { ...schedule, user };
+  return {
+    ...schedule,
+    user,
+    original_user: schedule.original_user_id ? getUserById(schedule.original_user_id) ?? null : null,
+  };
 }
 
 export function getSchedulesByDateRange(startDate: string, endDate: string): ScheduleWithUser[] {
@@ -18,7 +27,8 @@ export function getSchedulesByDateRange(startDate: string, endDate: string): Sch
   return schedules.map(s => ({
     ...s,
     is_manual: Boolean(s.is_manual),
-    user: getUserById(s.user_id)!
+    user: getUserById(s.user_id)!,
+    original_user: s.original_user_id ? getUserById(s.original_user_id) ?? null : null,
   })).filter(s => s.user);
 }
 
@@ -36,14 +46,27 @@ export function getSchedulesByDates(dates: string[]): ScheduleWithUser[] {
     ...schedule,
     is_manual: Boolean(schedule.is_manual),
     user: getUserById(schedule.user_id)!,
+    original_user: schedule.original_user_id ? getUserById(schedule.original_user_id) ?? null : null,
   })).filter(schedule => schedule.user);
 }
 
-export function setSchedule(date: string, userId: number, isManual: boolean = false): void {
+export function setSchedule(date: string, userId: number, isManual: boolean = false, options: SetScheduleOptions = {}): void {
   db.prepare(`
-    INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, ?)
-    ON CONFLICT(date) DO UPDATE SET user_id = ?, is_manual = ?
-  `).run(date, userId, isManual ? 1 : 0, userId, isManual ? 1 : 0);
+    INSERT INTO schedules (date, user_id, original_user_id, adjust_reason, is_manual)
+    VALUES (?, ?, COALESCE(?, ?), ?, ?)
+    ON CONFLICT(date) DO UPDATE SET
+      user_id = excluded.user_id,
+      original_user_id = COALESCE(schedules.original_user_id, excluded.original_user_id),
+      adjust_reason = COALESCE(excluded.adjust_reason, schedules.adjust_reason),
+      is_manual = excluded.is_manual
+  `).run(
+    date,
+    userId,
+    options.originalUserId ?? null,
+    userId,
+    options.adjustReason ?? null,
+    isManual ? 1 : 0
+  );
 }
 
 export function deleteSchedule(date: string): void {
