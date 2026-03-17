@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { clearQueuedSuccessToast, queueSuccessToast } from '@/lib/ui/success-toast';
 
 const highlights = [
   {
@@ -38,8 +39,10 @@ export function LoginForm({ registrationEnabled }: LoginFormProps) {
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
+    queueSuccessToast('登录成功');
     const result = await login(formData);
     if (result?.error) {
+      clearQueuedSuccessToast();
       setError(result.error);
       setLoading(false);
     }

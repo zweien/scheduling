@@ -40,6 +40,7 @@ test('月历视图可通过移动模式把排班移动到空日期', async ({ pa
   await page.locator('div').filter({ hasText: /^17$/ }).first().click();
 
   await expect(page.getByText(/正在移动 2026-03-16 的排班/)).toHaveCount(0);
-  await expect(page.locator('div').filter({ hasText: /^17张$/ }).first()).toBeVisible();
-  await expect(page.locator('div').filter({ hasText: /^16张$/ })).toHaveCount(0);
+  await expect(page.getByText('排班已移动')).toBeVisible();
+  await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('张');
+  await expect(page.locator('[data-calendar-date="2026-03-16"]')).not.toContainText('张');
 });

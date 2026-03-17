@@ -12,6 +12,8 @@ import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { getDeleteSchedulesSuccessMessage } from '@/lib/ui/success-toast';
 
 interface CalendarViewProps {
   refreshKey: number;
@@ -167,15 +169,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       }
 
       void (async () => {
-        const targetHasSchedule = schedules.some(schedule => schedule.date === dateStr);
-        if (targetHasSchedule) {
-          await swapSchedules(moveSourceDate, dateStr);
-        } else {
-          await moveSchedule(moveSourceDate, dateStr);
+        const succeeded = await handleScheduleMove(moveSourceDate, dateStr);
+        if (succeeded) {
+          setMoveSourceDate(null);
         }
-
-        setMoveSourceDate(null);
-        await loadData();
       })();
       return;
     }
@@ -212,6 +209,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     }
     if (!selectedDate) return;
     await replaceSchedule(selectedDate, userId);
+    toast.success('排班已更新');
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     loadData();
@@ -222,7 +220,13 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
-    await removeSchedule(selectedDate);
+    const result = await removeSchedule(selectedDate);
+    if (!result.success) {
+      toast.error(result.error ?? '删除失败');
+      return;
+    }
+
+    toast.success('删除成功');
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     await loadData();
@@ -259,6 +263,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
+    toast.success(getDeleteSchedulesSuccessMessage(targetDates.length));
     setSelectedDates(new Set());
     setDialogOpen(false);
     setSelectedDate(null);
@@ -286,21 +291,30 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     e.preventDefault();
   };
 
+  const handleScheduleMove = async (fromDate: string, toDate: string) => {
+    const targetHasSchedule = schedules.some(schedule => schedule.date === toDate);
+    const result = targetHasSchedule
+      ? await swapSchedules(fromDate, toDate)
+      : await moveSchedule(fromDate, toDate);
+
+    if (!result.success) {
+      toast.error(result.error ?? '排班操作失败');
+      return false;
+    }
+
+    toast.success(targetHasSchedule ? '排班已交换' : '排班已移动');
+    await loadData();
+    return true;
+  };
+
   const handleDrop = async (targetDate: string) => {
     if (!canManage) {
       return;
     }
     if (!dragDate || dragDate === targetDate) return;
 
-    const targetHasSchedule = schedules.some(schedule => schedule.date === targetDate);
-    if (targetHasSchedule) {
-      await swapSchedules(dragDate, targetDate);
-    } else {
-      await moveSchedule(dragDate, targetDate);
-    }
-
+    await handleScheduleMove(dragDate, targetDate);
     setDragDate(null);
-    loadData();
   };
 
   const goToPrevMonth = () => {
