@@ -47,7 +47,8 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
   await page.goto(`${baseUrl}/dashboard/settings`);
   await expect(page.getByRole('heading', { name: '修改密码' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '注册设置' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'API Token 配置' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'API Token 配置' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '生成 Token' })).toBeVisible();
 
   await page.goto(`${baseUrl}/dashboard/users`);
   await expect(page.getByRole('heading', { name: '值班人员管理' })).toBeVisible();
