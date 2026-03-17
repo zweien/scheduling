@@ -169,15 +169,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       }
 
       void (async () => {
-        const targetHasSchedule = schedules.some(schedule => schedule.date === dateStr);
-        if (targetHasSchedule) {
-          await swapSchedules(moveSourceDate, dateStr);
-        } else {
-          await moveSchedule(moveSourceDate, dateStr);
+        const succeeded = await handleScheduleMove(moveSourceDate, dateStr);
+        if (succeeded) {
+          setMoveSourceDate(null);
         }
-
-        setMoveSourceDate(null);
-        await loadData();
       })();
       return;
     }
@@ -225,7 +220,12 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
-    await removeSchedule(selectedDate);
+    const result = await removeSchedule(selectedDate);
+    if (!result.success) {
+      toast.error(result.error ?? '删除失败');
+      return;
+    }
+
     toast.success('删除成功');
     setDialogOpen(false);
     setSelectedHasSchedule(false);
@@ -291,23 +291,30 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     e.preventDefault();
   };
 
+  const handleScheduleMove = async (fromDate: string, toDate: string) => {
+    const targetHasSchedule = schedules.some(schedule => schedule.date === toDate);
+    const result = targetHasSchedule
+      ? await swapSchedules(fromDate, toDate)
+      : await moveSchedule(fromDate, toDate);
+
+    if (!result.success) {
+      toast.error(result.error ?? '排班操作失败');
+      return false;
+    }
+
+    toast.success(targetHasSchedule ? '排班已交换' : '排班已移动');
+    await loadData();
+    return true;
+  };
+
   const handleDrop = async (targetDate: string) => {
     if (!canManage) {
       return;
     }
     if (!dragDate || dragDate === targetDate) return;
 
-    const targetHasSchedule = schedules.some(schedule => schedule.date === targetDate);
-    if (targetHasSchedule) {
-      await swapSchedules(dragDate, targetDate);
-      toast.success('排班已交换');
-    } else {
-      await moveSchedule(dragDate, targetDate);
-      toast.success('排班已移动');
-    }
-
+    await handleScheduleMove(dragDate, targetDate);
     setDragDate(null);
-    loadData();
   };
 
   const goToPrevMonth = () => {
