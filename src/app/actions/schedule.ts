@@ -130,41 +130,8 @@ export async function batchDeleteSchedules(dates: string[]) {
 
 export async function moveSchedule(fromDate: string, toDate: string, reason?: string) {
   const account = await requireAdmin();
-  if (!reason) {
-    const schedules = getSchedulesByDateRange(
-      fromDate < toDate ? fromDate : toDate,
-      fromDate > toDate ? fromDate : toDate
-    );
-    const source = schedules.find(schedule => schedule.date === fromDate);
-    const target = schedules.find(schedule => schedule.date === toDate);
-
-    if (!source) {
-      return { success: false, error: '起始日期没有排班记录' };
-    }
-
-    if (target) {
-      return { success: false, error: '目标日期已有排班记录' };
-    }
-
-    setSchedule(toDate, source.user_id, true, {
-      originalUserId: source.original_user_id ?? source.user_id,
-    });
-    deleteSchedule(fromDate);
-
-    await addWebLog(
-      'move_schedule',
-      `移动: ${fromDate} -> ${toDate}`,
-      `${fromDate}: ${source.user.name}`,
-      `${toDate}: ${source.user.name}`,
-      { username: account.username, role: account.role }
-    );
-
-    revalidatePath('/dashboard');
-    return { success: true };
-  }
-
   const result = await moveScheduleWithReason(
-    { fromDate, toDate, reason },
+    { fromDate, toDate, reason: reason ?? '' },
     {
       getScheduleByDate,
       setSchedule,
@@ -190,40 +157,45 @@ export async function moveSchedule(fromDate: string, toDate: string, reason?: st
   return { success: true };
 }
 
-export async function swapSchedules(date1: string, date2: string, reason?: string) {
+export async function moveScheduleDirect(fromDate: string, toDate: string) {
   const account = await requireAdmin();
-  if (!reason) {
-    const minDate = date1 < date2 ? date1 : date2;
-    const maxDate = date1 > date2 ? date1 : date2;
-    const schedules = getSchedulesByDateRange(minDate, maxDate);
-    const s1 = schedules.find(s => s.date === date1);
-    const s2 = schedules.find(s => s.date === date2);
+  const schedules = getSchedulesByDateRange(
+    fromDate < toDate ? fromDate : toDate,
+    fromDate > toDate ? fromDate : toDate
+  );
+  const source = schedules.find(schedule => schedule.date === fromDate);
+  const target = schedules.find(schedule => schedule.date === toDate);
 
-    if (!s1 || !s2) {
-      return { success: false, error: '找不到排班记录' };
-    }
-
-    setSchedule(date1, s2.user_id, true, {
-      originalUserId: s1.original_user_id ?? s1.user_id,
-    });
-    setSchedule(date2, s1.user_id, true, {
-      originalUserId: s2.original_user_id ?? s2.user_id,
-    });
-
-    await addWebLog(
-      'swap_schedule',
-      `交换: ${date1} <-> ${date2}`,
-      `${s1.user.name} <-> ${s2.user.name}`,
-      `${s2.user.name} <-> ${s1.user.name}`,
-      { username: account.username, role: account.role }
-    );
-
-    revalidatePath('/dashboard');
-    return { success: true };
+  if (!source) {
+    return { success: false, error: '起始日期没有排班记录' };
   }
 
+  if (target) {
+    return { success: false, error: '目标日期已有排班记录' };
+  }
+
+  setSchedule(toDate, source.user_id, true, {
+    originalUserId: source.original_user_id ?? source.user_id,
+  });
+  deleteSchedule(fromDate);
+
+  await addWebLog(
+    'move_schedule',
+    `移动: ${fromDate} -> ${toDate}`,
+    `${fromDate}: ${source.user.name}`,
+    `${toDate}: ${source.user.name}`,
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
+export async function swapSchedules(date1: string, date2: string, reason?: string) {
+  const account = await requireAdmin();
+
   const result = await swapSchedulesWithReason(
-    { date1, date2, reason },
+    { date1, date2, reason: reason ?? '' },
     {
       getScheduleByDate,
       setSchedule,
@@ -244,6 +216,37 @@ export async function swapSchedules(date1: string, date2: string, reason?: strin
   if (!result.success) {
     return result;
   }
+
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
+export async function swapSchedulesDirect(date1: string, date2: string) {
+  const account = await requireAdmin();
+  const minDate = date1 < date2 ? date1 : date2;
+  const maxDate = date1 > date2 ? date1 : date2;
+  const schedules = getSchedulesByDateRange(minDate, maxDate);
+  const s1 = schedules.find(s => s.date === date1);
+  const s2 = schedules.find(s => s.date === date2);
+
+  if (!s1 || !s2) {
+    return { success: false, error: '找不到排班记录' };
+  }
+
+  setSchedule(date1, s2.user_id, true, {
+    originalUserId: s1.original_user_id ?? s1.user_id,
+  });
+  setSchedule(date2, s1.user_id, true, {
+    originalUserId: s2.original_user_id ?? s2.user_id,
+  });
+
+  await addWebLog(
+    'swap_schedule',
+    `交换: ${date1} <-> ${date2}`,
+    `${s1.user.name} <-> ${s2.user.name}`,
+    `${s2.user.name} <-> ${s1.user.name}`,
+    { username: account.username, role: account.role }
+  );
 
   revalidatePath('/dashboard');
   return { success: true };

@@ -8,7 +8,7 @@ import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { UserSelectDialog } from './UserSelectDialog';
-import { batchDeleteSchedules, getSchedules, moveSchedule, removeSchedule, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
+import { batchDeleteSchedules, getSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
 import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -207,9 +207,9 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       void (async () => {
         const targetHasSchedule = schedules.some(schedule => schedule.date === dateStr);
         if (targetHasSchedule) {
-          await swapSchedules(moveSourceDate, dateStr);
+          await swapSchedulesDirect(moveSourceDate, dateStr);
         } else {
-          await moveSchedule(moveSourceDate, dateStr);
+          await moveScheduleDirect(moveSourceDate, dateStr);
         }
 
         setMoveSourceDate(null);
@@ -378,7 +378,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       : await moveSchedule(pendingDragAction.sourceDate, pendingDragAction.targetDate, reason);
 
     if (!result.success) {
-      throw new Error(result.error);
+      const errorMessage = 'error' in result && typeof result.error === 'string'
+        ? result.error
+        : '调整排班失败';
+      throw new Error(errorMessage);
     }
 
     setPendingDragAction(null);
