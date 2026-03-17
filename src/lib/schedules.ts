@@ -13,7 +13,11 @@ export function getScheduleByDate(date: string): ScheduleWithUser | undefined {
   if (!schedule) return undefined;
   const user = getUserById(schedule.user_id);
   if (!user) return undefined;
-  return { ...schedule, user };
+  return {
+    ...schedule,
+    user,
+    original_user: schedule.original_user_id ? getUserById(schedule.original_user_id) ?? null : null,
+  };
 }
 
 export function getSchedulesByDateRange(startDate: string, endDate: string): ScheduleWithUser[] {
@@ -23,7 +27,8 @@ export function getSchedulesByDateRange(startDate: string, endDate: string): Sch
   return schedules.map(s => ({
     ...s,
     is_manual: Boolean(s.is_manual),
-    user: getUserById(s.user_id)!
+    user: getUserById(s.user_id)!,
+    original_user: s.original_user_id ? getUserById(s.original_user_id) ?? null : null,
   })).filter(s => s.user);
 }
 
@@ -41,6 +46,7 @@ export function getSchedulesByDates(dates: string[]): ScheduleWithUser[] {
     ...schedule,
     is_manual: Boolean(schedule.is_manual),
     user: getUserById(schedule.user_id)!,
+    original_user: schedule.original_user_id ? getUserById(schedule.original_user_id) ?? null : null,
   })).filter(schedule => schedule.user);
 }
 

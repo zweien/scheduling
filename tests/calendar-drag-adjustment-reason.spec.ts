@@ -79,3 +79,25 @@ test('取消后不落库', async ({ page }) => {
     .poll(() => db.prepare('SELECT date FROM schedules WHERE user_id = 1').get()?.date)
     .toBe('2026-03-16');
 });
+
+test('填写理由确认交换后显示原始与当前值班人员', async ({ page }) => {
+  db.prepare(`
+    INSERT INTO schedules (date, user_id, is_manual)
+    VALUES (?, ?, ?)
+  `).run('2026-03-17', 2, 1);
+
+  await login(page);
+
+  const sourceCell = page.locator('[data-calendar-date="2026-03-16"][draggable="true"]').first();
+  const targetCell = page.locator('[data-calendar-date="2026-03-17"][draggable="true"]').first();
+
+  await sourceCell.dragTo(targetCell);
+  await page.getByLabel('调整理由').fill('临时互换当日值班安排说明');
+  await page.getByRole('button', { name: '确认调整' }).click();
+
+  await expect
+    .poll(() => db.prepare('SELECT user_id FROM schedules WHERE date = ?').get('2026-03-16')?.user_id)
+    .toBe(2);
+  await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('原：张三');
+  await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('现：李四');
+});

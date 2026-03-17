@@ -43,6 +43,9 @@ export function CalendarCell({
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  const showOriginalAndCurrent = Boolean(
+    schedule?.original_user && schedule.original_user.id !== schedule.user.id
+  );
 
   return (
     <div
@@ -81,8 +84,20 @@ export function CalendarCell({
 
       {/* 头像/姓名 */}
       {schedule && (
-        <div className="flex items-center justify-center h-full pt-4">
-          {displayMode === 'avatar' ? (
+        <div className="flex h-full items-center justify-center pt-4">
+          {showOriginalAndCurrent ? (
+            <div className="w-full space-y-1 px-1 text-[10px] leading-tight sm:px-2 sm:text-xs">
+              <div className="truncate rounded bg-muted px-1.5 py-1 text-muted-foreground">
+                原：{schedule.original_user?.name}
+              </div>
+              <div
+                className="truncate rounded px-1.5 py-1 text-white"
+                style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+              >
+                现：{schedule.user.name}
+              </div>
+            </div>
+          ) : displayMode === 'avatar' ? (
             <div
               className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm"
               style={{ backgroundColor: getAvatarColor(schedule.user.name) }}

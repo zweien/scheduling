@@ -26,6 +26,7 @@ export interface Schedule {
 
 export interface ScheduleWithUser extends Schedule {
   user: User;
+  original_user?: User | null;
 }
 
 export interface Log {
