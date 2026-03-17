@@ -61,7 +61,7 @@ export function Header({
   ];
 
   return (
-    <header className="h-14 border-b bg-background flex items-center justify-between px-4 gap-4">
+    <header className="min-h-16 sm:min-h-[72px] border-b bg-background flex items-center justify-between px-4 py-2 gap-4">
       {/* 品牌区 */}
       <div className="flex items-center gap-3">
         {onToggleSidebar ? (
