@@ -28,6 +28,7 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
   if (!wasEnabled) {
     await registrationSwitch.click();
     await expect(registrationSwitch).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByText('注册设置已开启')).toBeVisible();
   }
 
   await page.getByRole('button', { name: /退出/ }).click();
@@ -41,6 +42,7 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
   await page.getByLabel('确认密码', { exact: true }).fill(newPassword);
   await page.getByRole('button', { name: '注册并进入系统' }).click();
   await page.waitForURL('**/dashboard');
+  await expect(page.getByText('注册成功')).toBeVisible();
 
   await expect(page.locator('a[href="/dashboard/accounts"]')).toHaveCount(0);
 
@@ -69,5 +71,6 @@ test('管理员可开启注册，普通用户注册后受权限限制', async ({
     await page.goto(`${baseUrl}/dashboard/settings`);
     await page.getByRole('switch').click();
     await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByText('注册设置已关闭')).toBeVisible();
   }
 });

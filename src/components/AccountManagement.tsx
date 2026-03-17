@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Account, AccountRole } from '@/types';
+import { toast } from 'sonner';
 
 export function AccountManagement() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -42,6 +43,7 @@ export function AccountManagement() {
     setDisplayName('');
     setPassword('');
     setRole('user');
+    toast.success('账号创建成功');
     await loadAccounts();
   }
 
@@ -51,6 +53,7 @@ export function AccountManagement() {
       setError(result.error ?? '更新失败');
       return;
     }
+    toast.success('角色已更新');
     await loadAccounts();
   }
 
@@ -60,6 +63,7 @@ export function AccountManagement() {
       setError(result.error ?? '更新失败');
       return;
     }
+    toast.success(nextActive ? '账号已启用' : '账号已停用');
     await loadAccounts();
   }
 

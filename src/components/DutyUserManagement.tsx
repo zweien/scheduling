@@ -21,6 +21,8 @@ import { DutyUserList } from '@/components/duty-users/DutyUserList';
 import { canReorderDutyUsers, reorderDutyUsers, shouldRollbackReorderRequest } from '@/components/duty-users/reorder-helpers';
 import type { DutyUserFiltersState, DutyUserFormState } from '@/components/duty-users/types';
 import { updateUserOrder } from '@/app/actions/users-write';
+import { toast } from 'sonner';
+import { getDeleteDutyUsersSuccessMessage, getDutyUsersImportSuccessMessage } from '@/lib/ui/success-toast';
 
 const initialFilters: DutyUserFiltersState = {
   search: '',
@@ -121,6 +123,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
     }
 
     resetForm();
+    toast.success(editingId === null ? '保存成功' : '保存成功');
     await loadUsers(filters);
   }
 
@@ -131,6 +134,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
       next.delete(user.id);
       return next;
     });
+    toast.success('删除成功');
     await loadUsers(filters);
   }
 
@@ -172,11 +176,13 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
 
     await removeUsers(selectedUsers.map(user => user.id));
     setSelectedUserIds(new Set());
+    toast.success(getDeleteDutyUsersSuccessMessage(selectedUsers.length));
     await loadUsers(filters);
   }
 
   async function handleToggleActive(user: User) {
     await updateUserActiveAction(user.id, !user.is_active);
+    toast.success(user.is_active ? '已停用值班人员' : '已启用值班人员');
     await loadUsers(filters);
   }
 
@@ -194,6 +200,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
 
     try {
       await updateUserOrder(userIds);
+      toast.success('顺序已更新');
     } catch {
       if (!shouldRollbackReorderRequest(requestId, latestReorderRequestIdRef.current)) {
         return;
@@ -275,11 +282,14 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
     setImportSummary(`导入完成：新增 ${result.createdCount} 人，更新 ${result.updatedCount} 人`);
     setPreview(null);
     setSelectedFile(null);
+    toast.success(getDutyUsersImportSuccessMessage(result.createdCount, result.updatedCount));
     await loadUsers(filters);
   }
 
   const canReorder = canReorderDutyUsers(filters, canManage, users.length);
-  const reorderHint = canManage && users.length > 1 && !canReorder
+  const reorderHint = canManage && !canReorder && (
+    !!filters.search.trim() || !!filters.organization || !!filters.category || !!filters.status
+  )
     ? '请清空筛选条件后再调整顺序'
     : null;
 

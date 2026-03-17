@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ScheduleImportPreview, ScheduleImportStrategy } from '@/types';
+import { toast } from 'sonner';
+import { getScheduleImportSuccessMessage } from '@/lib/ui/success-toast';
 
 interface ScheduleImportDialogProps {
   open: boolean;
@@ -119,10 +121,12 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
 
     if (result.markedOnly) {
       setImportSummary('已生成冲突清单，本次未执行导入');
+      toast.success('已生成冲突清单，本次未执行导入');
       return;
     }
 
     setImportSummary(`导入完成：成功 ${result.importedCount} 条，跳过 ${result.skippedCount} 条，覆盖 ${result.overwrittenCount} 条，冲突 ${result.conflictCount} 条`);
+    toast.success(getScheduleImportSuccessMessage(result.importedCount, result.skippedCount, result.overwrittenCount, result.conflictCount));
     onImported?.();
   }
 

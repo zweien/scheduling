@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { generateScheduleAction } from '@/app/actions/schedule';
 import { getUsers } from '@/app/actions/users';
+import { toast } from 'sonner';
 
 interface ScheduleGeneratorProps {
   onGenerated: () => void;
@@ -44,6 +45,7 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
     const result = await generateScheduleAction(startDate, endDate || undefined);
 
     if (result.success) {
+      toast.success('排班生成成功');
       onGenerated();
     } else {
       setError(result.error ?? '生成失败');

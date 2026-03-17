@@ -12,6 +12,8 @@ import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { getDeleteSchedulesSuccessMessage } from '@/lib/ui/success-toast';
 
 interface CalendarViewProps {
   refreshKey: number;
@@ -212,6 +214,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     }
     if (!selectedDate) return;
     await replaceSchedule(selectedDate, userId);
+    toast.success('排班已更新');
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     loadData();
@@ -223,6 +226,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     }
 
     await removeSchedule(selectedDate);
+    toast.success('删除成功');
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     await loadData();
@@ -259,6 +263,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
+    toast.success(getDeleteSchedulesSuccessMessage(targetDates.length));
     setSelectedDates(new Set());
     setDialogOpen(false);
     setSelectedDate(null);
@@ -295,8 +300,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     const targetHasSchedule = schedules.some(schedule => schedule.date === targetDate);
     if (targetHasSchedule) {
       await swapSchedules(dragDate, targetDate);
+      toast.success('排班已交换');
     } else {
       await moveSchedule(dragDate, targetDate);
+      toast.success('排班已移动');
     }
 
     setDragDate(null);
