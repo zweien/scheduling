@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   createDutyUser,
   downloadDutyUsersTemplate,
@@ -18,7 +18,7 @@ import { DutyUserFilters } from '@/components/duty-users/DutyUserFilters';
 import { DutyUserForm } from '@/components/duty-users/DutyUserForm';
 import { DutyUserImportPanel } from '@/components/duty-users/DutyUserImportPanel';
 import { DutyUserList } from '@/components/duty-users/DutyUserList';
-import { canReorderDutyUsers, reorderDutyUsers } from '@/components/duty-users/reorder-helpers';
+import { canReorderDutyUsers, reorderDutyUsers, shouldRollbackReorderRequest } from '@/components/duty-users/reorder-helpers';
 import type { DutyUserFiltersState, DutyUserFormState } from '@/components/duty-users/types';
 import { updateUserOrder } from '@/app/actions/users-write';
 
@@ -54,6 +54,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
+  const latestReorderRequestIdRef = useRef(0);
 
   const loadUsers = useCallback(async (nextFilters: DutyUserFiltersState) => {
     const items = canManage
@@ -180,6 +181,8 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   }
 
   async function handleReorder(userIds: number[]) {
+    latestReorderRequestIdRef.current += 1;
+    const requestId = latestReorderRequestIdRef.current;
     const previousUsers = users;
     const nextUsers = reorderDutyUsers(users, userIds).map((user, index) => ({
       ...user,
@@ -192,6 +195,10 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
     try {
       await updateUserOrder(userIds);
     } catch {
+      if (!shouldRollbackReorderRequest(requestId, latestReorderRequestIdRef.current)) {
+        return;
+      }
+
       setUsers(previousUsers);
       setError('顺序保存失败，请重试');
     }

@@ -6,7 +6,7 @@ export function canReorderDutyUsers(filters: DutyUserFiltersState, canManage: bo
     return false;
   }
 
-  return !filters.search && !filters.organization && !filters.category && !filters.status;
+  return !filters.search.trim() && !filters.organization && !filters.category && !filters.status;
 }
 
 export function reorderUserIds(userIds: number[], activeId: number, overId: number) {
@@ -36,4 +36,8 @@ export function reorderDutyUsers(users: User[], userIds: number[]) {
 
     return leftIndex - rightIndex;
   });
+}
+
+export function shouldRollbackReorderRequest(requestId: number, latestRequestId: number) {
+  return requestId === latestRequestId;
 }

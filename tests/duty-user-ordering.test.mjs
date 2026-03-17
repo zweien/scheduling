@@ -29,6 +29,17 @@ test('存在任一筛选条件时禁用排序', async () => {
   }, true, 3), false);
 });
 
+test('仅输入空格搜索时仍允许排序', async () => {
+  const { canReorderDutyUsers } = await loadHelperModule();
+
+  assert.equal(canReorderDutyUsers({
+    search: '   ',
+    organization: '',
+    category: '',
+    status: '',
+  }, true, 3), true);
+});
+
 test('拖拽结束后返回新的用户顺序', async () => {
   const { reorderUserIds } = await loadHelperModule();
 
@@ -45,4 +56,11 @@ test('按新的用户 ID 顺序重排用户对象列表', async () => {
   ], [2, 3, 1]);
 
   assert.deepEqual(reorderedUsers.map(user => user.name), ['李四', '王五', '张三']);
+});
+
+test('只有最新一次排序失败才允许回滚界面状态', async () => {
+  const { shouldRollbackReorderRequest } = await loadHelperModule();
+
+  assert.equal(shouldRollbackReorderRequest(2, 2), true);
+  assert.equal(shouldRollbackReorderRequest(1, 2), false);
 });
