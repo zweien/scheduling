@@ -79,7 +79,7 @@ test('移动排班未传理由时失败', async () => {
 
   assert.deepEqual(result, {
     success: false,
-    error: '请填写 10-200 字的调整理由',
+    error: '请填写调整理由',
   });
   assert.equal(deps.writes.length, 0);
   assert.equal(deps.logs.length, 0);

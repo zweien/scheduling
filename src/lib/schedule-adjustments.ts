@@ -42,7 +42,7 @@ function normalizeReason(reason: string) {
 
 function validateReason(reason: string) {
   const normalized = normalizeReason(reason);
-  if (normalized.length < 10 || normalized.length > 200) {
+  if (!normalized) {
     return null;
   }
 
@@ -59,7 +59,7 @@ export async function moveScheduleWithReason(
 ): Promise<AdjustmentResult> {
   const reason = validateReason(input.reason);
   if (!reason) {
-    return { success: false, error: '请填写 10-200 字的调整理由' };
+    return { success: false, error: '请填写调整理由' };
   }
 
   const source = deps.getScheduleByDate(input.fromDate);
@@ -95,7 +95,7 @@ export async function swapSchedulesWithReason(
 ): Promise<AdjustmentResult> {
   const reason = validateReason(input.reason);
   if (!reason) {
-    return { success: false, error: '请填写 10-200 字的调整理由' };
+    return { success: false, error: '请填写调整理由' };
   }
 
   const first = deps.getScheduleByDate(input.date1);

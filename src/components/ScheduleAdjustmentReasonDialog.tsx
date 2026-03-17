@@ -37,8 +37,8 @@ export function ScheduleAdjustmentReasonDialog({
 
   async function handleConfirm() {
     const trimmed = reason.trim();
-    if (trimmed.length < 10 || trimmed.length > 200) {
-      setError('请填写 10-200 字的调整理由');
+    if (!trimmed) {
+      setError('请填写调整理由');
       return;
     }
 
@@ -96,9 +96,8 @@ export function ScheduleAdjustmentReasonDialog({
                 error ? 'border-destructive ring-3 ring-destructive/20' : ''
               )}
             />
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{error || '请输入 10-200 字的调整原因'}</span>
-              <span>{reason.trim().length}/200</span>
+            <div className="text-xs text-muted-foreground">
+              {error || '请输入调整原因'}
             </div>
           </div>
         </div>

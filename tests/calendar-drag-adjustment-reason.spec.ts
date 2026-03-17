@@ -59,7 +59,7 @@ test('不填理由不能确认', async ({ page }) => {
   await sourceCell.dragTo(targetCell);
   await page.getByRole('button', { name: '确认调整' }).click();
 
-  await expect(page.getByText('请填写 10-200 字的调整理由')).toBeVisible();
+  await expect(page.getByText('请填写调整理由')).toBeVisible();
   await expect
     .poll(() => db.prepare('SELECT date FROM schedules WHERE user_id = 1').get()?.date)
     .toBe('2026-03-16');
