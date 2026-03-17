@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
 import { useDashboardAccount } from './DashboardAccountProvider';
+import { getAppVersion } from '@/lib/app-version';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -43,6 +44,7 @@ export function Header({
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const { role } = useDashboardAccount();
+  const appVersion = getAppVersion();
   const showViewToggle = pathname === '/dashboard' && viewMode && onViewModeChange;
 
   const navItems = [
@@ -59,7 +61,7 @@ export function Header({
   ];
 
   return (
-    <header className="h-14 border-b bg-background flex items-center justify-between px-4 gap-4">
+    <header className="min-h-16 sm:min-h-[72px] border-b bg-background flex items-center justify-between px-4 py-2 gap-4">
       {/* 品牌区 */}
       <div className="flex items-center gap-3">
         {onToggleSidebar ? (
@@ -71,6 +73,7 @@ export function Header({
         )}
         <div className="min-w-0">
           <h1 className="text-base sm:text-lg font-semibold truncate">值班排班系统</h1>
+          <p className="text-[11px] leading-4 text-muted-foreground">版本 {appVersion}</p>
           <p className="hidden sm:block text-xs text-muted-foreground">{currentSection}</p>
         </div>
       </div>
