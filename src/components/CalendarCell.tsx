@@ -15,6 +15,7 @@ interface CalendarCellProps {
   isSelected?: boolean;
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart?: () => void;
+  onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: () => void;
   isDragSource?: boolean;
@@ -31,6 +32,7 @@ export function CalendarCell({
   isSelected = false,
   onClick,
   onDragStart,
+  onDragEnd,
   onDragOver,
   onDrop,
   isDragSource = false,
@@ -49,6 +51,7 @@ export function CalendarCell({
       onClick={onClick}
       draggable={canManage && !!schedule}
       onDragStart={canManage ? onDragStart : undefined}
+      onDragEnd={canManage ? onDragEnd : undefined}
       onDragOver={canManage ? onDragOver : undefined}
       onDrop={canManage ? onDrop : undefined}
       className={cn(

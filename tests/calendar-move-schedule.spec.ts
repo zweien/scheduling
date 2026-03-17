@@ -33,11 +33,26 @@ test('月历视图中可将排班从有人的日期拖到空日期', async ({ pa
 
   await expect(page.getByRole('heading', { name: '值班日历' })).toBeVisible();
 
-  const sourceCell = page.locator('div').filter({ hasText: /^16张$/ }).first();
-  const targetCell = page.locator('div').filter({ hasText: /^17$/ }).first();
+  const sourceCell = page.locator('[data-calendar-date="2026-03-16"][draggable="true"]').first();
+  const targetCell = page.locator('[data-calendar-date="2026-03-17"]').first();
 
   await sourceCell.dragTo(targetCell);
 
-  await expect(page.locator('div').filter({ hasText: /^17张$/ }).first()).toBeVisible();
-  await expect(page.locator('div').filter({ hasText: /^16张$/ })).toHaveCount(0);
+  await expect
+    .poll(() => db.prepare('SELECT date FROM schedules WHERE user_id = 1').get()?.date)
+    .toBe('2026-03-17');
+});
+
+test('拖到非日历区域结束后应清理拖动态', async ({ page }) => {
+  await login(page);
+
+  const sourceCell = page.locator('[data-calendar-date="2026-03-16"][draggable="true"]').first();
+
+  await sourceCell.dispatchEvent('dragstart', {
+    dataTransfer: await page.evaluateHandle(() => new DataTransfer()),
+  });
+  await expect(sourceCell).toHaveClass(/opacity-40/);
+
+  await sourceCell.dispatchEvent('dragend');
+  await expect(sourceCell).not.toHaveClass(/opacity-40/);
 });
