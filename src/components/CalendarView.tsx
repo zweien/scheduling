@@ -30,6 +30,7 @@ interface MonthCalendarProps {
   selectedDates: Set<string>;
   onCellClick: (date: Date, event: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart: (date: string) => void;
+  onDragEnd: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (date: string) => void;
   canManage: boolean;
@@ -44,6 +45,7 @@ function MonthCalendar({
   selectedDates,
   onCellClick,
   onDragStart,
+  onDragEnd,
   onDragOver,
   onDrop,
   canManage,
@@ -89,6 +91,7 @@ function MonthCalendar({
               isSelected={selectedDates.has(dateStr)}
               onClick={event => onCellClick(day, event)}
               onDragStart={() => onDragStart(dateStr)}
+              onDragEnd={onDragEnd}
               onDragOver={onDragOver}
               onDrop={() => onDrop(dateStr)}
               isDragSource={dragDate === dateStr}
@@ -299,6 +302,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     setDragDate(date);
   };
 
+  const handleDragEnd = () => {
+    setDragDate(null);
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
@@ -427,6 +434,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           selectedDates={selectedDates}
           onCellClick={handleCellClick}
           onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           canManage={canManage}
@@ -441,6 +449,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           selectedDates={selectedDates}
           onCellClick={handleCellClick}
           onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           canManage={canManage}
