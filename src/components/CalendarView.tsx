@@ -2,7 +2,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
@@ -115,6 +115,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
+  const hasCustomizedDisplayModeRef = useRef(false);
 
   const today = new Date();
   const nextMonth = addMonths(currentMonth, 1);
@@ -140,6 +141,22 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       void loadData();
     });
   }, [loadData, refreshKey]);
+
+  useEffect(() => {
+    if (hasCustomizedDisplayModeRef.current || typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.matchMedia('(min-width: 640px)').matches) {
+      const frameId = window.requestAnimationFrame(() => {
+        setDisplayMode('name');
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+  }, []);
 
   // 筛选本月和下月的排班
   const currentMonthSchedules = schedules.filter(s => {
@@ -318,6 +335,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     setCurrentMonth(today);
   };
 
+  const handleToggleDisplayMode = () => {
+    hasCustomizedDisplayModeRef.current = true;
+    setDisplayMode(current => (current === 'avatar' ? 'name' : 'avatar'));
+  };
+
   const selectedCount = selectedDates.size;
   const hasCurrentMonthSchedules = currentMonthSchedules.length > 0;
   const hasSelectedSchedules = selectedCount > 0;
@@ -370,7 +392,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDisplayMode(displayMode === 'avatar' ? 'name' : 'avatar')}
+            onClick={handleToggleDisplayMode}
             title={displayMode === 'avatar' ? '切换为姓名' : '切换为头像'}
           >
             {displayMode === 'avatar' ? (
