@@ -9,7 +9,6 @@ import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { UserSelectDialog } from './UserSelectDialog';
 import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
 
 interface ListViewProps {
   refreshKey: number;
@@ -51,7 +50,6 @@ export function ListView({ refreshKey, canManage }: ListViewProps) {
   const handleReplace = async (userId: number) => {
     if (!selectedDate) return;
     await replaceSchedule(selectedDate, userId);
-    toast.success('排班已更新');
     setDialogOpen(false);
     loadData();
   };

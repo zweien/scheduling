@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updatePasswordAction } from '@/app/actions/config';
-import { toast } from 'sonner';
 
 interface PasswordDialogProps {
   open: boolean;
@@ -24,6 +23,7 @@ export function PasswordForm({ onClose }: PasswordFormProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,12 +49,13 @@ export function PasswordForm({ onClose }: PasswordFormProps) {
     setLoading(false);
 
     if (result.success) {
+      setSuccess(true);
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      toast.success('密码修改成功');
       if (onClose) {
         setTimeout(() => {
+          setSuccess(false);
           onClose();
         }, 1500);
       }
@@ -68,6 +69,10 @@ export function PasswordForm({ onClose }: PasswordFormProps) {
       {error && (
         <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</div>
       )}
+      {success && (
+        <div className="text-sm text-green-500 bg-green-500/10 p-2 rounded">密码修改成功！</div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="oldPassword">原密码</Label>
         <Input

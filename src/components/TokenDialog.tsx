@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
 
 interface TokenItem {
   id: number;
@@ -67,7 +66,6 @@ export function TokenManager({ active = true }: { active?: boolean }) {
       const body = await response.json() as CreateTokenResult;
       setLatestToken(body);
       setTokenName('');
-      toast.success('Token 生成成功');
       await loadTokens();
     } finally {
       setLoading(false);
@@ -87,7 +85,6 @@ export function TokenManager({ active = true }: { active?: boolean }) {
         return;
       }
 
-      toast.success('Token 已禁用');
       await loadTokens();
     } finally {
       setLoading(false);

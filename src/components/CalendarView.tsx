@@ -2,7 +2,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
@@ -12,8 +12,6 @@ import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { getDeleteSchedulesSuccessMessage } from '@/lib/ui/success-toast';
 
 interface CalendarViewProps {
   refreshKey: number;
@@ -117,6 +115,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
+  const hasCustomizedDisplayModeRef = useRef(false);
 
   const today = new Date();
   const nextMonth = addMonths(currentMonth, 1);
@@ -142,6 +141,22 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       void loadData();
     });
   }, [loadData, refreshKey]);
+
+  useEffect(() => {
+    if (hasCustomizedDisplayModeRef.current || typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.matchMedia('(min-width: 640px)').matches) {
+      const frameId = window.requestAnimationFrame(() => {
+        setDisplayMode('name');
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+  }, []);
 
   // 筛选本月和下月的排班
   const currentMonthSchedules = schedules.filter(s => {
@@ -169,10 +184,15 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       }
 
       void (async () => {
-        const succeeded = await handleScheduleMove(moveSourceDate, dateStr);
-        if (succeeded) {
-          setMoveSourceDate(null);
+        const targetHasSchedule = schedules.some(schedule => schedule.date === dateStr);
+        if (targetHasSchedule) {
+          await swapSchedules(moveSourceDate, dateStr);
+        } else {
+          await moveSchedule(moveSourceDate, dateStr);
         }
+
+        setMoveSourceDate(null);
+        await loadData();
       })();
       return;
     }
@@ -209,7 +229,6 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     }
     if (!selectedDate) return;
     await replaceSchedule(selectedDate, userId);
-    toast.success('排班已更新');
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     loadData();
@@ -220,13 +239,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
-    const result = await removeSchedule(selectedDate);
-    if (!result.success) {
-      toast.error(result.error ?? '删除失败');
-      return;
-    }
-
-    toast.success('删除成功');
+    await removeSchedule(selectedDate);
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     await loadData();
@@ -263,7 +276,6 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
-    toast.success(getDeleteSchedulesSuccessMessage(targetDates.length));
     setSelectedDates(new Set());
     setDialogOpen(false);
     setSelectedDate(null);
@@ -291,30 +303,21 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     e.preventDefault();
   };
 
-  const handleScheduleMove = async (fromDate: string, toDate: string) => {
-    const targetHasSchedule = schedules.some(schedule => schedule.date === toDate);
-    const result = targetHasSchedule
-      ? await swapSchedules(fromDate, toDate)
-      : await moveSchedule(fromDate, toDate);
-
-    if (!result.success) {
-      toast.error(result.error ?? '排班操作失败');
-      return false;
-    }
-
-    toast.success(targetHasSchedule ? '排班已交换' : '排班已移动');
-    await loadData();
-    return true;
-  };
-
   const handleDrop = async (targetDate: string) => {
     if (!canManage) {
       return;
     }
     if (!dragDate || dragDate === targetDate) return;
 
-    await handleScheduleMove(dragDate, targetDate);
+    const targetHasSchedule = schedules.some(schedule => schedule.date === targetDate);
+    if (targetHasSchedule) {
+      await swapSchedules(dragDate, targetDate);
+    } else {
+      await moveSchedule(dragDate, targetDate);
+    }
+
     setDragDate(null);
+    loadData();
   };
 
   const goToPrevMonth = () => {
@@ -330,6 +333,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const goToToday = () => {
     setSelectedDates(new Set());
     setCurrentMonth(today);
+  };
+
+  const handleToggleDisplayMode = () => {
+    hasCustomizedDisplayModeRef.current = true;
+    setDisplayMode(current => (current === 'avatar' ? 'name' : 'avatar'));
   };
 
   const selectedCount = selectedDates.size;
@@ -384,7 +392,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDisplayMode(displayMode === 'avatar' ? 'name' : 'avatar')}
+            onClick={handleToggleDisplayMode}
             title={displayMode === 'avatar' ? '切换为姓名' : '切换为头像'}
           >
             {displayMode === 'avatar' ? (

@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { updateRegistrationEnabledAction } from '@/app/actions/config';
-import { toast } from 'sonner';
 
 interface RegistrationSettingsProps {
   initialEnabled: boolean;
@@ -23,10 +22,7 @@ export function RegistrationSettings({ initialEnabled }: RegistrationSettingsPro
       if (!result.success) {
         setEnabled(!nextEnabled);
         setError('更新注册开关失败');
-        return;
       }
-
-      toast.success(`注册设置已${nextEnabled ? '开启' : '关闭'}`);
     });
   }
 
@@ -54,3 +50,4 @@ export function RegistrationSettings({ initialEnabled }: RegistrationSettingsPro
     </div>
   );
 }
+

@@ -1,16 +1,35 @@
 import path from 'path';
 import Database from 'better-sqlite3';
 import { expect, test } from '@playwright/test';
+import { hashPassword } from '../src/lib/password';
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
 const username = process.env.PLAYWRIGHT_USERNAME || 'admin';
 const password = process.env.PLAYWRIGHT_PASSWORD || '123456';
 const db = new Database(path.join(process.cwd(), 'data', 'scheduling.db'));
 
+function addColumnIfMissing(tableName: string, columnName: string, definition: string) {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  if (columns.some(column => column.name === columnName)) {
+    return;
+  }
+
+  db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+}
+
+function ensureUsersSchema() {
+  addColumnIfMissing('users', 'is_active', 'INTEGER DEFAULT 1');
+  addColumnIfMissing('users', 'organization', "TEXT NOT NULL DEFAULT 'W'");
+  addColumnIfMissing('users', 'category', "TEXT NOT NULL DEFAULT 'W'");
+  addColumnIfMissing('users', 'notes', "TEXT DEFAULT ''");
+}
+
 function seedCalendarData() {
+  ensureUsersSchema();
   db.prepare('DELETE FROM schedules').run();
   db.prepare('DELETE FROM users').run();
   db.prepare('DELETE FROM logs').run();
+  db.prepare('UPDATE accounts SET password_hash = ? WHERE username = ?').run(hashPassword(password), username);
 
   db.prepare("INSERT INTO users (id, name, sort_order, is_active, organization, category, notes) VALUES (1, '张三', 1, 1, 'W', 'W', '')").run();
   db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run('2026-03-16', 1);
@@ -34,13 +53,13 @@ test('月历视图可通过移动模式把排班移动到空日期', async ({ pa
 
   await page.getByText('张', { exact: true }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('button[title="切换为姓名"]')).toBeVisible();
   await page.getByRole('button', { name: '移动到其他日期' }).click();
 
   await expect(page.getByText(/正在移动 2026-03-16 的排班/)).toBeVisible();
   await page.locator('div').filter({ hasText: /^17$/ }).first().click();
 
   await expect(page.getByText(/正在移动 2026-03-16 的排班/)).toHaveCount(0);
-  await expect(page.getByText('排班已移动')).toBeVisible();
   await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('张');
   await expect(page.locator('[data-calendar-date="2026-03-16"]')).not.toContainText('张');
 });

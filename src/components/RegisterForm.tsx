@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { clearQueuedSuccessToast, queueSuccessToast } from '@/lib/ui/success-toast';
 
 interface RegisterFormProps {
   registrationEnabled: boolean;
@@ -22,10 +21,8 @@ export function RegisterForm({ registrationEnabled }: RegisterFormProps) {
     setError(null);
     setLoading(true);
 
-    queueSuccessToast('注册成功');
     const result = await register(formData);
     if (result?.error) {
-      clearQueuedSuccessToast();
       setError(result.error);
       setLoading(false);
     }
@@ -129,3 +126,4 @@ export function RegisterForm({ registrationEnabled }: RegisterFormProps) {
     </div>
   );
 }
+
