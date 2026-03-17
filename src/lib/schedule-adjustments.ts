@@ -105,6 +105,10 @@ export async function swapSchedulesWithReason(
     return { success: false, error: '找不到排班记录' };
   }
 
+  if (first.user_id === second.user_id) {
+    return { success: true };
+  }
+
   deps.setSchedule(input.date1, second.user_id, true, {
     originalUserId: resolveOriginalUserId(first),
     adjustReason: reason,

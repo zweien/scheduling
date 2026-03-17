@@ -343,6 +343,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       return;
     }
 
+    if (targetSchedule && targetSchedule.user_id === sourceSchedule.user_id) {
+      setDragDate(null);
+      return;
+    }
+
     setDragDate(null);
     setPendingDragAction(
       targetSchedule
