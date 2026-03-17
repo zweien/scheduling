@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import type { ScheduleImportConflict, ScheduleImportIssue, ScheduleImportPreview, ScheduleImportRow, ScheduleImportStrategy } from '../../types';
-import { SCHEDULE_TEMPLATE_HEADERS } from './schedule-import-template.ts';
+import { SCHEDULE_TEMPLATE_HEADERS } from './schedule-import-template';
 
 type ImportUser = { id: number; name: string };
 type ExistingSchedule = { date: string; user_id: number; is_manual?: boolean; user?: { id: number; name: string } };
@@ -11,8 +11,8 @@ export type ScheduleImportDependencies = {
   setSchedule: (date: string, userId: number, isManual: boolean) => void;
 };
 
-export type ScheduleImportResult = {
-  success: boolean;
+export type ScheduleImportSuccessResult = {
+  success: true;
   importedCount: number;
   skippedCount: number;
   overwrittenCount: number;
@@ -20,6 +20,18 @@ export type ScheduleImportResult = {
   markedOnly: boolean;
   preview: ScheduleImportPreview;
 };
+
+export type ScheduleImportFailureResult = {
+  success: false;
+  importedCount: number;
+  skippedCount: number;
+  overwrittenCount: number;
+  conflictCount: number;
+  markedOnly: boolean;
+  preview: ScheduleImportPreview;
+};
+
+export type ScheduleImportResult = ScheduleImportSuccessResult | ScheduleImportFailureResult;
 
 const VALID_MANUAL_VALUES = new Map<string, boolean>([
   ['是', true],

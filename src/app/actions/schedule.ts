@@ -17,11 +17,19 @@ import { revalidatePath } from 'next/cache';
 import { buildScheduleImportTemplateWorkbook } from '@/lib/imports/schedule-import-template';
 import { importScheduleRows, previewScheduleImport } from '@/lib/imports/schedule-import';
 import type { ScheduleImportStrategy } from '@/types';
+import type { ScheduleImportPreview } from '@/types';
+import type { ScheduleImportSuccessResult } from '@/lib/imports/schedule-import';
 
 type BinaryExportResponse = {
   fileName: string;
   mimeType: string;
   content: string;
+};
+
+type ScheduleImportActionFailure = {
+  success: false;
+  error: string;
+  preview: ScheduleImportPreview;
 };
 
 function decodeBase64File(fileBase64: string) {
@@ -208,7 +216,10 @@ export async function previewScheduleImportAction(fileBase64: string) {
   });
 }
 
-export async function importScheduleAction(fileBase64: string, strategy: ScheduleImportStrategy) {
+export async function importScheduleAction(
+  fileBase64: string,
+  strategy: ScheduleImportStrategy
+): Promise<ScheduleImportSuccessResult | ScheduleImportActionFailure> {
   const account = await requireAdmin();
   const fileBuffer = decodeBase64File(fileBase64);
   const result = await importScheduleRows(fileBuffer, strategy, {
@@ -241,8 +252,5 @@ export async function importScheduleAction(fileBase64: string, strategy: Schedul
     revalidatePath('/dashboard');
   }
 
-  return {
-    success: true,
-    ...result,
-  };
+  return result;
 }
