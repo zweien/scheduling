@@ -1,4 +1,5 @@
 import path from 'path';
+import { createHash } from 'crypto';
 import Database from 'better-sqlite3';
 import { expect, test } from 'playwright/test';
 import { hashPassword } from '../src/lib/password';
@@ -9,6 +10,10 @@ const adminPassword = process.env.PLAYWRIGHT_PASSWORD || '123456';
 const userUsername = 'token_user';
 const userPassword = 'token-user-123';
 const db = new Database(path.join(process.cwd(), 'data', 'scheduling.db'));
+
+function hashApiToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 function resetData() {
   db.prepare('DELETE FROM schedules').run();
@@ -74,6 +79,49 @@ test('管理员会话可以创建和列出自己的 token', async ({ page }) => 
   expect(listed.body).toHaveLength(1);
   expect(listed.body[0].name).toBe('playwright-token');
   expect(listed.body[0].token).toBeUndefined();
+});
+
+test('管理员可以查看并禁用历史未绑定账号的 token', async ({ page }) => {
+  db.prepare(`
+    INSERT INTO api_tokens (name, token_hash, token_prefix, account_id)
+    VALUES (?, ?, ?, NULL)
+  `).run('legacy-admin-token', hashApiToken('sch_legacy_admin_token'), 'sch_legac');
+
+  await login(page, adminUsername, adminPassword);
+
+  const listed = await page.evaluate(async () => {
+    const response = await fetch('/api/tokens');
+    return {
+      status: response.status,
+      body: await response.json(),
+    };
+  });
+
+  expect(listed.status).toBe(200);
+  expect(listed.body).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ name: 'legacy-admin-token' }),
+    ])
+  );
+
+  const legacyToken = listed.body.find((token: { name: string; id: number }) => token.name === 'legacy-admin-token');
+  expect(legacyToken).toBeTruthy();
+
+  const disabled = await page.evaluate(async ({ id }) => {
+    const response = await fetch(`/api/tokens/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ disabled: true }),
+    });
+
+    return {
+      status: response.status,
+      body: await response.json(),
+    };
+  }, { id: legacyToken.id });
+
+  expect(disabled.status).toBe(200);
+  expect(disabled.body.disabledAt).toBeTruthy();
 });
 
 test('普通用户会话可以创建和列出自己的 token', async ({ page, browser }) => {

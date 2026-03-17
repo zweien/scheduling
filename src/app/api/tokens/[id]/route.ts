@@ -20,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  const token = disableApiToken(Number(id), account.id);
+  const token = disableApiToken(Number(id), account);
   if (!token) {
     return apiError(404, 'NOT_FOUND', 'Token not found');
   }

@@ -12,7 +12,7 @@ export async function GET() {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
   }
 
-  return NextResponse.json(listApiTokens(account.id));
+  return NextResponse.json(listApiTokens(account));
 }
 
 export async function POST(request: NextRequest) {

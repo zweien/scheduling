@@ -51,18 +51,32 @@ export function createApiToken(name: string, accountId: number) {
   };
 }
 
-export function listApiTokens(accountId: number) {
-  const tokens = db.prepare('SELECT * FROM api_tokens WHERE account_id = ? ORDER BY id DESC').all(accountId) as ApiToken[];
+export function listApiTokens(account: Account) {
+  const tokens = account.role === 'admin'
+    ? db.prepare('SELECT * FROM api_tokens WHERE account_id = ? OR account_id IS NULL ORDER BY id DESC').all(account.id)
+    : db.prepare('SELECT * FROM api_tokens WHERE account_id = ? ORDER BY id DESC').all(account.id);
   return tokens.map(mapToken);
 }
 
-export function disableApiToken(id: number, accountId: number) {
-  db.prepare(
-    "UPDATE api_tokens SET disabled_at = COALESCE(disabled_at, CURRENT_TIMESTAMP) WHERE id = ? AND account_id = ?"
-  ).run(id, accountId);
+export function disableApiToken(id: number, account: Account) {
+  const token = account.role === 'admin'
+    ? db.prepare('SELECT * FROM api_tokens WHERE id = ? AND (account_id = ? OR account_id IS NULL)').get(id, account.id) as ApiToken | undefined
+    : db.prepare('SELECT * FROM api_tokens WHERE id = ? AND account_id = ?').get(id, account.id) as ApiToken | undefined;
 
-  const token = db.prepare('SELECT * FROM api_tokens WHERE id = ? AND account_id = ?').get(id, accountId) as ApiToken | undefined;
-  return token ? mapToken(token) : null;
+  if (!token) {
+    return null;
+  }
+
+  db.prepare(
+    'UPDATE api_tokens SET disabled_at = COALESCE(disabled_at, CURRENT_TIMESTAMP) WHERE id = ?'
+  ).run(id);
+
+  const updatedToken = db.prepare('SELECT * FROM api_tokens WHERE id = ?').get(id) as ApiToken | undefined;
+  if (!updatedToken) {
+    return null;
+  }
+
+  return mapToken(updatedToken);
 }
 
 export function verifyApiToken(token: string) {
