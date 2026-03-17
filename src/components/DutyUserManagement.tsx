@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   createDutyUser,
   downloadDutyUsersTemplate,
@@ -18,7 +18,9 @@ import { DutyUserFilters } from '@/components/duty-users/DutyUserFilters';
 import { DutyUserForm } from '@/components/duty-users/DutyUserForm';
 import { DutyUserImportPanel } from '@/components/duty-users/DutyUserImportPanel';
 import { DutyUserList } from '@/components/duty-users/DutyUserList';
+import { canReorderDutyUsers, reorderDutyUsers, shouldRollbackReorderRequest } from '@/components/duty-users/reorder-helpers';
 import type { DutyUserFiltersState, DutyUserFormState } from '@/components/duty-users/types';
+import { updateUserOrder } from '@/app/actions/users-write';
 
 const initialFilters: DutyUserFiltersState = {
   search: '',
@@ -52,6 +54,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
+  const latestReorderRequestIdRef = useRef(0);
 
   const loadUsers = useCallback(async (nextFilters: DutyUserFiltersState) => {
     const items = canManage
@@ -177,6 +180,30 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
     await loadUsers(filters);
   }
 
+  async function handleReorder(userIds: number[]) {
+    latestReorderRequestIdRef.current += 1;
+    const requestId = latestReorderRequestIdRef.current;
+    const previousUsers = users;
+    const nextUsers = reorderDutyUsers(users, userIds).map((user, index) => ({
+      ...user,
+      sort_order: index + 1,
+    }));
+
+    setUsers(nextUsers);
+    setError(null);
+
+    try {
+      await updateUserOrder(userIds);
+    } catch {
+      if (!shouldRollbackReorderRequest(requestId, latestReorderRequestIdRef.current)) {
+        return;
+      }
+
+      setUsers(previousUsers);
+      setError('顺序保存失败，请重试');
+    }
+  }
+
   async function fileToBase64(file: File) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     let binary = '';
@@ -251,6 +278,11 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
     await loadUsers(filters);
   }
 
+  const canReorder = canReorderDutyUsers(filters, canManage, users.length);
+  const reorderHint = canManage && users.length > 1 && !canReorder
+    ? '请清空筛选条件后再调整顺序'
+    : null;
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-border bg-card p-4">
@@ -304,9 +336,12 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
       <DutyUserList
         users={users}
         canManage={canManage}
+        canReorder={canReorder}
+        reorderHint={reorderHint}
         selectedUserIds={selectedUserIds}
         allVisibleSelected={users.length > 0 && users.every(user => selectedUserIds.has(user.id))}
         onEdit={startEdit}
+        onReorder={userIds => void handleReorder(userIds)}
         onToggleSelect={handleToggleSelect}
         onToggleSelectAll={handleToggleSelectAll}
         onDeleteSelected={() => void handleDeleteSelected()}
