@@ -16,6 +16,7 @@ test('右上角导航可进入独立功能页面', async ({ page }) => {
   await login(page);
   const header = page.locator('header');
   await expect(page.getByRole('heading', { name: '值班日历' })).toBeVisible();
+  await expect(header.getByText(/^版本 v/i)).toBeVisible();
 
   await expect(header.getByRole('link', { name: '统计', exact: true })).toBeVisible();
   await expect(header.getByRole('link', { name: '值班人员', exact: true })).toBeVisible();
