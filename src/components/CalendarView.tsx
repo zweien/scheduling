@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
+import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { UserSelectDialog } from './UserSelectDialog';
 import { batchDeleteSchedules, getSchedules, moveSchedule, removeSchedule, replaceSchedule, swapSchedules } from '@/app/actions/schedule';
 import { getAssignableUsers } from '@/app/actions/users';
@@ -19,6 +20,22 @@ interface CalendarViewProps {
 }
 
 type DisplayMode = 'avatar' | 'name';
+
+type PendingDragAction =
+  | {
+      type: 'move';
+      sourceDate: string;
+      targetDate: string;
+      sourceUserName: string;
+      targetUserName: null;
+    }
+  | {
+      type: 'swap';
+      sourceDate: string;
+      targetDate: string;
+      sourceUserName: string;
+      targetUserName: string;
+    };
 
 interface MonthCalendarProps {
   month: Date;
@@ -117,6 +134,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
+  const [pendingDragAction, setPendingDragAction] = useState<PendingDragAction | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
   const hasCustomizedDisplayModeRef = useRef(false);
 
@@ -314,17 +332,52 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     if (!canManage) {
       return;
     }
-    if (!dragDate || dragDate === targetDate) return;
+    if (!dragDate || dragDate === targetDate) {
+      return;
+    }
 
-    const targetHasSchedule = schedules.some(schedule => schedule.date === targetDate);
-    if (targetHasSchedule) {
-      await swapSchedules(dragDate, targetDate);
-    } else {
-      await moveSchedule(dragDate, targetDate);
+    const sourceSchedule = schedules.find(schedule => schedule.date === dragDate);
+    const targetSchedule = schedules.find(schedule => schedule.date === targetDate);
+    if (!sourceSchedule) {
+      setDragDate(null);
+      return;
     }
 
     setDragDate(null);
-    loadData();
+    setPendingDragAction(
+      targetSchedule
+        ? {
+            type: 'swap',
+            sourceDate: dragDate,
+            targetDate,
+            sourceUserName: sourceSchedule.user.name,
+            targetUserName: targetSchedule.user.name,
+          }
+        : {
+            type: 'move',
+            sourceDate: dragDate,
+            targetDate,
+            sourceUserName: sourceSchedule.user.name,
+            targetUserName: null,
+          }
+    );
+  };
+
+  const handleConfirmDragAction = async (reason: string) => {
+    if (!pendingDragAction) {
+      return;
+    }
+
+    const result = pendingDragAction.type === 'swap'
+      ? await swapSchedules(pendingDragAction.sourceDate, pendingDragAction.targetDate, reason)
+      : await moveSchedule(pendingDragAction.sourceDate, pendingDragAction.targetDate, reason);
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    setPendingDragAction(null);
+    await loadData();
   };
 
   const goToPrevMonth = () => {
@@ -466,6 +519,19 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           canDelete={selectedHasSchedule}
           canMove={selectedHasSchedule}
           onClose={() => setDialogOpen(false)}
+        />
+      ) : null}
+
+      {pendingDragAction ? (
+        <ScheduleAdjustmentReasonDialog
+          open
+          actionType={pendingDragAction.type}
+          sourceDate={pendingDragAction.sourceDate}
+          targetDate={pendingDragAction.targetDate}
+          sourceUserName={pendingDragAction.sourceUserName}
+          targetUserName={pendingDragAction.targetUserName}
+          onConfirm={handleConfirmDragAction}
+          onClose={() => setPendingDragAction(null)}
         />
       ) : null}
     </div>
