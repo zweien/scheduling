@@ -22,6 +22,7 @@ interface LogContext {
   actor?: LogActor | null;
   ipAddress?: string | null;
   source?: LogSource | null;
+  reason?: string | null;
 }
 
 function insertLog(action: Action, target: string, oldValue?: string, newValue?: string, context?: LogContext): void {
@@ -31,16 +32,18 @@ function insertLog(action: Action, target: string, oldValue?: string, newValue?:
       target,
       old_value,
       new_value,
+      reason,
       operator_username,
       operator_role,
       ip_address,
       source
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     action,
     target,
     oldValue ?? null,
     newValue ?? null,
+    context?.reason ?? null,
     context?.actor?.username ?? null,
     context?.actor?.role ?? null,
     context?.ipAddress ?? null,
@@ -117,15 +120,29 @@ function escapeCsv(value: string | null) {
   return raw;
 }
 
-export function addLog(action: Action, target: string, oldValue?: string, newValue?: string, context?: LogContext): void {
+export function addLog(
+  action: Action,
+  target: string,
+  oldValue?: string,
+  newValue?: string,
+  context?: LogContext
+): void {
   insertLog(action, target, oldValue, newValue, context);
 }
 
-export async function addWebLog(action: Action, target: string, oldValue?: string, newValue?: string, actor?: LogActor | null) {
+export async function addWebLog(
+  action: Action,
+  target: string,
+  oldValue?: string,
+  newValue?: string,
+  actor?: LogActor | null,
+  reason?: string
+) {
   insertLog(action, target, oldValue, newValue, {
     actor,
     ipAddress: await getCurrentRequestIp(),
     source: 'web',
+    reason,
   });
 }
 
@@ -135,12 +152,14 @@ export function addApiLog(
   oldValue: string | undefined,
   newValue: string | undefined,
   request: { headers: { get(name: string): string | null } },
-  actor?: LogActor | null
+  actor?: LogActor | null,
+  reason?: string
 ) {
   insertLog(action, target, oldValue, newValue, {
     actor,
     ipAddress: extractIpAddress(request.headers),
     source: 'api',
+    reason,
   });
 }
 
@@ -169,6 +188,7 @@ export function exportLogsAsCsv(logs: Log[]) {
     'target',
     'old_value',
     'new_value',
+    'reason',
     'operator_username',
     'operator_role',
     'ip_address',
@@ -182,6 +202,7 @@ export function exportLogsAsCsv(logs: Log[]) {
     escapeCsv(log.target),
     escapeCsv(log.old_value),
     escapeCsv(log.new_value),
+    escapeCsv(log.reason),
     escapeCsv(log.operator_username),
     escapeCsv(log.operator_role),
     escapeCsv(log.ip_address),
