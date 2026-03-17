@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'crypto';
 import db from './db';
-import type { ApiToken } from '@/types';
+import type { Account, ApiToken } from '@/types';
+import { getAccountById } from './accounts';
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -17,12 +18,30 @@ function mapToken(token: ApiToken) {
   };
 }
 
-export function createApiToken(name: string) {
+function getLegacyAdminAccount() {
+  return db.prepare(`
+    SELECT *
+    FROM accounts
+    WHERE role = 'admin' AND is_active = 1
+    ORDER BY id ASC
+    LIMIT 1
+  `).get() as Account | undefined;
+}
+
+function resolveApiTokenAccount(token: ApiToken) {
+  if (token.account_id) {
+    return getAccountById(token.account_id);
+  }
+
+  return getLegacyAdminAccount();
+}
+
+export function createApiToken(name: string, accountId: number) {
   const rawToken = `sch_${randomBytes(18).toString('hex')}`;
   const prefix = rawToken.slice(0, 10);
   const result = db.prepare(
-    'INSERT INTO api_tokens (name, token_hash, token_prefix) VALUES (?, ?, ?)'
-  ).run(name, hashToken(rawToken), prefix);
+    'INSERT INTO api_tokens (name, token_hash, token_prefix, account_id) VALUES (?, ?, ?, ?)'
+  ).run(name, hashToken(rawToken), prefix, accountId);
 
   const token = db.prepare('SELECT * FROM api_tokens WHERE id = ?').get(result.lastInsertRowid) as ApiToken;
 
@@ -32,17 +51,17 @@ export function createApiToken(name: string) {
   };
 }
 
-export function listApiTokens() {
-  const tokens = db.prepare('SELECT * FROM api_tokens ORDER BY id DESC').all() as ApiToken[];
+export function listApiTokens(accountId: number) {
+  const tokens = db.prepare('SELECT * FROM api_tokens WHERE account_id = ? ORDER BY id DESC').all(accountId) as ApiToken[];
   return tokens.map(mapToken);
 }
 
-export function disableApiToken(id: number) {
+export function disableApiToken(id: number, accountId: number) {
   db.prepare(
-    "UPDATE api_tokens SET disabled_at = COALESCE(disabled_at, CURRENT_TIMESTAMP) WHERE id = ?"
-  ).run(id);
+    "UPDATE api_tokens SET disabled_at = COALESCE(disabled_at, CURRENT_TIMESTAMP) WHERE id = ? AND account_id = ?"
+  ).run(id, accountId);
 
-  const token = db.prepare('SELECT * FROM api_tokens WHERE id = ?').get(id) as ApiToken | undefined;
+  const token = db.prepare('SELECT * FROM api_tokens WHERE id = ? AND account_id = ?').get(id, accountId) as ApiToken | undefined;
   return token ? mapToken(token) : null;
 }
 
@@ -52,8 +71,16 @@ export function verifyApiToken(token: string) {
     return null;
   }
 
+  const account = resolveApiTokenAccount(stored);
+  if (!account || !account.is_active) {
+    return null;
+  }
+
   db.prepare('UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').run(stored.id);
 
   const updated = db.prepare('SELECT * FROM api_tokens WHERE id = ?').get(stored.id) as ApiToken;
-  return mapToken(updated);
+  return {
+    token: mapToken(updated),
+    account,
+  };
 }

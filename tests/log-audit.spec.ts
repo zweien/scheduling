@@ -3,10 +3,13 @@ import os from 'os';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { expect, test } from '@playwright/test';
+import { hashPassword } from '../src/lib/password';
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
-const username = process.env.PLAYWRIGHT_USERNAME || 'admin';
-const password = process.env.PLAYWRIGHT_PASSWORD || '123456';
+const adminUsername = process.env.PLAYWRIGHT_USERNAME || 'admin';
+const adminPassword = process.env.PLAYWRIGHT_PASSWORD || '123456';
+const userUsername = 'audit_user';
+const userPassword = 'audit-user-123';
 const db = new Database(path.join(process.cwd(), 'data', 'scheduling.db'));
 
 function resetData() {
@@ -14,6 +17,13 @@ function resetData() {
   db.prepare('DELETE FROM users').run();
   db.prepare('DELETE FROM logs').run();
   db.prepare('DELETE FROM api_tokens').run();
+  db.prepare('DELETE FROM accounts WHERE username = ?').run(userUsername);
+  db.prepare('UPDATE accounts SET password_hash = ?, role = ?, is_active = 1 WHERE username = ?')
+    .run(hashPassword(adminPassword), 'admin', adminUsername);
+  db.prepare(`
+    INSERT INTO accounts (username, display_name, password_hash, role, is_active)
+    VALUES (?, ?, ?, ?, 1)
+  `).run(userUsername, '审计普通用户', hashPassword(userPassword), 'user');
 }
 
 function createUser(name: string) {
@@ -22,7 +32,7 @@ function createUser(name: string) {
   return Number(result.lastInsertRowid);
 }
 
-async function login(page: import('@playwright/test').Page) {
+async function login(page: import('@playwright/test').Page, username: string, password: string) {
   await page.goto(baseUrl);
   await page.getByLabel('用户名').fill(username);
   await page.getByLabel('登录密码').fill(password);
@@ -35,7 +45,7 @@ test.beforeEach(() => {
 });
 
 test('Web 日志记录操作用户、来源与 IP，并支持搜索', async ({ page }) => {
-  await login(page);
+  await login(page, adminUsername, adminPassword);
 
   await page.goto(`${baseUrl}/dashboard/logs`);
 
@@ -53,7 +63,7 @@ test('API 写操作可记录来源并支持筛选导出', async ({ page }) => {
   const suffix = Date.now().toString();
   const userId = createUser(`API日志用户${suffix}`);
 
-  await login(page);
+  await login(page, adminUsername, adminPassword);
 
   const createdToken = await page.evaluate(async (name) => {
     const response = await fetch('/api/tokens', {
@@ -102,4 +112,41 @@ test('API 写操作可记录来源并支持筛选导出', async ({ page }) => {
   const csvContent = await fs.readFile(csvPath, 'utf8');
   expect(csvContent).toContain('operator_username');
   expect(csvContent).toContain(`token:audit-token-${suffix}`);
+});
+
+test('普通用户 API 写操作被拒绝时不记录成功写日志', async ({ page, request }) => {
+  const suffix = Date.now().toString();
+  const userId = createUser(`普通用户日志${suffix}`);
+
+  await login(page, userUsername, userPassword);
+
+  const createdToken = await page.evaluate(async (name) => {
+    const response = await fetch('/api/tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+
+    return await response.json();
+  }, `user-audit-token-${suffix}`);
+
+  const response = await request.patch(`${baseUrl}/api/schedules/2030-01-16`, {
+    headers: {
+      Authorization: `Bearer ${createdToken.token}`,
+      'Content-Type': 'application/json',
+    },
+    data: { userId },
+  });
+
+  expect(response.status()).toBe(403);
+
+  const forbiddenLog = db.prepare(`
+    SELECT COUNT(*) AS count
+    FROM logs
+    WHERE action = 'replace_schedule'
+      AND source = 'api'
+      AND target LIKE ?
+  `).get('%2030-01-16%') as { count: number };
+
+  expect(forbiddenLog.count).toBe(0);
 });

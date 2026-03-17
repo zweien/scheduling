@@ -11,20 +11,14 @@ export async function GET() {
   if (!account) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
   }
-  if (account.role !== 'admin') {
-    return apiError(403, 'FORBIDDEN', 'Admin role required');
-  }
 
-  return NextResponse.json(listApiTokens());
+  return NextResponse.json(listApiTokens(account.id));
 }
 
 export async function POST(request: NextRequest) {
   const account = await getCurrentAccount();
   if (!account) {
     return apiError(401, 'UNAUTHORIZED', 'Login required');
-  }
-  if (account.role !== 'admin') {
-    return apiError(403, 'FORBIDDEN', 'Admin role required');
   }
 
   const body = await request.json().catch(() => null) as { name?: string } | null;
@@ -34,7 +28,7 @@ export async function POST(request: NextRequest) {
     return apiError(400, 'INVALID_INPUT', 'Token name is required');
   }
 
-  const token = createApiToken(name);
+  const token = createApiToken(name, account.id);
   await addWebLog('create_token', `Token: ${token.name}`, undefined, token.prefix, {
     username: account.username,
     role: account.role,

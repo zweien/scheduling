@@ -78,6 +78,10 @@ test('applyMigrations upgrades legacy schema with missing profile and audit colu
     getColumnNames(database, 'logs'),
     ['id', 'action', 'target', 'old_value', 'new_value', 'created_at', 'operator_username', 'operator_role', 'ip_address', 'source']
   );
+  assert.deepEqual(
+    getColumnNames(database, 'api_tokens'),
+    ['id', 'name', 'token_hash', 'token_prefix', 'created_at', 'last_used_at', 'disabled_at', 'account_id']
+  );
 });
 
 test('seedDatabase creates default config and admin account idempotently', async () => {
