@@ -52,9 +52,9 @@ export function createApiToken(name: string, accountId: number) {
 }
 
 export function listApiTokens(account: Account) {
-  const tokens = account.role === 'admin'
+  const tokens = (account.role === 'admin'
     ? db.prepare('SELECT * FROM api_tokens WHERE account_id = ? OR account_id IS NULL ORDER BY id DESC').all(account.id)
-    : db.prepare('SELECT * FROM api_tokens WHERE account_id = ? ORDER BY id DESC').all(account.id);
+    : db.prepare('SELECT * FROM api_tokens WHERE account_id = ? ORDER BY id DESC').all(account.id)) as ApiToken[];
   return tokens.map(mapToken);
 }
 
