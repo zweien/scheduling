@@ -76,12 +76,26 @@ test('applyMigrations upgrades legacy schema with missing profile and audit colu
   );
   assert.deepEqual(
     getColumnNames(database, 'logs'),
-    ['id', 'action', 'target', 'old_value', 'new_value', 'created_at', 'operator_username', 'operator_role', 'ip_address', 'source']
+    ['id', 'action', 'target', 'old_value', 'new_value', 'created_at', 'operator_username', 'operator_role', 'ip_address', 'source', 'reason']
   );
   assert.deepEqual(
     getColumnNames(database, 'api_tokens'),
     ['id', 'name', 'token_hash', 'token_prefix', 'created_at', 'last_used_at', 'disabled_at', 'account_id']
   );
+});
+
+test('applyMigrations adds schedule adjustment and log reason columns', async () => {
+  const { applyMigrations } = await loadMigrationsModule();
+  const database = new Database(':memory:');
+
+  applyMigrations(database);
+
+  const scheduleColumns = getColumnNames(database, 'schedules');
+  const logColumns = getColumnNames(database, 'logs');
+
+  assert(scheduleColumns.includes('original_user_id'));
+  assert(scheduleColumns.includes('adjust_reason'));
+  assert(logColumns.includes('reason'));
 });
 
 test('seedDatabase creates default config and admin account idempotently', async () => {

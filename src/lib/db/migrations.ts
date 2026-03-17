@@ -120,6 +120,20 @@ export const MIGRATIONS: Migration[] = [
       addColumnIfMissing(database, 'api_tokens', 'account_id', 'INTEGER');
     },
   },
+  {
+    version: '006_schedule_adjustment_reason',
+    up(database) {
+      addColumnIfMissing(database, 'schedules', 'original_user_id', 'INTEGER');
+      addColumnIfMissing(database, 'schedules', 'adjust_reason', 'TEXT');
+      addColumnIfMissing(database, 'logs', 'reason', 'TEXT');
+
+      database.prepare(`
+        UPDATE schedules
+        SET original_user_id = user_id
+        WHERE original_user_id IS NULL
+      `).run();
+    },
+  },
 ];
 
 export function applyMigrations(database: Database.Database) {
