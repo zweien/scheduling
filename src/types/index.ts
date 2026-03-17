@@ -18,6 +18,8 @@ export interface Schedule {
   id: number;
   date: string;
   user_id: number;
+  original_user_id: number | null;
+  adjust_reason: string | null;
   is_manual: boolean;
   created_at: string;
 }
@@ -32,6 +34,7 @@ export interface Log {
   target: string;
   old_value: string | null;
   new_value: string | null;
+  reason: string | null;
   operator_username: string | null;
   operator_role: AccountRole | null;
   ip_address: string | null;
