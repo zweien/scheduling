@@ -149,8 +149,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [pendingDragAction, setPendingDragAction] = useState<PendingDragAction | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
   const [isMobileSingleMonthLayout, setIsMobileSingleMonthLayout] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [autoScheduleDate, setAutoScheduleDate] = useState<string | null>(null);
+  const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
   const hasCustomizedDisplayModeRef = useRef(false);
 
   const today = new Date();
@@ -221,6 +223,37 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
       mediaQuery.removeEventListener('change', handleChange);
     };
   }, [currentMonth]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const syncPointerType = (matches: boolean) => {
+      setIsTouchDevice(matches || window.navigator.maxTouchPoints > 0);
+    };
+
+    syncPointerType(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      const handleChange = (event: MediaQueryListEvent) => {
+        syncPointerType(event.matches);
+      };
+      mediaQuery.addEventListener('change', handleChange);
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange);
+      };
+    }
+
+    const legacyListener = (event: MediaQueryListEvent) => {
+      syncPointerType(event.matches);
+    };
+    mediaQuery.addListener(legacyListener);
+    return () => {
+      mediaQuery.removeListener(legacyListener);
+    };
+  }, []);
 
   // 筛选本月和下月的排班
   const currentMonthSchedules = schedules.filter(s => {
@@ -293,7 +326,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     schedule: ScheduleWithUser | undefined,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
-    if (!canManage || isMobileSingleMonthLayout || dragDate || moveSourceDate) {
+    if (!canManage || isTouchDevice || dragDate || moveSourceDate) {
       return;
     }
 
@@ -484,6 +517,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     setSelectedHasSchedule(hasSchedule);
 
     if (action === 'auto_schedule') {
+      setAutoScheduleError(null);
       setAutoScheduleDate(targetDate);
       return;
     }
@@ -513,9 +547,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
     const result = await autoScheduleFromDateAction(autoScheduleDate, input.days, input.startMode);
     if (!result.success) {
+      setAutoScheduleError(result.error);
       return;
     }
 
+    setAutoScheduleError(null);
     setAutoScheduleDate(null);
     await loadData();
   };
@@ -673,7 +709,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           open
           startDate={autoScheduleDate}
           defaultDays={users.filter(user => user.is_active).length}
-          onClose={() => setAutoScheduleDate(null)}
+          error={autoScheduleError}
+          onClose={() => {
+            setAutoScheduleError(null);
+            setAutoScheduleDate(null);
+          }}
           onConfirm={handleAutoSchedule}
         />
       ) : null}

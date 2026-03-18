@@ -10,6 +10,7 @@ interface AutoScheduleDialogProps {
   open: boolean;
   startDate: string;
   defaultDays: number;
+  error?: string | null;
   onClose: () => void;
   onConfirm?: (input: { days: number; startMode: AutoScheduleStartMode }) => Promise<void> | void;
 }
@@ -18,18 +19,22 @@ export function AutoScheduleDialog({
   open,
   startDate,
   defaultDays,
+  error,
   onClose,
   onConfirm,
 }: AutoScheduleDialogProps) {
   const [days, setDays] = useState(String(defaultDays));
   const [startMode, setStartMode] = useState<AutoScheduleStartMode>('continue');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   async function handleConfirm() {
     const normalizedDays = Number.parseInt(days, 10);
     if (!Number.isFinite(normalizedDays) || normalizedDays < 1) {
+      setValidationError('连续天数必须大于等于 1');
       return;
     }
 
+    setValidationError(null);
     await onConfirm?.({
       days: normalizedDays,
       startMode,
@@ -59,6 +64,14 @@ export function AutoScheduleDialog({
               onChange={event => setDays(event.target.value)}
             />
           </div>
+
+          {validationError ? (
+            <div className="text-sm text-destructive">{validationError}</div>
+          ) : null}
+
+          {error ? (
+            <div className="text-sm text-destructive">{error}</div>
+          ) : null}
 
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">排班起点</legend>

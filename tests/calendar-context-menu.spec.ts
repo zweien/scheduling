@@ -68,6 +68,15 @@ test('右键空日期显示自动排班和安排值班人员', async ({ page }) 
   await expect(page.getByRole('menuitem', { name: '安排值班人员' })).toBeVisible();
 });
 
+test('窄窗口桌面端仍可打开右键菜单', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 900 });
+  await login(page);
+
+  await page.locator('[data-calendar-date="2026-03-17"]').click({ button: 'right' });
+
+  await expect(page.getByRole('menuitem', { name: '自动排班' })).toBeVisible();
+});
+
 test('右键已有排班日期显示替换、移动、删除', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await login(page);
@@ -105,4 +114,17 @@ test('自动排班可按选定起点模式连续安排后续值班', async ({ pa
   await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('张三');
   await expect(page.locator('[data-calendar-date="2026-03-18"]')).toContainText('李四');
   await expect(page.locator('[data-calendar-date="2026-03-19"]')).toContainText('张三');
+});
+
+test('自动排班失败时显示错误信息并保持对话框打开', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await login(page);
+
+  await page.locator('[data-calendar-date="2026-03-15"]').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: '自动排班' }).click();
+  await page.getByLabel('连续天数').fill('2');
+  await page.getByRole('button', { name: '确认自动排班' }).click();
+
+  await expect(page.getByText('所选范围内已有排班')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '自动排班' })).toBeVisible();
 });
