@@ -58,7 +58,8 @@ export function CalendarCell({
       onDragOver={canManage ? onDragOver : undefined}
       onDrop={canManage ? onDrop : undefined}
       className={cn(
-        'relative min-h-[50px] rounded border p-1 transition-all duration-150 sm:min-h-[80px] sm:p-2',
+        'relative rounded border p-1 transition-all duration-150 sm:min-h-[80px] sm:p-2',
+        displayMode === 'name' ? 'min-h-[60px]' : 'min-h-[50px]',
         canManage ? 'cursor-pointer' : 'cursor-default',
         schedule ? 'group' : '',
         isToday ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow' : 'border-border',
@@ -84,7 +85,7 @@ export function CalendarCell({
 
       {/* 头像/姓名 */}
       {schedule && (
-        <div className="flex h-full items-center justify-center pt-4">
+        <div className={cn('flex h-full items-center justify-center sm:pt-4', displayMode === 'name' ? 'pt-3' : 'pt-4')}>
           {showOriginalAndCurrent ? (
             displayMode === 'avatar' ? (
               <div
@@ -110,16 +111,24 @@ export function CalendarCell({
             ) : (
               <div
                 data-adjusted-display="name"
-                className="w-full space-y-1 px-1 text-[10px] leading-tight sm:px-2 sm:text-xs"
+                className="w-full space-y-0.5 px-0.5 text-[9px] leading-tight sm:space-y-1 sm:px-2 sm:text-xs"
               >
-                <div className="truncate rounded bg-muted px-1 py-0.5 text-muted-foreground sm:px-1.5 sm:py-1">
-                  原：{schedule.original_user?.name}
+                <div className="rounded bg-muted px-1 py-0.5 text-muted-foreground sm:px-1.5 sm:py-1 sm:truncate">
+                  <span className="sm:hidden">原 </span>
+                  <span className="break-all whitespace-normal sm:whitespace-nowrap">
+                    <span className="hidden sm:inline">原：</span>
+                    {schedule.original_user?.name}
+                  </span>
                 </div>
                 <div
-                  className="truncate rounded px-1 py-0.5 text-white sm:px-1.5 sm:py-1"
+                  className="rounded px-1 py-0.5 text-white sm:px-1.5 sm:py-1 sm:truncate"
                   style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
                 >
-                  现：{schedule.user.name}
+                  <span className="sm:hidden">现 </span>
+                  <span className="break-all whitespace-normal sm:whitespace-nowrap">
+                    <span className="hidden sm:inline">现：</span>
+                    {schedule.user.name}
+                  </span>
                 </div>
               </div>
             )
@@ -132,7 +141,7 @@ export function CalendarCell({
             </div>
           ) : (
             <div
-              className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-medium text-white truncate max-w-full"
+              className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm sm:truncate sm:whitespace-nowrap"
               style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
             >
               {schedule.user.name}

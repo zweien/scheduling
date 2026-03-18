@@ -92,3 +92,16 @@ test('移动端姓名模式下换班日期使用紧凑文本布局', async ({ pa
   await expect(adjustedCell).toContainText('现：');
   await expect(adjustedCell.locator('[data-adjusted-display="name"]')).toBeVisible();
 });
+
+test('移动端姓名模式下可以看到完整姓名', async ({ page }) => {
+  db.prepare('UPDATE users SET name = ? WHERE id = 1').run('欧阳测试甲');
+  db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run('2026-03-17', 1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page);
+
+  await page.getByRole('button', { name: '切换为姓名' }).click();
+
+  await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('欧阳测试甲');
+  await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('欧阳测试甲');
+});
