@@ -116,3 +116,35 @@ test('桌面端姓名模式下可以看到完整姓名', async ({ page }) => {
   await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('欧阳测试甲');
   await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('欧阳测试甲');
 });
+
+test('移动端月历仅显示单月并可切换月份', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page);
+
+  const monthHeadings = page.getByRole('heading').filter({ hasText: /\d{4}年\d+月/ });
+  await expect(monthHeadings).toHaveCount(1);
+
+  const currentMonth = await monthHeadings.first().textContent();
+  await page.getByRole('button', { name: '下个月' }).click();
+
+  if (currentMonth) {
+    await expect(page.getByRole('heading', { name: currentMonth })).toHaveCount(0);
+  }
+  await expect(page.getByRole('heading').filter({ hasText: /\d{4}年\d+月/ })).toHaveCount(1);
+});
+
+test('切换到移动端单月视图时会清理隐藏月份的选中日期', async ({ page }) => {
+  db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run('2026-04-01', 2);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await login(page);
+
+  await page.locator('[data-calendar-date="2026-03-16"]').click({ modifiers: ['Control'] });
+  await page.locator('[data-calendar-date="2026-04-01"]').click({ modifiers: ['Control'] });
+  await expect(page.getByText('已选择 2 天')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await expect(page.getByText('已选择 1 天')).toBeVisible();
+  await expect(page.getByText('已选择 2 天')).toHaveCount(0);
+});
