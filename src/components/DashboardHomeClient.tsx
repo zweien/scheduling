@@ -26,6 +26,13 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
     setRefreshKey(key => key + 1);
   };
 
+  const handleOpenScheduleGenerator = () => {
+    setSidebarOpen(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById('startDate')?.focus();
+    });
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <Header
@@ -52,9 +59,17 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
           ) : null}
 
           {viewMode === 'calendar' ? (
-            <CalendarView refreshKey={refreshKey} canManage={canManage} />
+            <CalendarView
+              refreshKey={refreshKey}
+              canManage={canManage}
+              onRequestGenerate={canManage ? handleOpenScheduleGenerator : undefined}
+            />
           ) : (
-            <ListView refreshKey={refreshKey} canManage={canManage} />
+            <ListView
+              refreshKey={refreshKey}
+              canManage={canManage}
+              onRequestGenerate={canManage ? handleOpenScheduleGenerator : undefined}
+            />
           )}
         </main>
       </div>

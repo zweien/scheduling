@@ -340,6 +340,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
         reorderHint={reorderHint}
         selectedUserIds={selectedUserIds}
         allVisibleSelected={users.length > 0 && users.every(user => selectedUserIds.has(user.id))}
+        searchTerm={filters.search}
         onEdit={startEdit}
         onReorder={userIds => void handleReorder(userIds)}
         onToggleSelect={handleToggleSelect}

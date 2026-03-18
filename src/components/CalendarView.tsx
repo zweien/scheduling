@@ -8,9 +8,12 @@ import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { CalendarContextMenu, type CalendarContextMenuAction } from './CalendarContextMenu';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
+import { EmptyScheduleState } from './EmptyScheduleState';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
+import { SelectedSchedulesActionBar } from './SelectedSchedulesActionBar';
 import { UserSelectDialog } from './UserSelectDialog';
-import { autoScheduleFromDateAction, batchDeleteSchedules, getSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
+import { autoScheduleFromDateAction, batchDeleteSchedules, getSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, replaceSchedules, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
+import { exportSelectedSchedulesToXLSX } from '@/app/actions/export';
 import { getAssignableUsers } from '@/app/actions/users';
 import type { AutoScheduleStartMode, ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -19,6 +22,7 @@ import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-
 interface CalendarViewProps {
   refreshKey: number;
   canManage: boolean;
+  onRequestGenerate?: () => void;
 }
 
 type DisplayMode = 'avatar' | 'name';
@@ -137,7 +141,7 @@ function MonthCalendar({
   );
 }
 
-export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
+export function CalendarView({ refreshKey, canManage, onRequestGenerate }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -145,6 +149,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
   const [pendingDragAction, setPendingDragAction] = useState<PendingDragAction | null>(null);
@@ -416,6 +421,40 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     await loadData();
   };
 
+  const handleBatchEdit = async (userId: number) => {
+    if (!canManage || selectedDates.size === 0) {
+      return;
+    }
+
+    const result = await replaceSchedules([...selectedDates], userId);
+    if (!result.success) {
+      return;
+    }
+
+    setBatchEditOpen(false);
+    setSelectedDates(new Set());
+    setDialogOpen(false);
+    setSelectedDate(null);
+    setSelectedHasSchedule(false);
+    await loadData();
+  };
+
+  const handleExportSelected = async () => {
+    if (!canManage || selectedDates.size === 0) {
+      return;
+    }
+
+    const file = await exportSelectedSchedulesToXLSX([...selectedDates]);
+    const bytes = Uint8Array.from(atob(file.content), char => char.charCodeAt(0));
+    const blob = new Blob([bytes], { type: file.mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleMoveStart = () => {
     if (!canManage || !selectedDate || !selectedHasSchedule) {
       return;
@@ -575,6 +614,9 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const selectedCount = selectedDates.size;
   const hasCurrentMonthSchedules = currentMonthSchedules.length > 0;
   const hasSelectedSchedules = selectedCount > 0;
+  const hasVisibleSchedules = isMobileSingleMonthLayout
+    ? currentMonthSchedules.length > 0
+    : currentMonthSchedules.length > 0 || nextMonthSchedules.length > 0;
 
   return (
     <div className="space-y-4">
@@ -594,7 +636,6 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
         <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
           {canManage ? (
             <>
-              <span className="mr-1 text-sm text-muted-foreground">已选择 {selectedCount} 天</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -610,14 +651,6 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
                 disabled={!hasSelectedSchedules}
               >
                 取消选择
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBatchDelete}
-                disabled={!hasSelectedSchedules}
-              >
-                批量删除
               </Button>
             </>
           ) : null}
@@ -646,6 +679,13 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           </Button>
         </div>
       </div>
+
+      {!hasVisibleSchedules ? (
+        <EmptyScheduleState
+          canManage={canManage}
+          onRequestGenerate={onRequestGenerate}
+        />
+      ) : null}
 
       <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
         <MonthCalendar
@@ -697,6 +737,15 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
         />
       ) : null}
 
+      {canManage ? (
+        <UserSelectDialog
+          open={batchEditOpen}
+          users={users}
+          onSelect={handleBatchEdit}
+          onClose={() => setBatchEditOpen(false)}
+        />
+      ) : null}
+
       {pendingDragAction ? (
         <ScheduleAdjustmentReasonDialog
           open
@@ -732,6 +781,19 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
             setAutoScheduleDate(null);
           }}
           onConfirm={handleAutoSchedule}
+        />
+      ) : null}
+
+      {canManage && hasSelectedSchedules ? (
+        <SelectedSchedulesActionBar
+          selectedCount={selectedCount}
+          onBatchEdit={() => setBatchEditOpen(true)}
+          onExportSelected={() => {
+            void handleExportSelected();
+          }}
+          onBatchDelete={() => {
+            void handleBatchDelete();
+          }}
         />
       ) : null}
     </div>

@@ -2,7 +2,7 @@ import path from 'path';
 import Database from 'better-sqlite3';
 import ExcelJS from 'exceljs';
 import { expect, test } from 'playwright/test';
-import { buildCalendarWorkbook } from '../src/lib/export/calendar-xlsx';
+import { buildCalendarWorkbook, buildSelectedSchedulesWorkbook } from '../src/lib/export/calendar-xlsx';
 import { getSchedulesByDateRange } from '../src/lib/schedules';
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
@@ -56,6 +56,29 @@ test('月历工作簿按月份创建 sheet 并写入排班内容', async () => {
   expect(aprilValues).toContain('4/2');
   expect(aprilValues).toContain('李四');
   expect(aprilValues).toContain('手动调整');
+});
+
+test('已选日期导出只包含被选中的排班记录', async () => {
+  const schedules = getSchedulesByDateRange('2026-03-01', '2026-04-30').filter(schedule =>
+    ['2026-03-16', '2026-04-02'].includes(schedule.date),
+  );
+  const buffer = await buildSelectedSchedulesWorkbook(schedules);
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+
+  expect(workbook.worksheets.map(sheet => sheet.name)).toEqual(['已选日期']);
+
+  const sheet = workbook.getWorksheet('已选日期');
+  expect(sheet?.rowCount).toBe(3);
+  expect(sheet?.getCell('A2').value).toBe('2026-03-16');
+  expect(sheet?.getCell('C2').value).toBe('张三');
+  expect(sheet?.getCell('A3').value).toBe('2026-04-02');
+  expect(sheet?.getCell('C3').value).toBe('李四');
+
+  const values = sheet?.getSheetValues().flatMap(value => Array.isArray(value) ? value : [value]).join(' ');
+  expect(values).not.toContain('2026-03-17');
+  expect(values).not.toContain('2026-03-18');
 });
 
 test('导出弹窗展示 XLSX 导出入口', async ({ page }) => {

@@ -1,8 +1,9 @@
 // src/app/actions/export.ts
 'use server';
 
-import { getSchedulesByDateRange } from '@/lib/schedules';
-import { buildCalendarWorkbook } from '@/lib/export/calendar-xlsx';
+import { requireAdmin } from '@/lib/auth';
+import { getSchedulesByDates, getSchedulesByDateRange } from '@/lib/schedules';
+import { buildCalendarWorkbook, buildSelectedSchedulesWorkbook } from '@/lib/export/calendar-xlsx';
 
 export async function exportToCSV(startDate: string, endDate: string): Promise<string> {
   const schedules = getSchedulesByDateRange(startDate, endDate);
@@ -29,6 +30,30 @@ export async function exportToXLSX(startDate: string, endDate: string) {
 
   return {
     fileName: `排班日历_${startDate}_${endDate}.xlsx`,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    content: workbook.toString('base64'),
+  };
+}
+
+export async function exportSelectedSchedulesToXLSX(dates: string[]) {
+  await requireAdmin();
+
+  const uniqueDates = [...new Set(dates)].sort();
+  if (uniqueDates.length === 0) {
+    throw new Error('请选择要导出的日期');
+  }
+
+  const schedules = getSchedulesByDates(uniqueDates);
+  if (schedules.length === 0) {
+    throw new Error('所选日期没有排班记录');
+  }
+
+  const startDate = uniqueDates[0];
+  const endDate = uniqueDates[uniqueDates.length - 1];
+  const workbook = await buildSelectedSchedulesWorkbook(schedules);
+
+  return {
+    fileName: `排班日历_已选日期_${startDate}_${endDate}.xlsx`,
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     content: workbook.toString('base64'),
   };
