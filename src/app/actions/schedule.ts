@@ -18,6 +18,8 @@ import { moveScheduleWithReason, swapSchedulesWithReason } from '@/lib/schedule-
 import { revalidatePath } from 'next/cache';
 import { buildScheduleImportTemplateWorkbook } from '@/lib/imports/schedule-import-template';
 import { importScheduleRows, previewScheduleImport } from '@/lib/imports/schedule-import';
+import { buildCalendarScheduleTemplateWorkbook } from '@/lib/imports/calendar-schedule-template';
+import { importCalendarScheduleRows, previewCalendarScheduleImport } from '@/lib/imports/calendar-schedule-import';
 import type { AutoScheduleStartMode, ScheduleImportStrategy } from '@/types';
 import type { ScheduleImportPreview } from '@/types';
 import type { ScheduleImportSuccessResult } from '@/lib/imports/schedule-import';
@@ -296,6 +298,19 @@ export async function downloadScheduleTemplateAction(): Promise<BinaryExportResp
   };
 }
 
+export async function downloadCalendarTemplateAction(year?: number, month?: number): Promise<BinaryExportResponse> {
+  await requireAdmin();
+  const targetYear = year ?? new Date().getFullYear();
+  const targetMonth = month ?? new Date().getMonth() + 1;
+  const workbook = await buildCalendarScheduleTemplateWorkbook(targetYear, targetMonth);
+
+  return {
+    fileName: `${targetYear}年${targetMonth}月值班表模板.xlsx`,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    content: workbook.toString('base64'),
+  };
+}
+
 export async function previewScheduleImportAction(fileBase64: string) {
   await requireAdmin();
   const fileBuffer = decodeBase64File(fileBase64);
@@ -341,6 +356,52 @@ export async function importScheduleAction(
   if (!result.markedOnly) {
     revalidatePath('/dashboard');
   }
+
+  return result;
+}
+
+export async function previewCalendarScheduleImportAction(fileBase64: string) {
+  await requireAdmin();
+  const fileBuffer = decodeBase64File(fileBase64);
+
+  return previewCalendarScheduleImport(fileBuffer, {
+    getUserByName,
+    getSchedulesByDates,
+  });
+}
+
+export async function importCalendarScheduleAction(
+  fileBase64: string,
+  strategy: 'skip' | 'overwrite'
+): Promise<{ success: boolean; error?: string; preview: ScheduleImportPreview; importedCount: number; skippedCount: number; overwrittenCount: number }> {
+  const account = await requireAdmin();
+  const fileBuffer = decodeBase64File(fileBase64);
+  const result = await importCalendarScheduleRows(fileBuffer, strategy, {
+    getUserByName,
+    getSchedulesByDates,
+    setSchedule,
+  });
+
+  if (!result.success) {
+    return {
+      success: false,
+      error: '导入文件校验失败，请先修正后再导入',
+      preview: result.preview,
+      importedCount: 0,
+      skippedCount: 0,
+      overwrittenCount: 0,
+    };
+  }
+
+  await addWebLog(
+    'import_schedules',
+    '月历式排班导入',
+    undefined,
+    `成功 ${result.importedCount} 条，跳过 ${result.skippedCount} 条，覆盖 ${result.overwrittenCount} 条`,
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard');
 
   return result;
 }

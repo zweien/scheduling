@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { downloadScheduleTemplateAction, importScheduleAction, previewScheduleImportAction } from '@/app/actions/schedule';
+import { downloadScheduleTemplateAction, downloadCalendarTemplateAction, importScheduleAction, previewScheduleImportAction, previewCalendarScheduleImportAction, importCalendarScheduleAction } from '@/app/actions/schedule';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ScheduleImportPreview, ScheduleImportStrategy } from '@/types';
+
+type TemplateType = 'simple' | 'calendar';
 
 interface ScheduleImportDialogProps {
   open: boolean;
@@ -20,21 +22,32 @@ const STRATEGY_OPTIONS: Array<{ value: ScheduleImportStrategy; label: string; de
   { value: 'mark_conflicts', label: '仅标记冲突，不执行导入', description: '只生成冲突清单，不写入数据库。' },
 ];
 
+const CALENDAR_STRATEGY_OPTIONS: Array<{ value: 'skip' | 'overwrite'; label: string; description: string }> = [
+  { value: 'skip', label: '跳过已有日期', description: '保留系统已有排班，只导入无冲突日期。' },
+  { value: 'overwrite', label: '覆盖已有日期', description: '用导入文件覆盖系统中已有排班。' },
+];
+
 export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImportDialogProps) {
+  const [templateType, setTemplateType] = useState<TemplateType>('simple');
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ScheduleImportPreview | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [conflictStrategy, setConflictStrategy] = useState<ScheduleImportStrategy>('skip');
+  const [calendarConflictStrategy, setCalendarConflictStrategy] = useState<'skip' | 'overwrite'>('skip');
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
 
   function resetState() {
+    setTemplateType('simple');
     setSelectedFile(null);
     setPreview(null);
     setImportError(null);
     setImportSummary(null);
     setConflictStrategy('skip');
+    setCalendarConflictStrategy('skip');
     setValidating(false);
     setImporting(false);
   }
@@ -65,8 +78,13 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
   }
 
   async function handleDownloadTemplate() {
-    const file = await downloadScheduleTemplateAction();
-    downloadBinaryFile(file.content, file.fileName, file.mimeType);
+    if (templateType === 'simple') {
+      const file = await downloadScheduleTemplateAction();
+      downloadBinaryFile(file.content, file.fileName, file.mimeType);
+    } else {
+      const file = await downloadCalendarTemplateAction(calendarYear, calendarMonth);
+      downloadBinaryFile(file.content, file.fileName, file.mimeType);
+    }
   }
 
   async function handlePreviewImport() {
@@ -80,7 +98,14 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
     setImportSummary(null);
 
     const base64 = await fileToBase64(selectedFile);
-    const result = await previewScheduleImportAction(base64);
+
+    let result: ScheduleImportPreview;
+    if (templateType === 'simple') {
+      result = await previewScheduleImportAction(base64);
+    } else {
+      result = await previewCalendarScheduleImportAction(base64);
+    }
+
     setPreview(result);
     setValidating(false);
 
@@ -107,23 +132,39 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
     setImportError(null);
 
     const base64 = await fileToBase64(selectedFile);
-    const result = await importScheduleAction(base64, conflictStrategy);
-    setImporting(false);
 
-    if (!result.success) {
-      setPreview(result.preview ?? null);
-      setImportSummary(null);
-      setImportError(result.error ?? '导入失败');
-      return;
+    if (templateType === 'simple') {
+      const result = await importScheduleAction(base64, conflictStrategy);
+      setImporting(false);
+
+      if (!result.success) {
+        setPreview(result.preview ?? null);
+        setImportSummary(null);
+        setImportError(result.error ?? '导入失败');
+        return;
+      }
+
+      if (result.markedOnly) {
+        setImportSummary('已生成冲突清单，本次未执行导入');
+        return;
+      }
+
+      setImportSummary(`导入完成：成功 ${result.importedCount} 条，跳过 ${result.skippedCount} 条，覆盖 ${result.overwrittenCount} 条，冲突 ${result.conflictCount} 条`);
+      onImported?.();
+    } else {
+      const result = await importCalendarScheduleAction(base64, calendarConflictStrategy);
+      setImporting(false);
+
+      if (!result.success) {
+        setPreview(result.preview ?? null);
+        setImportSummary(null);
+        setImportError(result.error ?? '导入失败');
+        return;
+      }
+
+      setImportSummary(`导入完成：成功 ${result.importedCount} 条，跳过 ${result.skippedCount} 条，覆盖 ${result.overwrittenCount} 条`);
+      onImported?.();
     }
-
-    if (result.markedOnly) {
-      setImportSummary('已生成冲突清单，本次未执行导入');
-      return;
-    }
-
-    setImportSummary(`导入完成：成功 ${result.importedCount} 条，跳过 ${result.skippedCount} 条，覆盖 ${result.overwrittenCount} 条，冲突 ${result.conflictCount} 条`);
-    onImported?.();
   }
 
   const hasBlockingIssues = !preview || preview.issues.length > 0;
@@ -139,11 +180,70 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
         <DialogHeader>
           <DialogTitle>导入排班</DialogTitle>
           <DialogDescription>
-            下载模板后上传 `.xlsx` 文件，系统会先校验格式、重复日期和系统内冲突。
+            选择模板类型，下载对应模板后上传 `.xlsx` 文件，系统会先校验格式、重复日期和系统内冲突。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
+          {/* 模板类型选择 */}
+          <div className="space-y-2">
+            <Label>模板类型</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="template-type"
+                  checked={templateType === 'simple'}
+                  onChange={() => setTemplateType('simple')}
+                  className="mt-0.5"
+                />
+                <span>简单行式模板</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="template-type"
+                  checked={templateType === 'calendar'}
+                  onChange={() => setTemplateType('calendar')}
+                  className="mt-0.5"
+                />
+                <span>月历式模板</span>
+              </label>
+            </div>
+          </div>
+
+          {/* 月历式模板：年月选择 */}
+          {templateType === 'calendar' && (
+            <div className="flex gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="calendar-year">年份</Label>
+                <select
+                  id="calendar-year"
+                  value={calendarYear}
+                  onChange={e => setCalendarYear(parseInt(e.target.value, 10))}
+                  className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                    <option key={year} value={year}>{year}年</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="calendar-month">月份</Label>
+                <select
+                  id="calendar-month"
+                  value={calendarMonth}
+                  onChange={e => setCalendarMonth(parseInt(e.target.value, 10))}
+                  className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>{month}月</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-4 lg:grid-cols-[auto_1fr_auto_auto] lg:items-end">
             <div>
               <Button variant="outline" onClick={() => void handleDownloadTemplate()}>
@@ -204,13 +304,19 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
                 <div className="space-y-3">
                   <div className="font-medium">冲突处理</div>
                   <div className="space-y-2">
-                    {STRATEGY_OPTIONS.map(option => (
+                    {(templateType === 'simple' ? STRATEGY_OPTIONS : CALENDAR_STRATEGY_OPTIONS).map(option => (
                       <label key={option.value} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-3 text-sm">
                         <input
                           type="radio"
                           name="schedule-import-strategy"
-                          checked={conflictStrategy === option.value}
-                          onChange={() => setConflictStrategy(option.value)}
+                          checked={templateType === 'simple' ? conflictStrategy === option.value : calendarConflictStrategy === option.value}
+                          onChange={() => {
+                            if (templateType === 'simple') {
+                              setConflictStrategy(option.value as ScheduleImportStrategy);
+                            } else {
+                              setCalendarConflictStrategy(option.value as 'skip' | 'overwrite');
+                            }
+                          }}
                           aria-label={option.label}
                           className="mt-1"
                         />
