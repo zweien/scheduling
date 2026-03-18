@@ -547,7 +547,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
     const result = await autoScheduleFromDateAction(autoScheduleDate, input.days, input.startMode);
     if (!result.success) {
-      setAutoScheduleError(result.error);
+      setAutoScheduleError(result.error ?? '自动排班失败');
       return;
     }
 
