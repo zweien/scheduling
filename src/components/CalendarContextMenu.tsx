@@ -14,6 +14,7 @@ interface CalendarContextMenuProps {
   x: number;
   y: number;
   hasSchedule: boolean;
+  labelledBy?: string;
   onSelect: (action: CalendarContextMenuAction) => void;
   onClose: () => void;
 }
@@ -34,6 +35,7 @@ export function CalendarContextMenu({
   x,
   y,
   hasSchedule,
+  labelledBy,
   onSelect,
   onClose,
 }: CalendarContextMenuProps) {
@@ -43,6 +45,9 @@ export function CalendarContextMenu({
     if (!open) {
       return;
     }
+
+    const firstMenuItem = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]');
+    firstMenuItem?.focus();
 
     const handlePointerDown = (event: PointerEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -75,6 +80,7 @@ export function CalendarContextMenu({
     <div
       ref={menuRef}
       role="menu"
+      aria-labelledby={labelledBy}
       className="fixed z-50 min-w-[180px] rounded-lg border border-border bg-popover p-1 shadow-lg"
       style={{ left: x, top: y }}
     >

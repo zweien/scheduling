@@ -35,6 +35,7 @@ export function ThemeToggle() {
       size="sm"
       onClick={cycleTheme}
       title={getLabel()}
+      aria-label={`切换主题，当前${getLabel()}`}
       className="px-2"
     >
       {getIcon()}

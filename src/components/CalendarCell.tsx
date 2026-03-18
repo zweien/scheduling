@@ -53,6 +53,7 @@ export function CalendarCell({
     <div
       data-calendar-date={format(date, 'yyyy-MM-dd')}
       data-selected={isSelected ? 'true' : 'false'}
+      tabIndex={-1}
       onClick={onClick}
       onContextMenu={canManage ? onContextMenu : undefined}
       draggable={canManage && !!schedule}
