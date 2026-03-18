@@ -61,7 +61,14 @@ function findWeekdayHeaderRow(sheet) {
 
 export async function parseCalendarScheduleImport(fileBuffer) {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(fileBuffer);
+  try {
+    await workbook.xlsx.load(fileBuffer);
+  } catch {
+    return {
+      rows: [],
+      issues: [{ row: 1, field: '文件', message: '无法解析导入文件，请确认使用模板生成的 .xlsx 文件' }],
+    };
+  }
 
   const sheet = workbook.worksheets[0];
   if (!sheet) {
@@ -125,6 +132,7 @@ export async function parseCalendarScheduleImport(fileBuffer) {
 
       seenDates.add(normalizedDate);
       rows.push({
+        rowNumber: rowNumber + 1,
         date: normalizedDate,
         userName: rawUserName,
         isManual: true,

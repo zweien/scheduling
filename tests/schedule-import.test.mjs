@@ -146,6 +146,21 @@ test('预检会识别文件内重复、姓名缺失和系统冲突', async () =>
   assert.equal(preview.invalidRows, 2);
 });
 
+test('预检错误不会影响后续冲突记录的原始行号', async () => {
+  const { previewScheduleImport } = await loadImportModule();
+  const buffer = await createWorkbookBuffer([
+    ['', '张三', '否', '缺少日期'],
+    ['2026-03-21', '李四', '是', '与系统冲突'],
+  ]);
+
+  const preview = await previewScheduleImport(buffer, createDependencies());
+
+  assert.equal(preview.issues.length, 1);
+  assert.equal(preview.issues[0].row, 3);
+  assert.equal(preview.conflicts.length, 1);
+  assert.equal(preview.conflicts[0].row, 4);
+});
+
 test('skip 策略只导入无冲突记录', async () => {
   const { importScheduleRows } = await loadImportModule();
   const buffer = await createWorkbookBuffer([

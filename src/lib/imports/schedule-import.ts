@@ -83,7 +83,7 @@ async function parseImportRows(
   templateType: ScheduleImportTemplateType
 ): Promise<{
   totalRows: number;
-  rows: Array<Pick<ScheduleImportRow, 'date' | 'userName' | 'isManual' | 'notes'>>;
+  rows: Array<Pick<ScheduleImportRow, 'date' | 'userName' | 'isManual' | 'notes'> & { rowNumber: number }>;
   issues: ScheduleImportIssue[];
   duplicateRows: number;
 }> {
@@ -185,6 +185,7 @@ async function parseImportRows(
     }
 
     rows.push({
+      rowNumber,
       date: normalizedDate,
       userName,
       isManual: VALID_MANUAL_VALUES.get(isManualValue) ?? false,
@@ -204,13 +205,11 @@ export async function previewScheduleImport(
   const rows: ScheduleImportRow[] = [];
   const issues: ScheduleImportIssue[] = [...parsed.issues];
   const rowMetas: Array<{ rowNumber: number; date: string; userName: string }> = [];
-  let rowNumber = templateType === 'calendar' ? 1 : 3;
 
   for (const row of parsed.rows) {
     const user = row.userName ? dependencies.getUserByName(row.userName) : undefined;
     if (!user) {
-      issues.push({ row: rowNumber, field: '值班人员姓名', message: '系统中不存在该值班人员' });
-      rowNumber += 1;
+      issues.push({ row: row.rowNumber, field: '值班人员姓名', message: '系统中不存在该值班人员' });
       continue;
     }
 
@@ -221,8 +220,7 @@ export async function previewScheduleImport(
       isManual: row.isManual,
       notes: row.notes,
     });
-    rowMetas.push({ rowNumber, date: row.date, userName: row.userName });
-    rowNumber += 1;
+    rowMetas.push({ rowNumber: row.rowNumber, date: row.date, userName: row.userName });
   }
 
   const existingSchedules = dependencies.getSchedulesByDates(rows.map(row => row.date));

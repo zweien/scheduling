@@ -25,8 +25,14 @@ const TEMPLATE_OPTIONS: Array<{ value: ScheduleImportTemplateType; label: string
   { value: 'calendar', label: '月历模板', description: '适用于每周两行：上行日期、下行值班员的单月月历模板。' },
 ];
 
+function getCurrentMonthValue() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${now.getFullYear()}-${month}`;
+}
+
 export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImportDialogProps) {
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = getCurrentMonthValue();
   const [templateType, setTemplateType] = useState<ScheduleImportTemplateType>('standard');
   const [calendarTemplateMonth, setCalendarTemplateMonth] = useState(currentMonth);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
