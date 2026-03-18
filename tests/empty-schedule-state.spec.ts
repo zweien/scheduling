@@ -57,3 +57,16 @@ test('空状态点击去生成排班后聚焦现有生成入口', async ({ page 
 
   await expect(page.locator('#startDate')).toBeFocused();
 });
+
+test('空月份仍保留月历网格，可直接手动安排第一条排班', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await login(page);
+
+  const current = new Date();
+  const dateKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-15`;
+
+  await expect(page.locator(`[data-calendar-date="${dateKey}"]`)).toBeVisible();
+  await page.locator(`[data-calendar-date="${dateKey}"]`).click();
+
+  await expect(page.getByRole('heading', { name: '选择值班人员' })).toBeVisible();
+});

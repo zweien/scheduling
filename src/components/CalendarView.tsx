@@ -680,11 +680,34 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
         </div>
       </div>
 
-      {hasVisibleSchedules ? (
-        <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
+      {!hasVisibleSchedules ? (
+        <EmptyScheduleState
+          canManage={canManage}
+          onRequestGenerate={onRequestGenerate}
+        />
+      ) : null}
+
+      <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
+        <MonthCalendar
+          month={currentMonth}
+          schedules={currentMonthSchedules}
+          users={users}
+          today={today}
+          displayMode={displayMode}
+          dragDate={dragDate}
+          selectedDates={selectedDates}
+          onCellClick={handleCellClick}
+          onCellContextMenu={handleCellContextMenu}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          canManage={canManage}
+        />
+        {isMobileSingleMonthLayout ? null : (
           <MonthCalendar
-            month={currentMonth}
-            schedules={currentMonthSchedules}
+            month={nextMonth}
+            schedules={nextMonthSchedules}
             users={users}
             today={today}
             displayMode={displayMode}
@@ -698,31 +721,8 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
             onDrop={handleDrop}
             canManage={canManage}
           />
-          {isMobileSingleMonthLayout ? null : (
-            <MonthCalendar
-              month={nextMonth}
-              schedules={nextMonthSchedules}
-              users={users}
-              today={today}
-              displayMode={displayMode}
-              dragDate={dragDate}
-              selectedDates={selectedDates}
-              onCellClick={handleCellClick}
-              onCellContextMenu={handleCellContextMenu}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              canManage={canManage}
-            />
-          )}
-        </div>
-      ) : (
-        <EmptyScheduleState
-          canManage={canManage}
-          onRequestGenerate={onRequestGenerate}
-        />
-      )}
+        )}
+      </div>
 
       {canManage ? (
         <UserSelectDialog

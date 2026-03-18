@@ -3,7 +3,7 @@
 
 import { requireAdmin } from '@/lib/auth';
 import { getSchedulesByDates, getSchedulesByDateRange } from '@/lib/schedules';
-import { buildCalendarWorkbook } from '@/lib/export/calendar-xlsx';
+import { buildCalendarWorkbook, buildSelectedSchedulesWorkbook } from '@/lib/export/calendar-xlsx';
 
 export async function exportToCSV(startDate: string, endDate: string): Promise<string> {
   const schedules = getSchedulesByDateRange(startDate, endDate);
@@ -50,7 +50,7 @@ export async function exportSelectedSchedulesToXLSX(dates: string[]) {
 
   const startDate = uniqueDates[0];
   const endDate = uniqueDates[uniqueDates.length - 1];
-  const workbook = await buildCalendarWorkbook(startDate, endDate, schedules);
+  const workbook = await buildSelectedSchedulesWorkbook(schedules);
 
   return {
     fileName: `排班日历_已选日期_${startDate}_${endDate}.xlsx`,
