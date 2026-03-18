@@ -116,6 +116,8 @@ export interface ScheduleImportConflict {
   existingUserName: string;
 }
 
+export type AutoScheduleStartMode = 'continue' | 'from_first';
+
 export interface ScheduleImportPreview {
   totalRows: number;
   validRows: number;
@@ -144,6 +146,7 @@ export type Action =
   | 'batch_delete_schedules'
   | 'move_schedule'
   | 'swap_schedule'
+  | 'auto_schedule_from_date'
   | 'set_password'
   | 'add_account'
   | 'toggle_account_active'

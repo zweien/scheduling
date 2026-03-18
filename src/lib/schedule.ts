@@ -2,9 +2,17 @@
 import { getActiveUsers } from './users';
 import { setSchedule, getSchedulesByDateRange } from './schedules';
 import { format, eachDayOfInterval, parseISO, addDays } from 'date-fns';
+import { generateScheduleFromDate as doGenerateScheduleFromDate } from './auto-schedule';
+import type { AutoScheduleStartMode } from '@/types';
+
+const defaultDeps = {
+  getActiveUsers,
+  getSchedulesByDateRange,
+  setSchedule,
+};
 
 export function generateSchedule(startDate: string, endDate?: string) {
-  const users = getActiveUsers();
+  const users = defaultDeps.getActiveUsers();
   if (users.length === 0) {
     throw new Error('没有参与值班的人员');
   }
@@ -17,7 +25,7 @@ export function generateSchedule(startDate: string, endDate?: string) {
   const endDateStr = endDate || format(end, 'yyyy-MM-dd');
 
   // 获取已有手动调整的日期
-  const existingSchedules = getSchedulesByDateRange(startDate, endDateStr);
+  const existingSchedules = defaultDeps.getSchedulesByDateRange(startDate, endDateStr);
   const manualDates = new Set(
     existingSchedules.filter(s => s.is_manual).map(s => s.date)
   );
@@ -34,8 +42,16 @@ export function generateSchedule(startDate: string, endDate?: string) {
     }
 
     const user = users[userIndex % users.length];
-    setSchedule(dateStr, user.id, false);
+    defaultDeps.setSchedule(dateStr, user.id, false);
     assigned.push(`${dateStr}: ${user.name}`);
     userIndex++;
   });
+}
+
+export function generateScheduleFromDate(
+  startDate: string,
+  days: number,
+  startMode: AutoScheduleStartMode
+) {
+  return doGenerateScheduleFromDate(startDate, days, startMode, defaultDeps);
 }
