@@ -160,3 +160,17 @@ test('管理员筛选值班人员后会禁用排序并显示提示', async ({ pa
   await expect(page.getByText('请清空筛选条件后再调整顺序')).toBeVisible();
   await expect(page.getByRole('button', { name: '拖拽排序 张三' })).toHaveCount(0);
 });
+
+test('姓名搜索命中后会高亮匹配片段，清空后恢复普通显示', async ({ page }) => {
+  await login(page);
+  await page.goto(`${baseUrl}/dashboard/users`);
+
+  await page.getByPlaceholder('搜索姓名或备注').fill('张');
+
+  const highlightedMark = page.locator('mark').filter({ hasText: '张' });
+  await expect(highlightedMark).toHaveCount(1);
+  await expect(page.getByTestId('duty-user-card-name').first()).toContainText('张三');
+
+  await page.getByPlaceholder('搜索姓名或备注').fill('   ');
+  await expect(page.locator('mark')).toHaveCount(0);
+});

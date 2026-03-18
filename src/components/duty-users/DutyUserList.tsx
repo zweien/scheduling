@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { User } from '@/types';
+import { HighlightedText } from './HighlightedText';
 import { reorderUserIds } from './reorder-helpers';
 
 function DraggableDutyUserItem({
@@ -18,6 +19,7 @@ function DraggableDutyUserItem({
   onToggleSelect,
   onToggleActive,
   onDelete,
+  searchTerm,
 }: {
   user: User;
   canManage: boolean;
@@ -30,6 +32,7 @@ function DraggableDutyUserItem({
   onToggleSelect: (userId: number) => void;
   onToggleActive: (user: User) => void;
   onDelete: (user: User) => void;
+  searchTerm: string;
 }) {
   return (
     <div
@@ -75,7 +78,9 @@ function DraggableDutyUserItem({
 
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <div data-testid="duty-user-card-name" className="font-medium">{user.name}</div>
+              <div data-testid="duty-user-card-name" className="font-medium">
+                <HighlightedText text={user.name} highlight={searchTerm} />
+              </div>
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{user.organization}</span>
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{user.category}</span>
               <span className={`rounded-full px-2 py-0.5 text-xs ${user.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
@@ -107,6 +112,7 @@ interface DutyUserListProps {
   reorderHint: string | null;
   selectedUserIds: Set<number>;
   allVisibleSelected: boolean;
+  searchTerm: string;
   onEdit: (user: User) => void;
   onReorder: (userIds: number[]) => void;
   onToggleSelect: (userId: number) => void;
@@ -123,6 +129,7 @@ export function DutyUserList({
   reorderHint,
   selectedUserIds,
   allVisibleSelected,
+  searchTerm,
   onEdit,
   onReorder,
   onToggleSelect,
@@ -154,7 +161,9 @@ export function DutyUserList({
 
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <div data-testid="duty-user-card-name" className="font-medium">{user.name}</div>
+                <div data-testid="duty-user-card-name" className="font-medium">
+                  <HighlightedText text={user.name} highlight={searchTerm} />
+                </div>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{user.organization}</span>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{user.category}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs ${user.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
@@ -239,6 +248,7 @@ export function DutyUserList({
               onToggleSelect={onToggleSelect}
               onToggleActive={onToggleActive}
               onDelete={onDelete}
+              searchTerm={searchTerm}
             />
           ))}
         </div>

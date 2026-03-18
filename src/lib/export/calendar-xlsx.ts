@@ -132,3 +132,62 @@ export async function buildCalendarWorkbook(startDate: string, endDate: string, 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }
+
+export async function buildSelectedSchedulesWorkbook(schedules: ScheduleWithUser[]) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'scheduling';
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet('已选日期');
+
+  sheet.columns = [
+    { header: '日期', key: 'date', width: 16 },
+    { header: '星期', key: 'weekday', width: 10 },
+    { header: '值班人员', key: 'userName', width: 18 },
+    { header: '备注', key: 'note', width: 14 },
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { name: 'Arial', size: 11, bold: true };
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+  headerRow.eachCell(cell => {
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE7EEF8' },
+    };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+      left: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+      bottom: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+      right: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+    };
+  });
+
+  schedules.forEach(schedule => {
+    const date = new Date(`${schedule.date}T00:00:00`);
+    sheet.addRow({
+      date: schedule.date,
+      weekday: `星期${format(date, 'i', { locale: zhCN }) === '7' ? '日' : ['一', '二', '三', '四', '五', '六'][Number(format(date, 'i', { locale: zhCN })) - 1]}`,
+      userName: schedule.user.name,
+      note: schedule.is_manual ? '手动调整' : '',
+    });
+  });
+
+  for (let row = 2; row <= sheet.rowCount; row += 1) {
+    sheet.getRow(row).eachCell(cell => {
+      cell.alignment = { horizontal: 'left', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+        left: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+        bottom: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+        right: { style: 'thin', color: { argb: 'FFD0D7E2' } },
+      };
+    });
+  }
+
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}

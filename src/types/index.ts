@@ -143,6 +143,7 @@ export type Action =
   | 'update_user_profile'
   | 'generate_schedule'
   | 'replace_schedule'
+  | 'batch_replace_schedules'
   | 'delete_schedule'
   | 'batch_delete_schedules'
   | 'move_schedule'

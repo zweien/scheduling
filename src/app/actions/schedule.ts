@@ -101,6 +101,42 @@ export async function replaceSchedule(date: string, newUserId: number) {
   revalidatePath('/dashboard');
 }
 
+export async function replaceSchedules(dates: string[], newUserId: number) {
+  const account = await requireAdmin();
+  const uniqueDates = [...new Set(dates)].sort();
+
+  if (uniqueDates.length === 0) {
+    return { success: false, error: '请选择要编辑的日期' };
+  }
+
+  const schedules = getSchedulesByDates(uniqueDates);
+  if (schedules.length === 0) {
+    return { success: false, error: '所选日期没有排班记录' };
+  }
+
+  const newUser = getUserById(newUserId);
+  if (!newUser) {
+    return { success: false, error: '找不到目标值班人员' };
+  }
+
+  for (const schedule of schedules) {
+    setSchedule(schedule.date, newUserId, true, {
+      originalUserId: schedule.original_user_id ?? schedule.user_id,
+    });
+  }
+
+  await addWebLog(
+    'batch_replace_schedules',
+    `批量替换日期: ${schedules.map(schedule => schedule.date).join(', ')}`,
+    schedules.map(schedule => `${schedule.date}: ${schedule.user.name}`).join('，'),
+    `已统一替换为 ${newUser.name}（${schedules.length} 条）`,
+    { username: account.username, role: account.role }
+  );
+
+  revalidatePath('/dashboard');
+  return { success: true, updatedCount: schedules.length };
+}
+
 export async function removeSchedule(date: string) {
   const account = await requireAdmin();
   const current = getSchedulesByDateRange(date, date)[0];
