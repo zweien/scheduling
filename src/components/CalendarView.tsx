@@ -44,6 +44,7 @@ type ContextMenuState = {
   hasSchedule: boolean;
   x: number;
   y: number;
+  triggerId: string;
 };
 
 interface MonthCalendarProps {
@@ -154,6 +155,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [autoScheduleDate, setAutoScheduleDate] = useState<string | null>(null);
   const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
   const hasCustomizedDisplayModeRef = useRef(false);
+  const contextMenuTriggerRef = useRef<HTMLElement | null>(null);
 
   const today = new Date();
   const nextMonth = addMonths(currentMonth, 1);
@@ -332,13 +334,27 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
     event.preventDefault();
     const dateStr = format(date, 'yyyy-MM-dd');
+    contextMenuTriggerRef.current = event.currentTarget;
+    const triggerId = `calendar-cell-${dateStr}`;
+    event.currentTarget.id = triggerId;
     setContextMenuState({
       date: dateStr,
       hasSchedule: Boolean(schedule),
       x: event.clientX,
       y: event.clientY,
+      triggerId,
     });
   };
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenuState(null);
+    const trigger = contextMenuTriggerRef.current;
+    if (trigger) {
+      window.requestAnimationFrame(() => {
+        trigger.focus();
+      });
+    }
+  }, []);
 
   const handleReplace = async (userId: number) => {
     if (!canManage) {
@@ -699,8 +715,9 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
         x={contextMenuState?.x ?? 0}
         y={contextMenuState?.y ?? 0}
         hasSchedule={contextMenuState?.hasSchedule ?? false}
+        labelledBy={contextMenuState?.triggerId}
         onSelect={handleContextMenuAction}
-        onClose={() => setContextMenuState(null)}
+        onClose={handleCloseContextMenu}
       />
 
       {autoScheduleDate ? (

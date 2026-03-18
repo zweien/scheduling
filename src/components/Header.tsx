@@ -65,7 +65,7 @@ export function Header({
       {/* 品牌区 */}
       <div className="flex items-center gap-3">
         {onToggleSidebar ? (
-          <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="h-8 w-8" aria-label="切换侧边栏">
             <Menu className="w-5 h-5" />
           </Button>
         ) : (
@@ -91,6 +91,8 @@ export function Header({
               size="sm"
               onClick={() => onViewModeChange('calendar')}
               className="rounded-none gap-1"
+              aria-label="切换到月历视图"
+              aria-pressed={viewMode === 'calendar'}
             >
               <Calendar className="w-4 h-4" />
               月历
@@ -100,6 +102,8 @@ export function Header({
               size="sm"
               onClick={() => onViewModeChange('list')}
               className="rounded-none gap-1"
+              aria-label="切换到列表视图"
+              aria-pressed={viewMode === 'list'}
             >
               <List className="w-4 h-4" />
               列表
@@ -147,6 +151,8 @@ export function Header({
               size="icon"
               onClick={() => onViewModeChange('calendar')}
               className="rounded-none h-8 w-8"
+              aria-label="切换到月历视图"
+              aria-pressed={viewMode === 'calendar'}
             >
               <Calendar className="w-4 h-4" />
             </Button>
@@ -155,6 +161,8 @@ export function Header({
               size="icon"
               onClick={() => onViewModeChange('list')}
               className="rounded-none h-8 w-8"
+              aria-label="切换到列表视图"
+              aria-pressed={viewMode === 'list'}
             >
               <List className="w-4 h-4" />
             </Button>
@@ -168,6 +176,9 @@ export function Header({
             size="icon"
             onClick={() => setMenuOpen(!menuOpen)}
             className="h-8 w-8"
+            aria-label={menuOpen ? '关闭更多菜单' : '打开更多菜单'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-header-menu"
           >
             {menuOpen ? <X className="w-4 h-4" /> : <MoreVertical className="w-4 h-4" />}
           </Button>
@@ -182,7 +193,10 @@ export function Header({
               />
 
               {/* 菜单面板 */}
-              <div className="fixed bottom-0 left-0 right-0 bg-background border-t rounded-t-2xl p-4 z-50 animate-fade-in">
+              <div
+                id="mobile-header-menu"
+                className="fixed bottom-0 left-0 right-0 bg-background border-t rounded-t-2xl p-4 z-50 animate-fade-in"
+              >
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   {navItems.map(item => (
                     <Link
