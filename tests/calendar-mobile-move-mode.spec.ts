@@ -116,3 +116,19 @@ test('桌面端姓名模式下可以看到完整姓名', async ({ page }) => {
   await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('欧阳测试甲');
   await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('欧阳测试甲');
 });
+
+test('移动端月历仅显示单月并可切换月份', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page);
+
+  const monthHeadings = page.getByRole('heading').filter({ hasText: /\d{4}年\d+月/ });
+  await expect(monthHeadings).toHaveCount(1);
+
+  const currentMonth = await monthHeadings.first().textContent();
+  await page.getByRole('button', { name: '下个月' }).click();
+
+  if (currentMonth) {
+    await expect(page.getByRole('heading', { name: currentMonth })).toHaveCount(0);
+  }
+  await expect(page.getByRole('heading').filter({ hasText: /\d{4}年\d+月/ })).toHaveCount(1);
+});

@@ -136,6 +136,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
   const [pendingDragAction, setPendingDragAction] = useState<PendingDragAction | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
+  const [isMobileSingleMonthLayout, setIsMobileSingleMonthLayout] = useState(false);
   const hasCustomizedDisplayModeRef = useRef(false);
 
   const today = new Date();
@@ -177,6 +178,29 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
         window.cancelAnimationFrame(frameId);
       };
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const syncLayout = (matches: boolean) => {
+      setIsMobileSingleMonthLayout(matches);
+    };
+
+    syncLayout(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      syncLayout(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, []);
 
   // 筛选本月和下月的排班
@@ -469,22 +493,21 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
               <UserCircle className="w-4 h-4" />
             )}
           </Button>
-          <Button variant="outline" size="sm" onClick={goToPrevMonth}>
+          <Button variant="outline" size="sm" onClick={goToPrevMonth} aria-label="上个月">
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline ml-1">上月</span>
+            <span className="ml-1 text-xs sm:text-sm">{isMobileSingleMonthLayout ? '上个月' : '上月'}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
             今天
           </Button>
-          <Button variant="outline" size="sm" onClick={goToNextMonth}>
-            <span className="hidden sm:inline mr-1">下月</span>
+          <Button variant="outline" size="sm" onClick={goToNextMonth} aria-label="下个月">
+            <span className="mr-1 text-xs sm:text-sm">{isMobileSingleMonthLayout ? '下个月' : '下月'}</span>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* 双月日历布局 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
         <MonthCalendar
           month={currentMonth}
           schedules={currentMonthSchedules}
@@ -500,21 +523,23 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           onDrop={handleDrop}
           canManage={canManage}
         />
-        <MonthCalendar
-          month={nextMonth}
-          schedules={nextMonthSchedules}
-          users={users}
-          today={today}
-          displayMode={displayMode}
-          dragDate={dragDate}
-          selectedDates={selectedDates}
-          onCellClick={handleCellClick}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          canManage={canManage}
-        />
+        {isMobileSingleMonthLayout ? null : (
+          <MonthCalendar
+            month={nextMonth}
+            schedules={nextMonthSchedules}
+            users={users}
+            today={today}
+            displayMode={displayMode}
+            dragDate={dragDate}
+            selectedDates={selectedDates}
+            onCellClick={handleCellClick}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            canManage={canManage}
+          />
+        )}
       </div>
 
       {canManage ? (
