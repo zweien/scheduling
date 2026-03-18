@@ -43,6 +43,7 @@ const actionConfig: Record<string, { label: string; badgeClass: string }> = {
   toggle_account_active: { label: '账号启停', badgeClass: 'bg-amber-100 text-amber-800' },
   change_account_role: { label: '变更角色', badgeClass: 'bg-indigo-100 text-indigo-800' },
   toggle_registration: { label: '注册开关', badgeClass: 'bg-orange-100 text-orange-800' },
+  update_default_schedule_days: { label: '默认排班天数', badgeClass: 'bg-orange-100 text-orange-800' },
   create_token: { label: '创建 Token', badgeClass: 'bg-emerald-100 text-emerald-800' },
   disable_token: { label: '禁用 Token', badgeClass: 'bg-rose-100 text-rose-800' },
 };

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { generateScheduleAction } from '@/app/actions/schedule';
-import { getUsers } from '@/app/actions/users';
+import { getDefaultScheduleDaysAction } from '@/app/actions/config';
 
 interface ScheduleGeneratorProps {
   onGenerated: () => void;
@@ -17,12 +17,12 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeUserCount, setActiveUserCount] = useState(0);
+  const [defaultScheduleDays, setDefaultScheduleDays] = useState<number | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => {
-      getUsers().then(users => {
-        setActiveUserCount(users.filter(u => u.is_active).length);
+      getDefaultScheduleDaysAction().then(days => {
+        setDefaultScheduleDays(days);
       });
     });
   }, []);
@@ -76,8 +76,8 @@ export function ScheduleGenerator({ onGenerated }: ScheduleGeneratorProps) {
           onChange={e => setEndDate(e.target.value)}
           className="h-8"
         />
-        {!endDate && activeUserCount > 0 && (
-          <p className="text-xs text-muted-foreground">不填将排 {activeUserCount} 天</p>
+        {!endDate && defaultScheduleDays && (
+          <p className="text-xs text-muted-foreground">不填将默认排 {defaultScheduleDays} 天</p>
         )}
       </div>
 
