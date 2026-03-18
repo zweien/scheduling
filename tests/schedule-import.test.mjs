@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
+import { format } from 'date-fns';
 
 const templateModulePath = new URL('../src/lib/imports/schedule-import-template.ts', import.meta.url).href;
 const importModulePath = new URL('../src/lib/imports/schedule-import.ts', import.meta.url).href;
@@ -11,6 +12,22 @@ async function loadTemplateModule() {
 
 async function loadImportModule() {
   return import(`${importModulePath}?t=${Date.now()}-${Math.random()}`);
+}
+
+function excelSerialToDate(serial) {
+  return new Date((serial - 25569) * 86400000);
+}
+
+function cellValueToDate(value) {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return excelSerialToDate(value);
+  }
+
+  throw new Error(`Unexpected cell value: ${String(value)}`);
 }
 
 async function createWorkbookBuffer(rows, options = {}) {
@@ -75,6 +92,41 @@ test('排班导入模板包含预期表头', async () => {
   ]);
 });
 
+test('月历排班模板与参考月历结构一致', async () => {
+  const { buildCalendarScheduleImportTemplateWorkbook } = await loadTemplateModule();
+
+  const workbookBuffer = await buildCalendarScheduleImportTemplateWorkbook('2026-03');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(workbookBuffer);
+  const sheet = workbook.worksheets[0];
+
+  assert.equal(sheet.name, 'Sheet1');
+  assert.equal(sheet.getCell('A2').value, '2026年03月XXX值班表');
+  assert.deepEqual(sheet.getRow(3).values.slice(1, 9), ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']);
+  assert.equal(sheet.getCell('A4').value, '日  期');
+  assert.equal(sheet.getCell('A5').value, '值班员');
+  assert.equal(sheet.getCell('H4').numFmt, 'yyyy-mm-dd');
+  assert.equal(format(cellValueToDate(sheet.getCell('H4').value), 'yyyy-MM-dd'), '2026-03-01');
+  assert.equal(sheet.getCell('A14').value, '日  期');
+  assert.equal(format(cellValueToDate(sheet.getCell('B14').value), 'yyyy-MM-dd'), '2026-03-30');
+  assert.equal(format(cellValueToDate(sheet.getCell('C14').value), 'yyyy-MM-dd'), '2026-03-31');
+  assert.equal(sheet.getCell('D14').value, '');
+});
+
+test('月历排班模板支持按指定月份下载', async () => {
+  const { buildCalendarScheduleImportTemplateWorkbook } = await loadTemplateModule();
+
+  const workbookBuffer = await buildCalendarScheduleImportTemplateWorkbook('2026-04');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(workbookBuffer);
+  const sheet = workbook.worksheets[0];
+
+  assert.equal(sheet.getCell('A2').value, '2026年04月XXX值班表');
+  assert.equal(sheet.getCell('D4').numFmt, 'yyyy-mm-dd');
+  assert.equal(format(cellValueToDate(sheet.getCell('D4').value), 'yyyy-MM-dd'), '2026-04-01');
+  assert.equal(format(cellValueToDate(sheet.getCell('E12').value), 'yyyy-MM-dd'), '2026-04-30');
+});
+
 test('预检会识别文件内重复、姓名缺失和系统冲突', async () => {
   const { previewScheduleImport } = await loadImportModule();
   const buffer = await createWorkbookBuffer([
@@ -92,6 +144,21 @@ test('预检会识别文件内重复、姓名缺失和系统冲突', async () =>
   assert.equal(preview.issues.length, 2);
   assert.equal(preview.duplicateRows, 1);
   assert.equal(preview.invalidRows, 2);
+});
+
+test('预检错误不会影响后续冲突记录的原始行号', async () => {
+  const { previewScheduleImport } = await loadImportModule();
+  const buffer = await createWorkbookBuffer([
+    ['', '张三', '否', '缺少日期'],
+    ['2026-03-21', '李四', '是', '与系统冲突'],
+  ]);
+
+  const preview = await previewScheduleImport(buffer, createDependencies());
+
+  assert.equal(preview.issues.length, 1);
+  assert.equal(preview.issues[0].row, 3);
+  assert.equal(preview.conflicts.length, 1);
+  assert.equal(preview.conflicts[0].row, 4);
 });
 
 test('skip 策略只导入无冲突记录', async () => {

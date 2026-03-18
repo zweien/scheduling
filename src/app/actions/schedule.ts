@@ -16,9 +16,9 @@ import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import { moveScheduleWithReason, swapSchedulesWithReason } from '@/lib/schedule-adjustments';
 import { revalidatePath } from 'next/cache';
-import { buildScheduleImportTemplateWorkbook } from '@/lib/imports/schedule-import-template';
+import { buildScheduleTemplateWorkbookByType } from '@/lib/imports/schedule-import-template';
 import { importScheduleRows, previewScheduleImport } from '@/lib/imports/schedule-import';
-import type { AutoScheduleStartMode, ScheduleImportStrategy } from '@/types';
+import type { AutoScheduleStartMode, ScheduleImportStrategy, ScheduleImportTemplateType } from '@/types';
 import type { ScheduleImportPreview } from '@/types';
 import type { ScheduleImportSuccessResult } from '@/lib/imports/schedule-import';
 
@@ -285,30 +285,37 @@ export async function getStats(startDate?: string, endDate?: string) {
   }));
 }
 
-export async function downloadScheduleTemplateAction(): Promise<BinaryExportResponse> {
+export async function downloadScheduleTemplateAction(
+  templateType: ScheduleImportTemplateType = 'standard',
+  monthKey?: string
+): Promise<BinaryExportResponse> {
   await requireAdmin();
-  const workbook = await buildScheduleImportTemplateWorkbook();
+  const workbook = await buildScheduleTemplateWorkbookByType(templateType, monthKey);
+  const normalizedMonth = monthKey && /^\d{4}-\d{2}$/.test(monthKey) ? monthKey : undefined;
 
   return {
-    fileName: '排班导入模板.xlsx',
+    fileName: templateType === 'calendar'
+      ? `排班月历模板${normalizedMonth ? `-${normalizedMonth}` : ''}.xlsx`
+      : '排班导入模板.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     content: workbook.toString('base64'),
   };
 }
 
-export async function previewScheduleImportAction(fileBase64: string) {
+export async function previewScheduleImportAction(fileBase64: string, templateType: ScheduleImportTemplateType = 'standard') {
   await requireAdmin();
   const fileBuffer = decodeBase64File(fileBase64);
 
   return previewScheduleImport(fileBuffer, {
     getUserByName,
     getSchedulesByDates,
-  });
+  }, templateType);
 }
 
 export async function importScheduleAction(
   fileBase64: string,
-  strategy: ScheduleImportStrategy
+  strategy: ScheduleImportStrategy,
+  templateType: ScheduleImportTemplateType = 'standard'
 ): Promise<ScheduleImportSuccessResult | ScheduleImportActionFailure> {
   const account = await requireAdmin();
   const fileBuffer = decodeBase64File(fileBase64);
@@ -316,7 +323,7 @@ export async function importScheduleAction(
     getUserByName,
     getSchedulesByDates,
     setSchedule,
-  });
+  }, templateType);
 
   if (!result.success) {
     return {

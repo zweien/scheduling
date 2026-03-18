@@ -94,6 +94,7 @@ export interface DutyUserImportPreview {
 }
 
 export type ScheduleImportStrategy = 'skip' | 'overwrite' | 'mark_conflicts';
+export type ScheduleImportTemplateType = 'standard' | 'calendar';
 
 export interface ScheduleImportRow {
   date: string;
