@@ -6,11 +6,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
+import { CalendarContextMenu, type CalendarContextMenuAction } from './CalendarContextMenu';
+import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { UserSelectDialog } from './UserSelectDialog';
-import { batchDeleteSchedules, getSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
+import { autoScheduleFromDateAction, batchDeleteSchedules, getSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
 import { getAssignableUsers } from '@/app/actions/users';
-import type { ScheduleWithUser, User } from '@/types';
+import type { AutoScheduleStartMode, ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
 
@@ -37,6 +39,13 @@ type PendingDragAction =
       targetUserName: string;
     };
 
+type ContextMenuState = {
+  date: string;
+  hasSchedule: boolean;
+  x: number;
+  y: number;
+};
+
 interface MonthCalendarProps {
   month: Date;
   schedules: ScheduleWithUser[];
@@ -46,6 +55,7 @@ interface MonthCalendarProps {
   dragDate: string | null;
   selectedDates: Set<string>;
   onCellClick: (date: Date, event: React.MouseEvent<HTMLDivElement>) => void;
+  onCellContextMenu: (date: Date, schedule: ScheduleWithUser | undefined, event: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart: (date: string) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -61,6 +71,7 @@ function MonthCalendar({
   dragDate,
   selectedDates,
   onCellClick,
+  onCellContextMenu,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -107,6 +118,7 @@ function MonthCalendar({
               isToday={isSameDay(day, today)}
               isSelected={selectedDates.has(dateStr)}
               onClick={event => onCellClick(day, event)}
+              onContextMenu={event => onCellContextMenu(day, schedule, event)}
               onDragStart={() => onDragStart(dateStr)}
               onDragEnd={onDragEnd}
               onDragOver={onDragOver}
@@ -137,6 +149,10 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const [pendingDragAction, setPendingDragAction] = useState<PendingDragAction | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('avatar');
   const [isMobileSingleMonthLayout, setIsMobileSingleMonthLayout] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
+  const [autoScheduleDate, setAutoScheduleDate] = useState<string | null>(null);
+  const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
   const hasCustomizedDisplayModeRef = useRef(false);
 
   const today = new Date();
@@ -208,6 +224,37 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     };
   }, [currentMonth]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const syncPointerType = (matches: boolean) => {
+      setIsTouchDevice(matches || window.navigator.maxTouchPoints > 0);
+    };
+
+    syncPointerType(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      const handleChange = (event: MediaQueryListEvent) => {
+        syncPointerType(event.matches);
+      };
+      mediaQuery.addEventListener('change', handleChange);
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange);
+      };
+    }
+
+    const legacyListener = (event: MediaQueryListEvent) => {
+      syncPointerType(event.matches);
+    };
+    mediaQuery.addListener(legacyListener);
+    return () => {
+      mediaQuery.removeListener(legacyListener);
+    };
+  }, []);
+
   // 筛选本月和下月的排班
   const currentMonthSchedules = schedules.filter(s => {
     const date = new Date(s.date);
@@ -220,6 +267,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   });
 
   const handleCellClick = (date: Date, event: React.MouseEvent<HTMLDivElement>) => {
+    setContextMenuState(null);
     if (!canManage) {
       return;
     }
@@ -271,6 +319,25 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     setSelectedHasSchedule(hasSchedule);
     setSelectedDate(dateStr);
     setDialogOpen(true);
+  };
+
+  const handleCellContextMenu = (
+    date: Date,
+    schedule: ScheduleWithUser | undefined,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    if (!canManage || isTouchDevice || dragDate || moveSourceDate) {
+      return;
+    }
+
+    event.preventDefault();
+    const dateStr = format(date, 'yyyy-MM-dd');
+    setContextMenuState({
+      date: dateStr,
+      hasSchedule: Boolean(schedule),
+      x: event.clientX,
+      y: event.clientY,
+    });
   };
 
   const handleReplace = async (userId: number) => {
@@ -437,6 +504,58 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     setDisplayMode(current => (current === 'avatar' ? 'name' : 'avatar'));
   };
 
+  const handleContextMenuAction = (action: CalendarContextMenuAction) => {
+    if (!contextMenuState) {
+      return;
+    }
+
+    const targetDate = contextMenuState.date;
+    const hasSchedule = contextMenuState.hasSchedule;
+    setContextMenuState(null);
+    setSelectedDates(new Set());
+    setSelectedDate(targetDate);
+    setSelectedHasSchedule(hasSchedule);
+
+    if (action === 'auto_schedule') {
+      setAutoScheduleError(null);
+      setAutoScheduleDate(targetDate);
+      return;
+    }
+
+    if (action === 'assign_user' || action === 'replace_user') {
+      setDialogOpen(true);
+      return;
+    }
+
+    if (action === 'move_schedule') {
+      setMoveSourceDate(targetDate);
+      return;
+    }
+
+    if (action === 'delete_schedule') {
+      void (async () => {
+        await removeSchedule(targetDate);
+        await loadData();
+      })();
+    }
+  };
+
+  const handleAutoSchedule = async (input: { days: number; startMode: AutoScheduleStartMode }) => {
+    if (!autoScheduleDate) {
+      return;
+    }
+
+    const result = await autoScheduleFromDateAction(autoScheduleDate, input.days, input.startMode);
+    if (!result.success) {
+      setAutoScheduleError(result.error);
+      return;
+    }
+
+    setAutoScheduleError(null);
+    setAutoScheduleDate(null);
+    await loadData();
+  };
+
   const selectedCount = selectedDates.size;
   const hasCurrentMonthSchedules = currentMonthSchedules.length > 0;
   const hasSelectedSchedules = selectedCount > 0;
@@ -522,6 +641,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           dragDate={dragDate}
           selectedDates={selectedDates}
           onCellClick={handleCellClick}
+          onCellContextMenu={handleCellContextMenu}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
@@ -538,6 +658,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
             dragDate={dragDate}
             selectedDates={selectedDates}
             onCellClick={handleCellClick}
+            onCellContextMenu={handleCellContextMenu}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
@@ -570,6 +691,30 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
           targetUserName={pendingDragAction.targetUserName}
           onConfirm={handleConfirmDragAction}
           onClose={() => setPendingDragAction(null)}
+        />
+      ) : null}
+
+      <CalendarContextMenu
+        open={contextMenuState !== null}
+        x={contextMenuState?.x ?? 0}
+        y={contextMenuState?.y ?? 0}
+        hasSchedule={contextMenuState?.hasSchedule ?? false}
+        onSelect={handleContextMenuAction}
+        onClose={() => setContextMenuState(null)}
+      />
+
+      {autoScheduleDate ? (
+        <AutoScheduleDialog
+          key={autoScheduleDate}
+          open
+          startDate={autoScheduleDate}
+          defaultDays={users.filter(user => user.is_active).length}
+          error={autoScheduleError}
+          onClose={() => {
+            setAutoScheduleError(null);
+            setAutoScheduleDate(null);
+          }}
+          onConfirm={handleAutoSchedule}
         />
       ) : null}
     </div>

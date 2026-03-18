@@ -14,6 +14,7 @@ interface CalendarCellProps {
   isToday: boolean;
   isSelected?: boolean;
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onContextMenu?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -31,6 +32,7 @@ export function CalendarCell({
   isToday,
   isSelected = false,
   onClick,
+  onContextMenu,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -52,6 +54,7 @@ export function CalendarCell({
       data-calendar-date={format(date, 'yyyy-MM-dd')}
       data-selected={isSelected ? 'true' : 'false'}
       onClick={onClick}
+      onContextMenu={canManage ? onContextMenu : undefined}
       draggable={canManage && !!schedule}
       onDragStart={canManage ? onDragStart : undefined}
       onDragEnd={canManage ? onDragEnd : undefined}

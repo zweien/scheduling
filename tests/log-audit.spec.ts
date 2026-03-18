@@ -23,6 +23,11 @@ function resetData() {
   db.prepare(`
     INSERT INTO accounts (username, display_name, password_hash, role, is_active)
     VALUES (?, ?, ?, ?, 1)
+    ON CONFLICT(username) DO UPDATE SET
+      display_name = excluded.display_name,
+      password_hash = excluded.password_hash,
+      role = excluded.role,
+      is_active = excluded.is_active
   `).run(userUsername, '审计普通用户', hashPassword(userPassword), 'user');
 }
 
@@ -56,7 +61,7 @@ test('Web 日志记录操作用户、来源与 IP，并支持搜索', async ({ p
   await page.getByPlaceholder('搜索操作类型、对象、用户或 IP').fill('admin');
   await expect(page.locator('div.font-medium').filter({ hasText: /^admin$/ }).first()).toBeVisible();
   await expect(page.locator('span').filter({ hasText: 'WEB' }).first()).toBeVisible();
-  await expect(page.getByText(/127\.0\.0\.1|::1|::ffff:127\.0\.0\.1/)).toBeVisible();
+  await expect(page.getByText(/127\.0\.0\.1|::1|::ffff:127\.0\.0\.1/).first()).toBeVisible();
 });
 
 test('API 写操作可记录来源并支持筛选导出', async ({ page }) => {
@@ -180,4 +185,36 @@ test('日志页面显示换班理由', async ({ page }) => {
   await page.goto(`${baseUrl}/dashboard/logs`);
 
   await expect(page.getByText('临时互换白夜班安排说明')).toBeVisible();
+});
+
+test('日志页面显示自动排班动作', async ({ page }) => {
+  db.prepare(`
+    INSERT INTO logs (
+      action,
+      target,
+      old_value,
+      new_value,
+      reason,
+      operator_username,
+      operator_role,
+      ip_address,
+      source
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'auto_schedule_from_date',
+    '起始日期: 2026-03-17',
+    null,
+    '已自动安排 2 天（2026-03-17 ~ 2026-03-18）',
+    null,
+    adminUsername,
+    'admin',
+    '127.0.0.1',
+    'web'
+  );
+
+  await login(page, adminUsername, adminPassword);
+  await page.goto(`${baseUrl}/dashboard/logs`);
+
+  await expect(page.locator('span').filter({ hasText: '自动排班' }).first()).toBeVisible();
+  await expect(page.getByText('起始日期: 2026-03-17')).toBeVisible();
 });

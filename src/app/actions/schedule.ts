@@ -1,7 +1,7 @@
 // src/app/actions/schedule.ts
 'use server';
 
-import { generateSchedule as doGenerateSchedule } from '@/lib/schedule';
+import { generateSchedule as doGenerateSchedule, generateScheduleFromDate } from '@/lib/schedule';
 import {
   batchDeleteSchedules as doBatchDeleteSchedules,
   deleteSchedule,
@@ -18,7 +18,7 @@ import { moveScheduleWithReason, swapSchedulesWithReason } from '@/lib/schedule-
 import { revalidatePath } from 'next/cache';
 import { buildScheduleImportTemplateWorkbook } from '@/lib/imports/schedule-import-template';
 import { importScheduleRows, previewScheduleImport } from '@/lib/imports/schedule-import';
-import type { ScheduleImportStrategy } from '@/types';
+import type { AutoScheduleStartMode, ScheduleImportStrategy } from '@/types';
 import type { ScheduleImportPreview } from '@/types';
 import type { ScheduleImportSuccessResult } from '@/lib/imports/schedule-import';
 
@@ -47,6 +47,29 @@ export async function generateScheduleAction(startDate: string, endDate?: string
       username: account.username,
       role: account.role,
     });
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function autoScheduleFromDateAction(startDate: string, days: number, startMode: AutoScheduleStartMode) {
+  const account = await requireAdmin();
+
+  try {
+    if (getScheduleByDate(startDate)) {
+      return { success: false, error: '起始日期已有排班' };
+    }
+
+    const result = generateScheduleFromDate(startDate, days, startMode);
+    await addWebLog(
+      'auto_schedule_from_date',
+      `起始日期: ${startDate}`,
+      undefined,
+      `已自动安排 ${result.days} 天（${result.startDate} ~ ${result.endDate}）`,
+      { username: account.username, role: account.role }
+    );
     revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
