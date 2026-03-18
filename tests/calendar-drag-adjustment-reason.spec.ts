@@ -98,8 +98,15 @@ test('填写理由确认交换后显示原始与当前值班人员', async ({ pa
   await expect
     .poll(() => db.prepare('SELECT user_id FROM schedules WHERE date = ?').get('2026-03-16')?.user_id)
     .toBe(2);
-  await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('原：张三');
-  await expect(page.locator('[data-calendar-date="2026-03-16"]')).toContainText('现：李四');
+  const adjustedCell = page.locator('[data-calendar-date="2026-03-16"]');
+  await expect(adjustedCell).toContainText('原：张三');
+  await expect(adjustedCell).toContainText('现：李四');
+
+  await page.getByRole('button', { name: '切换为头像' }).click();
+
+  await expect(adjustedCell).not.toContainText('原：');
+  await expect(adjustedCell).not.toContainText('现：');
+  await expect(adjustedCell.locator('[data-adjusted-display="avatar"]')).toBeVisible();
 });
 
 test('目标日期和值班人员相同时不弹出交换确认框', async ({ page }) => {
