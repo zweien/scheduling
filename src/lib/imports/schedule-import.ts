@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
-import type { ScheduleImportConflict, ScheduleImportIssue, ScheduleImportPreview, ScheduleImportRow, ScheduleImportStrategy } from '../../types';
-import { SCHEDULE_TEMPLATE_HEADERS } from './schedule-import-template';
+import type { ScheduleImportConflict, ScheduleImportIssue, ScheduleImportPreview, ScheduleImportRow, ScheduleImportStrategy, ScheduleImportTemplateType } from '../../types';
+import { parseCalendarScheduleImport } from './calendar-schedule-import.js';
 
 type ImportUser = { id: number; name: string };
 type ExistingSchedule = { date: string; user_id: number; is_manual?: boolean; user?: { id: number; name: string } };
@@ -32,6 +32,13 @@ export type ScheduleImportFailureResult = {
 };
 
 export type ScheduleImportResult = ScheduleImportSuccessResult | ScheduleImportFailureResult;
+
+const SCHEDULE_TEMPLATE_HEADERS = [
+  '日期（必填，YYYY-MM-DD）',
+  '值班人员姓名（必填）',
+  '是否手动调整（必填，是/否）',
+  '备注（选填）',
+] as const;
 
 const VALID_MANUAL_VALUES = new Map<string, boolean>([
   ['是', true],
@@ -71,10 +78,25 @@ function normalizeDate(value: string) {
   return date.toISOString().slice(0, 10) === value ? value : null;
 }
 
-export async function previewScheduleImport(
+async function parseImportRows(
   fileBuffer: Buffer,
-  dependencies: Pick<ScheduleImportDependencies, 'getUserByName' | 'getSchedulesByDates'>
-): Promise<ScheduleImportPreview> {
+  templateType: ScheduleImportTemplateType
+): Promise<{
+  totalRows: number;
+  rows: Array<Pick<ScheduleImportRow, 'date' | 'userName' | 'isManual' | 'notes'>>;
+  issues: ScheduleImportIssue[];
+  duplicateRows: number;
+}> {
+  if (templateType === 'calendar') {
+    const result = await parseCalendarScheduleImport(fileBuffer);
+    return {
+      totalRows: result.rows.length + result.issues.length,
+      rows: result.rows,
+      issues: result.issues,
+      duplicateRows: result.issues.filter(issue => issue.message.includes('重复日期')).length,
+    };
+  }
+
   const workbook = new ExcelJS.Workbook();
 
   try {
@@ -82,14 +104,9 @@ export async function previewScheduleImport(
   } catch {
     return {
       totalRows: 0,
-      validRows: 0,
-      invalidRows: 0,
-      duplicateRows: 0,
-      conflictRows: 0,
-      cleanRows: 0,
       rows: [],
       issues: [{ row: 1, field: '文件', message: '无法解析导入文件，请确认使用模板生成的 .xlsx 文件' }],
-      conflicts: [],
+      duplicateRows: 0,
     };
   }
 
@@ -97,14 +114,9 @@ export async function previewScheduleImport(
   if (!sheet) {
     return {
       totalRows: 0,
-      validRows: 0,
-      invalidRows: 0,
-      duplicateRows: 0,
-      conflictRows: 0,
-      cleanRows: 0,
       rows: [],
       issues: [{ row: 1, field: '文件', message: '未找到工作表' }],
-      conflicts: [],
+      duplicateRows: 0,
     };
   }
 
@@ -115,20 +127,14 @@ export async function previewScheduleImport(
   if (!validateHeaders(headers)) {
     return {
       totalRows: 0,
-      validRows: 0,
-      invalidRows: 0,
-      duplicateRows: 0,
-      conflictRows: 0,
-      cleanRows: 0,
       rows: [],
       issues: [{ row: 1, field: '表头', message: '模板表头不匹配，请先下载最新模板' }],
-      conflicts: [],
+      duplicateRows: 0,
     };
   }
 
-  const rows: ScheduleImportRow[] = [];
+  const rows: Array<Pick<ScheduleImportRow, 'date' | 'userName' | 'isManual' | 'notes'>> = [];
   const issues: ScheduleImportIssue[] = [];
-  const rowMetas: Array<{ rowNumber: number; date: string; userName: string }> = [];
   const seenDates = new Set<string>();
   let duplicateRows = 0;
   let totalRows = 0;
@@ -173,12 +179,7 @@ export async function previewScheduleImport(
       }
     }
 
-    const user = userName ? dependencies.getUserByName(userName) : undefined;
-    if (userName && !user) {
-      rowIssues.push({ row: rowNumber, field: '值班人员姓名', message: '系统中不存在该值班人员' });
-    }
-
-    if (rowIssues.length > 0 || !normalizedDate || !user) {
+    if (rowIssues.length > 0 || !normalizedDate) {
       issues.push(...rowIssues);
       continue;
     }
@@ -186,11 +187,42 @@ export async function previewScheduleImport(
     rows.push({
       date: normalizedDate,
       userName,
-      userId: user.id,
       isManual: VALID_MANUAL_VALUES.get(isManualValue) ?? false,
       notes,
     });
-    rowMetas.push({ rowNumber, date: normalizedDate, userName });
+  }
+
+  return { totalRows, rows, issues, duplicateRows };
+}
+
+export async function previewScheduleImport(
+  fileBuffer: Buffer,
+  dependencies: Pick<ScheduleImportDependencies, 'getUserByName' | 'getSchedulesByDates'>,
+  templateType: ScheduleImportTemplateType = 'standard'
+): Promise<ScheduleImportPreview> {
+  const parsed = await parseImportRows(fileBuffer, templateType);
+  const rows: ScheduleImportRow[] = [];
+  const issues: ScheduleImportIssue[] = [...parsed.issues];
+  const rowMetas: Array<{ rowNumber: number; date: string; userName: string }> = [];
+  let rowNumber = templateType === 'calendar' ? 1 : 3;
+
+  for (const row of parsed.rows) {
+    const user = row.userName ? dependencies.getUserByName(row.userName) : undefined;
+    if (!user) {
+      issues.push({ row: rowNumber, field: '值班人员姓名', message: '系统中不存在该值班人员' });
+      rowNumber += 1;
+      continue;
+    }
+
+    rows.push({
+      date: row.date,
+      userName: row.userName,
+      userId: user.id,
+      isManual: row.isManual,
+      notes: row.notes,
+    });
+    rowMetas.push({ rowNumber, date: row.date, userName: row.userName });
+    rowNumber += 1;
   }
 
   const existingSchedules = dependencies.getSchedulesByDates(rows.map(row => row.date));
@@ -212,10 +244,10 @@ export async function previewScheduleImport(
   }
 
   return {
-    totalRows,
+    totalRows: parsed.totalRows,
     validRows: rows.length,
     invalidRows: issues.length,
-    duplicateRows,
+    duplicateRows: parsed.duplicateRows,
     conflictRows: conflicts.length,
     cleanRows: rows.length - conflicts.length,
     rows,
@@ -227,9 +259,10 @@ export async function previewScheduleImport(
 export async function importScheduleRows(
   fileBuffer: Buffer,
   strategy: ScheduleImportStrategy,
-  dependencies: ScheduleImportDependencies
+  dependencies: ScheduleImportDependencies,
+  templateType: ScheduleImportTemplateType = 'standard'
 ): Promise<ScheduleImportResult> {
-  const preview = await previewScheduleImport(fileBuffer, dependencies);
+  const preview = await previewScheduleImport(fileBuffer, dependencies, templateType);
 
   if (preview.issues.length > 0) {
     return {

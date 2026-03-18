@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { ScheduleImportPreview, ScheduleImportStrategy } from '@/types';
+import type { ScheduleImportPreview, ScheduleImportStrategy, ScheduleImportTemplateType } from '@/types';
 
 interface ScheduleImportDialogProps {
   open: boolean;
@@ -20,7 +20,15 @@ const STRATEGY_OPTIONS: Array<{ value: ScheduleImportStrategy; label: string; de
   { value: 'mark_conflicts', label: '仅标记冲突，不执行导入', description: '只生成冲突清单，不写入数据库。' },
 ];
 
+const TEMPLATE_OPTIONS: Array<{ value: ScheduleImportTemplateType; label: string; description: string }> = [
+  { value: 'standard', label: '标准模板', description: '适用于按行填写 日期、值班员、手动调整、备注 的标准模板。' },
+  { value: 'calendar', label: '月历模板', description: '适用于每周两行：上行日期、下行值班员的单月月历模板。' },
+];
+
 export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImportDialogProps) {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [templateType, setTemplateType] = useState<ScheduleImportTemplateType>('standard');
+  const [calendarTemplateMonth, setCalendarTemplateMonth] = useState(currentMonth);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ScheduleImportPreview | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -30,6 +38,8 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
   const [importing, setImporting] = useState(false);
 
   function resetState() {
+    setTemplateType('standard');
+    setCalendarTemplateMonth(currentMonth);
     setSelectedFile(null);
     setPreview(null);
     setImportError(null);
@@ -65,7 +75,10 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
   }
 
   async function handleDownloadTemplate() {
-    const file = await downloadScheduleTemplateAction();
+    const file = await downloadScheduleTemplateAction(
+      templateType,
+      templateType === 'calendar' ? calendarTemplateMonth : undefined
+    );
     downloadBinaryFile(file.content, file.fileName, file.mimeType);
   }
 
@@ -80,7 +93,7 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
     setImportSummary(null);
 
     const base64 = await fileToBase64(selectedFile);
-    const result = await previewScheduleImportAction(base64);
+    const result = await previewScheduleImportAction(base64, templateType);
     setPreview(result);
     setValidating(false);
 
@@ -107,7 +120,7 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
     setImportError(null);
 
     const base64 = await fileToBase64(selectedFile);
-    const result = await importScheduleAction(base64, conflictStrategy);
+    const result = await importScheduleAction(base64, conflictStrategy, templateType);
     setImporting(false);
 
     if (!result.success) {
@@ -135,7 +148,7 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
         handleClose();
       }
     }}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>导入排班</DialogTitle>
           <DialogDescription>
@@ -144,6 +157,48 @@ export function ScheduleImportDialog({ open, onClose, onImported }: ScheduleImpo
         </DialogHeader>
 
         <div className="space-y-5">
+          <div className="space-y-3">
+            <Label>模板类型</Label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {TEMPLATE_OPTIONS.map(option => (
+                <label key={option.value} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-3 text-sm">
+                  <input
+                    type="radio"
+                    name="schedule-import-template-type"
+                    checked={templateType === option.value}
+                    onChange={() => {
+                      setTemplateType(option.value);
+                      setPreview(null);
+                      setImportError(null);
+                      setImportSummary(null);
+                    }}
+                    aria-label={option.label}
+                    className="mt-1"
+                  />
+                  <span className="space-y-1">
+                    <span className="block font-medium">{option.label}</span>
+                    <span className="block text-muted-foreground">{option.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {templateType === 'calendar' ? (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+                <div>每周两行：上行日期，下行值班员。首周和末周可以不是完整 7 列，日期支持 Excel 序列号。</div>
+                <div className="space-y-2">
+                  <Label htmlFor="calendar-template-month">模板月份</Label>
+                  <Input
+                    id="calendar-template-month"
+                    type="month"
+                    value={calendarTemplateMonth}
+                    onChange={event => setCalendarTemplateMonth(event.target.value)}
+                    className="max-w-xs bg-background"
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-[auto_1fr_auto_auto] lg:items-end">
             <div>
               <Button variant="outline" onClick={() => void handleDownloadTemplate()}>
