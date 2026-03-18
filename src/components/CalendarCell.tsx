@@ -59,7 +59,7 @@ export function CalendarCell({
       onDrop={canManage ? onDrop : undefined}
       className={cn(
         'relative rounded border p-1 transition-all duration-150 sm:min-h-[80px] sm:p-2',
-        displayMode === 'name' ? 'min-h-[60px]' : 'min-h-[50px]',
+        displayMode === 'name' ? 'min-h-[60px] sm:min-h-[96px]' : 'min-h-[50px]',
         canManage ? 'cursor-pointer' : 'cursor-default',
         schedule ? 'group' : '',
         isToday ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow' : 'border-border',
@@ -113,19 +113,19 @@ export function CalendarCell({
                 data-adjusted-display="name"
                 className="w-full space-y-0.5 px-0.5 text-[9px] leading-tight sm:space-y-1 sm:px-2 sm:text-xs"
               >
-                <div className="rounded bg-muted px-1 py-0.5 text-muted-foreground sm:px-1.5 sm:py-1 sm:truncate">
+                <div className="rounded bg-muted px-1 py-0.5 text-muted-foreground sm:px-1.5 sm:py-1">
                   <span className="sm:hidden">原 </span>
-                  <span className="break-all whitespace-normal sm:whitespace-nowrap">
+                  <span className="break-all whitespace-normal">
                     <span className="hidden sm:inline">原：</span>
                     {schedule.original_user?.name}
                   </span>
                 </div>
                 <div
-                  className="rounded px-1 py-0.5 text-white sm:px-1.5 sm:py-1 sm:truncate"
+                  className="rounded px-1 py-0.5 text-white sm:px-1.5 sm:py-1"
                   style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
                 >
                   <span className="sm:hidden">现 </span>
-                  <span className="break-all whitespace-normal sm:whitespace-nowrap">
+                  <span className="break-all whitespace-normal">
                     <span className="hidden sm:inline">现：</span>
                     {schedule.user.name}
                   </span>
@@ -141,7 +141,7 @@ export function CalendarCell({
             </div>
           ) : (
             <div
-              className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm sm:truncate sm:whitespace-nowrap"
+              className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm"
               style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
             >
               {schedule.user.name}
