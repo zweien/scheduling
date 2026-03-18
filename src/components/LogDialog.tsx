@@ -36,6 +36,7 @@ const actionConfig: Record<string, { label: string; badgeClass: string }> = {
   generate_schedule: { label: '生成排班', badgeClass: 'bg-violet-100 text-violet-800' },
   auto_schedule_from_date: { label: '自动排班', badgeClass: 'bg-violet-100 text-violet-800' },
   replace_schedule: { label: '替换值班', badgeClass: 'bg-cyan-100 text-cyan-800' },
+  batch_replace_schedules: { label: '批量编辑排班', badgeClass: 'bg-cyan-100 text-cyan-800' },
   batch_delete_schedules: { label: '批量删除排班', badgeClass: 'bg-rose-100 text-rose-800' },
   swap_schedule: { label: '交换值班', badgeClass: 'bg-fuchsia-100 text-fuchsia-800' },
   set_password: { label: '修改密码', badgeClass: 'bg-slate-100 text-slate-800' },
