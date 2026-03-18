@@ -7,15 +7,17 @@ import { zhCN } from 'date-fns/locale';
 import { getSchedules, replaceSchedule } from '@/app/actions/schedule';
 import { getAssignableUsers } from '@/app/actions/users';
 import type { ScheduleWithUser, User } from '@/types';
+import { EmptyScheduleState } from './EmptyScheduleState';
 import { UserSelectDialog } from './UserSelectDialog';
 import { Card } from '@/components/ui/card';
 
 interface ListViewProps {
   refreshKey: number;
   canManage: boolean;
+  onRequestGenerate?: () => void;
 }
 
-export function ListView({ refreshKey, canManage }: ListViewProps) {
+export function ListView({ refreshKey, canManage, onRequestGenerate }: ListViewProps) {
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -59,10 +61,10 @@ export function ListView({ refreshKey, canManage }: ListViewProps) {
       <h2 className="text-lg font-semibold">值班列表</h2>
 
       {schedules.length === 0 ? (
-        <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
-          <p className="text-sm">暂无排班数据</p>
-          <p className="text-xs mt-1">点击左侧生成排班开始</p>
-        </div>
+        <EmptyScheduleState
+          canManage={canManage}
+          onRequestGenerate={onRequestGenerate}
+        />
       ) : (
         <Card className="divide-y">
           {schedules.map(schedule => (

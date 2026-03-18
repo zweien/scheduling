@@ -8,6 +8,7 @@ import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { CalendarContextMenu, type CalendarContextMenuAction } from './CalendarContextMenu';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
+import { EmptyScheduleState } from './EmptyScheduleState';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { SelectedSchedulesActionBar } from './SelectedSchedulesActionBar';
 import { UserSelectDialog } from './UserSelectDialog';
@@ -21,6 +22,7 @@ import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-
 interface CalendarViewProps {
   refreshKey: number;
   canManage: boolean;
+  onRequestGenerate?: () => void;
 }
 
 type DisplayMode = 'avatar' | 'name';
@@ -139,7 +141,7 @@ function MonthCalendar({
   );
 }
 
-export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
+export function CalendarView({ refreshKey, canManage, onRequestGenerate }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -612,6 +614,9 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
   const selectedCount = selectedDates.size;
   const hasCurrentMonthSchedules = currentMonthSchedules.length > 0;
   const hasSelectedSchedules = selectedCount > 0;
+  const hasVisibleSchedules = isMobileSingleMonthLayout
+    ? currentMonthSchedules.length > 0
+    : currentMonthSchedules.length > 0 || nextMonthSchedules.length > 0;
 
   return (
     <div className="space-y-4">
@@ -675,27 +680,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
         </div>
       </div>
 
-      <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
-        <MonthCalendar
-          month={currentMonth}
-          schedules={currentMonthSchedules}
-          users={users}
-          today={today}
-          displayMode={displayMode}
-          dragDate={dragDate}
-          selectedDates={selectedDates}
-          onCellClick={handleCellClick}
-          onCellContextMenu={handleCellContextMenu}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          canManage={canManage}
-        />
-        {isMobileSingleMonthLayout ? null : (
+      {hasVisibleSchedules ? (
+        <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
           <MonthCalendar
-            month={nextMonth}
-            schedules={nextMonthSchedules}
+            month={currentMonth}
+            schedules={currentMonthSchedules}
             users={users}
             today={today}
             displayMode={displayMode}
@@ -709,8 +698,31 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
             onDrop={handleDrop}
             canManage={canManage}
           />
-        )}
-      </div>
+          {isMobileSingleMonthLayout ? null : (
+            <MonthCalendar
+              month={nextMonth}
+              schedules={nextMonthSchedules}
+              users={users}
+              today={today}
+              displayMode={displayMode}
+              dragDate={dragDate}
+              selectedDates={selectedDates}
+              onCellClick={handleCellClick}
+              onCellContextMenu={handleCellContextMenu}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              canManage={canManage}
+            />
+          )}
+        </div>
+      ) : (
+        <EmptyScheduleState
+          canManage={canManage}
+          onRequestGenerate={onRequestGenerate}
+        />
+      )}
 
       {canManage ? (
         <UserSelectDialog
