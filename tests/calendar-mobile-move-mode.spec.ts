@@ -24,14 +24,25 @@ function ensureUsersSchema() {
   addColumnIfMissing('users', 'notes', "TEXT DEFAULT ''");
 }
 
+function ensureSchedulesSchema() {
+  addColumnIfMissing('schedules', 'original_user_id', 'INTEGER');
+  addColumnIfMissing('schedules', 'adjust_reason', 'TEXT');
+}
+
 function seedCalendarData() {
   ensureUsersSchema();
+  ensureSchedulesSchema();
   db.prepare('DELETE FROM schedules').run();
   db.prepare('DELETE FROM users').run();
   db.prepare('DELETE FROM logs').run();
   db.prepare('UPDATE accounts SET password_hash = ? WHERE username = ?').run(hashPassword(password), username);
 
-  db.prepare("INSERT INTO users (id, name, sort_order, is_active, organization, category, notes) VALUES (1, '张三', 1, 1, 'W', 'W', '')").run();
+  db.prepare(`
+    INSERT INTO users (id, name, sort_order, is_active, organization, category, notes)
+    VALUES
+      (1, '张三', 1, 1, 'W', 'W', ''),
+      (2, '李四', 2, 1, 'W', 'W', '')
+  `).run();
   db.prepare('INSERT INTO schedules (date, user_id, is_manual) VALUES (?, ?, 1)').run('2026-03-16', 1);
 }
 
@@ -62,4 +73,22 @@ test('月历视图可通过移动模式把排班移动到空日期', async ({ pa
   await expect(page.getByText(/正在移动 2026-03-16 的排班/)).toHaveCount(0);
   await expect(page.locator('[data-calendar-date="2026-03-17"]')).toContainText('张');
   await expect(page.locator('[data-calendar-date="2026-03-16"]')).not.toContainText('张');
+});
+
+test('移动端姓名模式下换班日期使用紧凑文本布局', async ({ page }) => {
+  db.prepare(`
+    UPDATE schedules
+    SET user_id = ?, original_user_id = ?, adjust_reason = ?, is_manual = 1
+    WHERE date = ?
+  `).run(2, 1, '临时换班', '2026-03-16');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page);
+
+  const adjustedCell = page.locator('[data-calendar-date="2026-03-16"]');
+
+  await page.getByRole('button', { name: '切换为姓名' }).click();
+  await expect(adjustedCell).toContainText('原：');
+  await expect(adjustedCell).toContainText('现：');
+  await expect(adjustedCell.locator('[data-adjusted-display="name"]')).toBeVisible();
 });

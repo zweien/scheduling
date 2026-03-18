@@ -86,17 +86,43 @@ export function CalendarCell({
       {schedule && (
         <div className="flex h-full items-center justify-center pt-4">
           {showOriginalAndCurrent ? (
-            <div className="w-full space-y-1 px-1 text-[10px] leading-tight sm:px-2 sm:text-xs">
-              <div className="truncate rounded bg-muted px-1.5 py-1 text-muted-foreground">
-                原：{schedule.original_user?.name}
-              </div>
+            displayMode === 'avatar' ? (
               <div
-                className="truncate rounded px-1.5 py-1 text-white"
-                style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                data-adjusted-display="avatar"
+                className="flex w-full flex-col items-center justify-center gap-1 px-1 sm:px-2"
               >
-                现：{schedule.user.name}
+                <div className="flex items-center gap-1 rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground sm:px-1.5 sm:text-[10px]">
+                  <span className="shrink-0 font-medium">原</span>
+                  <div
+                    className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-medium text-white sm:h-5 sm:w-5 sm:text-[10px]"
+                    style={{ backgroundColor: getAvatarColor(schedule.original_user?.name ?? '') }}
+                  >
+                    {getAvatarInitial(schedule.original_user?.name ?? '')}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 rounded px-1 py-0.5 text-[9px] text-white sm:px-1.5 sm:text-[10px]" style={{ backgroundColor: getAvatarColor(schedule.user.name) }}>
+                  <span className="shrink-0 font-medium">现</span>
+                  <div className="flex h-4 w-4 items-center justify-center rounded-full border border-white/30 text-[9px] font-medium text-white sm:h-5 sm:w-5 sm:text-[10px]">
+                    {getAvatarInitial(schedule.user.name)}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                data-adjusted-display="name"
+                className="w-full space-y-1 px-1 text-[10px] leading-tight sm:px-2 sm:text-xs"
+              >
+                <div className="truncate rounded bg-muted px-1 py-0.5 text-muted-foreground sm:px-1.5 sm:py-1">
+                  原：{schedule.original_user?.name}
+                </div>
+                <div
+                  className="truncate rounded px-1 py-0.5 text-white sm:px-1.5 sm:py-1"
+                  style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                >
+                  现：{schedule.user.name}
+                </div>
+              </div>
+            )
           ) : displayMode === 'avatar' ? (
             <div
               className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm"
