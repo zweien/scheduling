@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createAccountAction, getAccounts, updateAccountActiveAction, updateAccountRoleAction } from '@/app/actions/accounts';
+import { AdminAccountPasswordDialog } from '@/components/AdminAccountPasswordDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,7 @@ export function AccountManagement() {
   const [role, setRole] = useState<AccountRole>('user');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<Account | null>(null);
 
   async function loadAccounts() {
     const items = await getAccounts();
@@ -139,11 +141,25 @@ export function AccountManagement() {
                 >
                   {account.is_active ? '停用账号' : '启用账号'}
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPasswordTarget(account)}
+                >
+                  修改密码
+                </Button>
               </div>
             </div>
           </div>
         ))}
       </section>
+
+      <AdminAccountPasswordDialog
+        account={passwordTarget}
+        open={passwordTarget !== null}
+        onClose={() => setPasswordTarget(null)}
+      />
     </div>
   );
 }

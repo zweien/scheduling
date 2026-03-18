@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { countAdminAccounts, createAccount, listAccounts, updateAccountActive, updateAccountRole } from '@/lib/accounts';
+import { countAdminAccounts, createAccount, getAccountById, listAccounts, updateAccountActive, updateAccountPassword, updateAccountRole } from '@/lib/accounts';
 import { requireAdmin } from '@/lib/auth';
 import { addWebLog } from '@/lib/logs';
 import type { AccountRole } from '@/types';
@@ -87,4 +87,32 @@ export async function updateAccountActiveAction(accountId: number, isActive: boo
   });
   revalidatePath('/dashboard/users');
   return { success: true, account: updated };
+}
+
+export async function adminUpdateAccountPasswordAction(accountId: number, newPassword: string) {
+  const current = await requireAdmin();
+
+  if (!newPassword.trim()) {
+    return { success: false, error: '请填写新密码' };
+  }
+
+  if (newPassword.length < 6) {
+    return { success: false, error: '密码长度不能少于6位' };
+  }
+
+  const targetAccount = getAccountById(accountId);
+  if (!targetAccount) {
+    return { success: false, error: '账号不存在' };
+  }
+
+  updateAccountPassword(accountId, newPassword);
+  await addWebLog(
+    'set_password',
+    `账号: ${targetAccount.username}`,
+    '******',
+    '******',
+    { username: current.username, role: current.role }
+  );
+  revalidatePath('/dashboard/accounts');
+  return { success: true };
 }
