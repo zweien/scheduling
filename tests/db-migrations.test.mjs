@@ -109,10 +109,12 @@ test('seedDatabase creates default config and admin account idempotently', async
 
   const password = database.prepare('SELECT value FROM config WHERE key = ?').get('password');
   const registrationEnabled = database.prepare('SELECT value FROM config WHERE key = ?').get('registration_enabled');
+  const defaultScheduleDays = database.prepare('SELECT value FROM config WHERE key = ?').get('default_schedule_days');
   const adminAccounts = database.prepare('SELECT username, role, is_active FROM accounts WHERE username = ?').all('admin');
 
   assert.equal(password.value, '123456');
   assert.equal(registrationEnabled.value, 'false');
+  assert.equal(defaultScheduleDays.value, '21');
   assert.equal(adminAccounts.length, 1);
   assert.deepEqual(adminAccounts[0], { username: 'admin', role: 'admin', is_active: 1 });
 });

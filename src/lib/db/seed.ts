@@ -19,6 +19,7 @@ export function ensureDefaultAdminAccount(database: Database.Database, initialPa
 export function seedDatabase(database: Database.Database, dependencies: SeedDependencies = {}) {
   ensureConfigValue(database, 'password', '123456');
   ensureConfigValue(database, 'registration_enabled', 'false');
+  ensureConfigValue(database, 'default_schedule_days', '21');
 
   const legacyPassword = database.prepare('SELECT value FROM config WHERE key = ?').get('password') as { value: string } | undefined;
   ensureDefaultAdminAccount(database, legacyPassword?.value || '123456', dependencies);

@@ -1,14 +1,16 @@
 import { getCurrentAccount, requireAuth } from '@/lib/auth';
-import { isRegistrationEnabled } from '@/lib/config';
+import { getDefaultScheduleDays, isRegistrationEnabled } from '@/lib/config';
 import { Header } from '@/components/Header';
 import { TokenManager } from '@/components/TokenDialog';
 import { PasswordForm } from '@/components/PasswordDialog';
 import { RegistrationSettings } from '@/components/RegistrationSettings';
+import { DefaultScheduleDaysSettings } from '@/components/DefaultScheduleDaysSettings';
 
 export default async function SettingsPage() {
   await requireAuth();
   const account = await getCurrentAccount();
   const isAdmin = account?.role === 'admin';
+  const defaultScheduleDays = getDefaultScheduleDays();
 
   return (
     <div className="h-screen flex flex-col">
@@ -30,6 +32,16 @@ export default async function SettingsPage() {
                 <p className="text-sm text-muted-foreground">控制登录页是否开放新用户注册入口。</p>
               </div>
               <RegistrationSettings initialEnabled={isRegistrationEnabled()} />
+            </section>
+          ) : null}
+
+          {isAdmin ? (
+            <section className="rounded-2xl border bg-card p-4 sm:p-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">排班设置</h2>
+                <p className="text-sm text-muted-foreground">调整未填写结束日期时的默认排班天数。</p>
+              </div>
+              <DefaultScheduleDaysSettings initialDays={defaultScheduleDays} />
             </section>
           ) : null}
 

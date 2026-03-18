@@ -152,6 +152,7 @@ export type Action =
   | 'toggle_account_active'
   | 'change_account_role'
   | 'toggle_registration'
+  | 'update_default_schedule_days'
   | 'import_users'
   | 'import_schedules'
   | 'create_token'

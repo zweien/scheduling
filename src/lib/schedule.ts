@@ -1,9 +1,11 @@
 // src/lib/schedule.ts
 import { getActiveUsers } from './users';
 import { setSchedule, getSchedulesByDateRange } from './schedules';
-import { format, eachDayOfInterval, parseISO, addDays } from 'date-fns';
+import { format, eachDayOfInterval, parseISO } from 'date-fns';
 import { generateScheduleFromDate as doGenerateScheduleFromDate } from './auto-schedule';
 import type { AutoScheduleStartMode } from '@/types';
+import { getDefaultScheduleDays } from './config';
+import { resolveScheduleEndDate } from './default-schedule-days';
 
 const defaultDeps = {
   getActiveUsers,
@@ -18,11 +20,11 @@ export function generateSchedule(startDate: string, endDate?: string) {
   }
 
   const start = parseISO(startDate);
-  // 如果没有结束日期，只排一轮（参与人数 = 天数）
-  const end = endDate ? parseISO(endDate) : addDays(start, users.length - 1);
+  const resolvedEndDate = resolveScheduleEndDate(startDate, endDate, getDefaultScheduleDays());
+  const end = endDate ? parseISO(endDate) : parseISO(resolvedEndDate);
   const days = eachDayOfInterval({ start, end });
 
-  const endDateStr = endDate || format(end, 'yyyy-MM-dd');
+  const endDateStr = resolvedEndDate;
 
   // 获取已有手动调整的日期
   const existingSchedules = defaultDeps.getSchedulesByDateRange(startDate, endDateStr);
