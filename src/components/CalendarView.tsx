@@ -187,6 +187,11 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
 
     const mediaQuery = window.matchMedia('(max-width: 639px)');
     const syncLayout = (matches: boolean) => {
+      if (matches) {
+        setSelectedDates(current => new Set(
+          [...current].filter(date => isSameMonth(new Date(date), currentMonth))
+        ));
+      }
       setIsMobileSingleMonthLayout(matches);
     };
 
@@ -201,7 +206,7 @@ export function CalendarView({ refreshKey, canManage }: CalendarViewProps) {
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
     };
-  }, []);
+  }, [currentMonth]);
 
   // 筛选本月和下月的排班
   const currentMonthSchedules = schedules.filter(s => {
