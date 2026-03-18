@@ -54,8 +54,8 @@ export async function buildCalendarScheduleImportTemplateWorkbook(monthKey?: str
 
   let cursor = calendarStart;
   while (cursor <= monthEnd) {
-    const dateRow = ['日  期'];
-    const userRow = ['值班员'];
+    const dateRow: Array<string | number> = ['日  期'];
+    const userRow: string[] = ['值班员'];
 
     for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
       const currentDate = addDays(cursor, dayOffset);

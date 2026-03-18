@@ -133,7 +133,7 @@ async function parseImportRows(
     };
   }
 
-  const rows: Array<Pick<ScheduleImportRow, 'date' | 'userName' | 'isManual' | 'notes'>> = [];
+  const rows: Array<Pick<ScheduleImportRow, 'date' | 'userName' | 'isManual' | 'notes'> & { rowNumber: number }> = [];
   const issues: ScheduleImportIssue[] = [];
   const seenDates = new Set<string>();
   let duplicateRows = 0;
