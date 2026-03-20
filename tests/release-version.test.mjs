@@ -6,7 +6,7 @@ test('根包版本与锁文件版本保持一致', () => {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const packageLock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
 
-  assert.equal(packageJson.version, '1.4.0');
-  assert.equal(packageLock.version, '1.4.0');
-  assert.equal(packageLock.packages[''].version, '1.4.0');
+  assert.equal(packageJson.version, '1.4.1');
+  assert.equal(packageLock.version, '1.4.1');
+  assert.equal(packageLock.packages[''].version, '1.4.1');
 });
