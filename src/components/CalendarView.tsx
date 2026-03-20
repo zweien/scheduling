@@ -145,6 +145,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
@@ -166,6 +167,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const nextMonth = addMonths(currentMonth, 1);
 
   const loadData = useCallback(async () => {
+    setIsLoading(true);
     // 加载本月和下月的数据
     const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
     const end = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
@@ -179,6 +181,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       return new Set([...current].filter(date => availableDates.has(date)));
     });
     setUsers(userData);
+    setIsLoading(false);
   }, [currentMonth]);
 
   useEffect(() => {
@@ -680,7 +683,21 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
         </div>
       </div>
 
-      {!hasVisibleSchedules ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="text-center text-xs font-medium text-muted-foreground py-1">
+                <div className="h-4 w-4 mx-auto bg-muted animate-pulse rounded" />
+              </div>
+            ))}
+            {Array.from({ length: 42 }).map((_, i) => (
+              <div key={i} className="min-h-[50px] sm:min-h-[80px] rounded border border-border bg-muted/30 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      ) : !hasVisibleSchedules ? (
         <EmptyScheduleState
           canManage={canManage}
           onRequestGenerate={onRequestGenerate}
