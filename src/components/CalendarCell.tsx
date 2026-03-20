@@ -24,6 +24,8 @@ interface CalendarCellProps {
   animationDelay?: number;
   displayMode?: 'avatar' | 'name';
   canManage?: boolean;
+  isHoliday?: boolean;
+  holidayName?: string;
 }
 
 export function CalendarCell({
@@ -42,6 +44,8 @@ export function CalendarCell({
   animationDelay = 0,
   displayMode = 'avatar',
   canManage = true,
+  isHoliday = false,
+  holidayName,
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -67,7 +71,8 @@ export function CalendarCell({
         canManage ? 'cursor-pointer' : 'cursor-default',
         schedule ? 'group' : '',
         isToday ? 'border-l-4 border-l-primary bg-primary/5 animate-pulse-glow' : 'border-border',
-        isWeekend ? 'bg-muted/30' : 'bg-background',
+        isWeekend ? 'bg-slate-100 dark:bg-slate-800/50' : 'bg-background',
+        isHoliday ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : '',
         schedule && canManage ? 'hover:-translate-y-0.5 hover:shadow-md' : '',
         isSelected ? 'ring-2 ring-primary ring-offset-1 ring-offset-background border-primary shadow-sm' : '',
         isDragSource ? 'opacity-40' : '',
@@ -76,7 +81,7 @@ export function CalendarCell({
       style={{ animationDelay: `${animationDelay}ms` }}
     >
       {/* 日期 */}
-      <div className={`absolute top-1 right-1 text-xs font-medium
+      <div className={`absolute top-1 right-1 text-xs font-medium tabular-nums
         ${isWeekend ? 'text-muted-foreground' : 'text-foreground'}
         ${isToday ? 'text-primary' : ''}`}>
         {day}
@@ -85,6 +90,13 @@ export function CalendarCell({
       {/* 手动调整标记 */}
       {schedule?.is_manual && (
         <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" />
+      )}
+
+      {/* 节假日标记 */}
+      {isHoliday && holidayName && (
+        <div className="absolute bottom-1 left-1 right-1 text-[8px] text-blue-700 dark:text-blue-300 text-center truncate">
+          {holidayName}
+        </div>
       )}
 
       {/* 头像/姓名 */}
