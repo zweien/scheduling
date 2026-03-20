@@ -26,6 +26,8 @@ interface CalendarCellProps {
   canManage?: boolean;
   isHoliday?: boolean;
   holidayName?: string;
+  /** 拖拽预览：被拖拽的用户信息 */
+  dragPreviewUser?: { id: number; name: string };
 }
 
 export function CalendarCell({
@@ -46,6 +48,7 @@ export function CalendarCell({
   canManage = true,
   isHoliday = false,
   holidayName,
+  dragPreviewUser,
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -96,6 +99,27 @@ export function CalendarCell({
       {isHoliday && holidayName && (
         <div className="absolute bottom-1 left-1 right-1 text-[8px] text-blue-700 dark:text-blue-300 text-center truncate">
           {holidayName}
+        </div>
+      )}
+
+      {/* 拖拽预览效果 */}
+      {isDropTarget && dragPreviewUser && !schedule && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-50 pointer-events-none">
+          {displayMode === 'avatar' ? (
+            <div
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium border-2 border-dashed border-primary animate-pulse"
+              style={{ backgroundColor: getAvatarColor(dragPreviewUser.name) }}
+            >
+              {getAvatarInitial(dragPreviewUser.name)}
+            </div>
+          ) : (
+            <div
+              className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm border-2 border-dashed border-primary animate-pulse"
+              style={{ backgroundColor: getAvatarColor(dragPreviewUser.name) }}
+            >
+              {dragPreviewUser.name}
+            </div>
+          )}
         </div>
       )}
 
@@ -150,14 +174,14 @@ export function CalendarCell({
             )
           ) : displayMode === 'avatar' ? (
             <div
-              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm"
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm transition-all duration-200"
               style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
             >
               {getAvatarInitial(schedule.user.name)}
             </div>
           ) : (
             <div
-              className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm"
+              className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm transition-all duration-200"
               style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
             >
               {schedule.user.name}
