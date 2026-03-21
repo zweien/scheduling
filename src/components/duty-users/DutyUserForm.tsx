@@ -3,20 +3,36 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { UserCategory, UserOrganization } from '@/types';
 import type { DutyUserFormState } from './types';
+
+export interface ConfigOptionSimple {
+  value: string;
+  label: string;
+}
 
 interface DutyUserFormProps {
   form: DutyUserFormState;
   editingId: number | null;
   error: string | null;
   loading: boolean;
+  organizationOptions: ConfigOptionSimple[];
+  categoryOptions: ConfigOptionSimple[];
   onChange: <K extends keyof DutyUserFormState>(key: K, value: DutyUserFormState[K]) => void;
   onCancel: () => void;
   onSubmit: () => void;
 }
 
-export function DutyUserForm({ form, editingId, error, loading, onChange, onCancel, onSubmit }: DutyUserFormProps) {
+export function DutyUserForm({
+  form,
+  editingId,
+  error,
+  loading,
+  organizationOptions,
+  categoryOptions,
+  onChange,
+  onCancel,
+  onSubmit,
+}: DutyUserFormProps) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-4 space-y-1">
@@ -35,11 +51,11 @@ export function DutyUserForm({ form, editingId, error, loading, onChange, onCanc
             id="duty-user-form-organization"
             className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
             value={form.organization}
-            onChange={event => onChange('organization', event.target.value as UserOrganization)}
+            onChange={event => onChange('organization', event.target.value)}
           >
-            <option value="W">W</option>
-            <option value="X">X</option>
-            <option value="Z">Z</option>
+            {organizationOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
           </select>
         </div>
         <div className="space-y-2">
@@ -48,10 +64,11 @@ export function DutyUserForm({ form, editingId, error, loading, onChange, onCanc
             id="duty-user-form-category"
             className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
             value={form.category}
-            onChange={event => onChange('category', event.target.value as UserCategory)}
+            onChange={event => onChange('category', event.target.value)}
           >
-            <option value="J">J</option>
-            <option value="W">W</option>
+            {categoryOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
           </select>
         </div>
         <div className="space-y-2 lg:col-span-2">

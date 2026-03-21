@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   createDutyUser,
   downloadDutyUsersTemplate,
+  getDutyUserConfigOptions,
   getDutyUsers,
   getDutyUsersForView,
   importDutyUsersAction,
@@ -21,6 +22,7 @@ import { DutyUserList } from '@/components/duty-users/DutyUserList';
 import { canReorderDutyUsers, reorderDutyUsers, shouldRollbackReorderRequest } from '@/components/duty-users/reorder-helpers';
 import type { DutyUserFiltersState, DutyUserFormState } from '@/components/duty-users/types';
 import { updateUserOrder } from '@/app/actions/users-write';
+import type { ConfigOptionSimple } from '@/components/duty-users/DutyUserFilters';
 
 const initialFilters: DutyUserFiltersState = {
   search: '',
@@ -31,8 +33,8 @@ const initialFilters: DutyUserFiltersState = {
 
 const initialForm: DutyUserFormState = {
   name: '',
-  organization: 'W' as UserOrganization,
-  category: 'W' as UserCategory,
+  organization: '' as UserOrganization,
+  category: '' as UserCategory,
   notes: '',
 };
 
@@ -55,6 +57,24 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
   const [importing, setImporting] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
   const latestReorderRequestIdRef = useRef(0);
+  const [organizationOptions, setOrganizationOptions] = useState<ConfigOptionSimple[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<ConfigOptionSimple[]>([]);
+
+  // 加载配置选项
+  useEffect(() => {
+    void (async () => {
+      const options = await getDutyUserConfigOptions();
+      setOrganizationOptions(options.organizationOptions);
+      setCategoryOptions(options.categoryOptions);
+      // 设置表单默认值
+      if (options.organizationOptions.length > 0 && !form.organization) {
+        setForm(current => ({ ...current, organization: options.organizationOptions[0].value }));
+      }
+      if (options.categoryOptions.length > 0 && !form.category) {
+        setForm(current => ({ ...current, category: options.categoryOptions[0].value }));
+      }
+    })();
+  }, []);
 
   const loadUsers = useCallback(async (nextFilters: DutyUserFiltersState) => {
     const items = canManage
@@ -318,6 +338,8 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
           editingId={editingId}
           error={error}
           loading={loading}
+          organizationOptions={organizationOptions}
+          categoryOptions={categoryOptions}
           onChange={updateForm}
           onCancel={resetForm}
           onSubmit={() => void handleSubmit()}
@@ -326,6 +348,8 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
 
       <DutyUserFilters
         filters={filters}
+        organizationOptions={organizationOptions}
+        categoryOptions={categoryOptions}
         onFilterChange={updateFilter}
         onReset={() => {
           setSelectedUserIds(new Set());

@@ -3,16 +3,28 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { UserCategory, UserOrganization } from '@/types';
 import type { DutyUserFiltersState } from './types';
+
+export interface ConfigOptionSimple {
+  value: string;
+  label: string;
+}
 
 interface DutyUserFiltersProps {
   filters: DutyUserFiltersState;
+  organizationOptions: ConfigOptionSimple[];
+  categoryOptions: ConfigOptionSimple[];
   onFilterChange: <K extends keyof DutyUserFiltersState>(key: K, value: DutyUserFiltersState[K]) => void;
   onReset: () => void;
 }
 
-export function DutyUserFilters({ filters, onFilterChange, onReset }: DutyUserFiltersProps) {
+export function DutyUserFilters({
+  filters,
+  organizationOptions,
+  categoryOptions,
+  onFilterChange,
+  onReset,
+}: DutyUserFiltersProps) {
   return (
     <section className="rounded-2xl border border-border bg-muted/30 p-4">
       <div className="mb-4 space-y-1">
@@ -37,12 +49,12 @@ export function DutyUserFilters({ filters, onFilterChange, onReset }: DutyUserFi
             aria-label="所属单位"
             className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
             value={filters.organization}
-            onChange={event => onFilterChange('organization', event.target.value as UserOrganization | '')}
+            onChange={event => onFilterChange('organization', event.target.value)}
           >
             <option value="">全部单位</option>
-            <option value="W">W</option>
-            <option value="X">X</option>
-            <option value="Z">Z</option>
+            {organizationOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
           </select>
         </div>
         <div className="space-y-2">
@@ -52,11 +64,12 @@ export function DutyUserFilters({ filters, onFilterChange, onReset }: DutyUserFi
             aria-label="人员类别"
             className="h-8 w-full rounded-lg border border-input bg-background px-3 text-sm"
             value={filters.category}
-            onChange={event => onFilterChange('category', event.target.value as UserCategory | '')}
+            onChange={event => onFilterChange('category', event.target.value)}
           >
             <option value="">全部类别</option>
-            <option value="J">J</option>
-            <option value="W">W</option>
+            {categoryOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
           </select>
         </div>
       </div>
