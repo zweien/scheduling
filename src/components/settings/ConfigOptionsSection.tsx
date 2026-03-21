@@ -70,6 +70,10 @@ export function ConfigOptionsSection({
         value,
         label
       );
+      if (!saved) {
+        toast.error('保存失败');
+        return;
+      }
       if (editingOption) {
         // 编辑模式：更新现有项
         if (editingType === 'organization') {
