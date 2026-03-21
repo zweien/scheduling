@@ -39,7 +39,10 @@ jobs:
           script: |
             set -euo pipefail
             cd "${{ secrets.VPS_APP_DIR }}"
-            git fetch --all --tags
+            # 清理可能冲突的本地 tags（删除所有 v1.6.x 标签）
+            git tag -l | grep -E '^v1\.6' | xargs git tag -d 2>/dev/null || true
+            # 强制同步远程 tags
+            git fetch --all --tags --prune
             # 删除可能存在的旧分支，避免 checkout 冲突
             git branch -D release-deploy 2>/dev/null || true
             git checkout "tags/${{ env.DEPLOY_TAG }}" -B release-deploy
