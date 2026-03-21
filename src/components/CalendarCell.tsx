@@ -2,6 +2,7 @@
 'use client';
 
 import type React from 'react';
+import { memo } from 'react';
 import type { ScheduleWithUser } from '@/types';
 import { getAvatarColor, getAvatarInitial } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,7 @@ interface CalendarCellProps {
   dragPreviewUser?: { id: number; name: string };
 }
 
-export function CalendarCell({
+const CalendarCellInner = memo(function CalendarCellInner({
   date,
   schedule,
   isToday,
@@ -214,4 +215,7 @@ export function CalendarCell({
       )}
     </div>
   );
-}
+});
+
+// 导出 memo 化的组件
+export const CalendarCell = CalendarCellInner;

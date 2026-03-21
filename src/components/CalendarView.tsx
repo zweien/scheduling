@@ -2,7 +2,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, startOfWeek, endOfWeek, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
@@ -12,9 +12,10 @@ import { EmptyScheduleState } from './EmptyScheduleState';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { SelectedSchedulesActionBar } from './SelectedSchedulesActionBar';
 import { UserSelectDialog } from './UserSelectDialog';
-import { autoScheduleFromDateAction, batchDeleteSchedules, getSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, replaceSchedules, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
+import { autoScheduleFromDateAction, batchDeleteSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, replaceSchedules, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
 import { exportSelectedSchedulesToXLSX } from '@/app/actions/export';
-import { getAssignableUsers } from '@/app/actions/users';
+import { useSchedules, useInvalidateSchedules } from '@/hooks/useSchedules';
+import { useAssignableUsers } from '@/hooks/useUsers';
 import type { AutoScheduleStartMode, ScheduleWithUser, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
@@ -68,7 +69,7 @@ interface MonthCalendarProps {
   canManage: boolean;
 }
 
-function MonthCalendar({
+const MonthCalendar = memo(function MonthCalendar({
   month,
   schedules,
   today,
@@ -83,11 +84,23 @@ function MonthCalendar({
   onDrop,
   canManage,
 }: MonthCalendarProps) {
-  const monthStart = startOfMonth(month);
-  const monthEnd = endOfMonth(month);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  // 使用 useMemo 缓存日期计算
+  const days = useMemo(() => {
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  }, [month]);
+
+  // 使用 useMemo 缓存 schedule 查找 map
+  const scheduleMap = useMemo(() => {
+    const map = new Map<string, ScheduleWithUser>();
+    for (const schedule of schedules) {
+      map.set(schedule.date, schedule);
+    }
+    return map;
+  }, [schedules]);
 
   return (
     <div className="space-y-2">
@@ -103,7 +116,7 @@ function MonthCalendar({
 
         {days.map((day, index) => {
           const dateStr = format(day, 'yyyy-MM-dd');
-          const schedule = schedules.find(s => s.date === dateStr);
+          const schedule = scheduleMap.get(dateStr);
           const isCurrentMonth = isSameMonth(day, month);
           const animationDelay = Math.min(index * 5, 150);
 
@@ -139,13 +152,10 @@ function MonthCalendar({
       </div>
     </div>
   );
-}
+});
 
 export function CalendarView({ refreshKey, canManage, onRequestGenerate }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [schedules, setSchedules] = useState<ScheduleWithUser[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
@@ -166,29 +176,35 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const today = new Date();
   const nextMonth = addMonths(currentMonth, 1);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    // 加载本月和下月的数据
-    const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-    const end = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
-    const [scheduleData, userData] = await Promise.all([
-      getSchedules(start, end),
-      getAssignableUsers(),
-    ]);
-    setSchedules(scheduleData);
+  // 使用 React Query hooks
+  const { data: schedules = [], isLoading: isLoadingSchedules, refetch: refetchSchedules } = useSchedules(currentMonth);
+  const { data: users = [], isLoading: isLoadingUsers } = useAssignableUsers();
+  const invalidateSchedules = useInvalidateSchedules();
+
+  const isLoading = isLoadingSchedules || isLoadingUsers;
+
+  // 刷新数据时失效缓存
+  const refreshData = useCallback(async () => {
+    await invalidateSchedules();
+    await refetchSchedules();
+  }, [invalidateSchedules, refetchSchedules]);
+
+  // 当 refreshKey 变化时刷新数据
+  useEffect(() => {
+    if (refreshKey > 0) {
+      queueMicrotask(() => {
+        void refreshData();
+      });
+    }
+  }, [refreshKey, refreshData]);
+
+  // 当 schedules 变化时更新选中状态
+  useEffect(() => {
     setSelectedDates(current => {
-      const availableDates = new Set(scheduleData.map(schedule => schedule.date));
+      const availableDates = new Set(schedules.map(schedule => schedule.date));
       return new Set([...current].filter(date => availableDates.has(date)));
     });
-    setUsers(userData);
-    setIsLoading(false);
-  }, [currentMonth]);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void loadData();
-    });
-  }, [loadData, refreshKey]);
+  }, [schedules]);
 
   useEffect(() => {
     if (hasCustomizedDisplayModeRef.current || typeof window === 'undefined') {
@@ -265,16 +281,24 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     };
   }, []);
 
-  // 筛选本月和下月的排班
-  const currentMonthSchedules = schedules.filter(s => {
-    const date = new Date(s.date);
-    return isSameMonth(date, currentMonth);
-  });
+  // 使用 useMemo 缓存筛选后的排班数据
+  const { currentMonthSchedules, nextMonthSchedules, scheduleDateSet } = useMemo(() => {
+    const current: ScheduleWithUser[] = [];
+    const next: ScheduleWithUser[] = [];
+    const dateSet = new Set<string>();
 
-  const nextMonthSchedules = schedules.filter(s => {
-    const date = new Date(s.date);
-    return isSameMonth(date, nextMonth);
-  });
+    for (const schedule of schedules) {
+      dateSet.add(schedule.date);
+      const date = new Date(schedule.date);
+      if (isSameMonth(date, currentMonth)) {
+        current.push(schedule);
+      } else if (isSameMonth(date, nextMonth)) {
+        next.push(schedule);
+      }
+    }
+
+    return { currentMonthSchedules: current, nextMonthSchedules: next, scheduleDateSet: dateSet };
+  }, [schedules, currentMonth, nextMonth]);
 
   const handleCellClick = (date: Date, event: React.MouseEvent<HTMLDivElement>) => {
     setContextMenuState(null);
@@ -282,7 +306,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       return;
     }
     const dateStr = format(date, 'yyyy-MM-dd');
-    const hasSchedule = schedules.some(schedule => schedule.date === dateStr);
+    const hasSchedule = scheduleDateSet.has(dateStr);
     const isMultiSelect = event.metaKey || event.ctrlKey;
 
     if (moveSourceDate) {
@@ -292,7 +316,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       }
 
       void (async () => {
-        const targetHasSchedule = schedules.some(schedule => schedule.date === dateStr);
+        const targetHasSchedule = scheduleDateSet.has(dateStr);
         if (targetHasSchedule) {
           await swapSchedulesDirect(moveSourceDate, dateStr);
         } else {
@@ -300,7 +324,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
         }
 
         setMoveSourceDate(null);
-        await loadData();
+        await refreshData();
       })();
       return;
     }
@@ -372,7 +396,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     await replaceSchedule(selectedDate, userId);
     setDialogOpen(false);
     setSelectedHasSchedule(false);
-    loadData();
+    void refreshData();
   };
 
   const handleDelete = async () => {
@@ -383,7 +407,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     await removeSchedule(selectedDate);
     setDialogOpen(false);
     setSelectedHasSchedule(false);
-    await loadData();
+    await refreshData();
   };
 
   const handleSelectCurrentMonth = () => {
@@ -421,7 +445,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     setDialogOpen(false);
     setSelectedDate(null);
     setSelectedHasSchedule(false);
-    await loadData();
+    await refreshData();
   };
 
   const handleBatchEdit = async (userId: number) => {
@@ -439,7 +463,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     setDialogOpen(false);
     setSelectedDate(null);
     setSelectedHasSchedule(false);
-    await loadData();
+    await refreshData();
   };
 
   const handleExportSelected = async () => {
@@ -539,7 +563,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     }
 
     setPendingDragAction(null);
-    await loadData();
+    await refreshData();
   };
 
   const goToPrevMonth = () => {
@@ -593,7 +617,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     if (action === 'delete_schedule') {
       void (async () => {
         await removeSchedule(targetDate);
-        await loadData();
+        await refreshData();
       })();
     }
   };
@@ -611,7 +635,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
 
     setAutoScheduleError(null);
     setAutoScheduleDate(null);
-    await loadData();
+    await refreshData();
   };
 
   const selectedCount = selectedDates.size;
