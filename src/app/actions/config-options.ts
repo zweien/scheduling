@@ -26,7 +26,9 @@ export async function saveConfigOption(
   if (id === null) {
     return createConfigOption({ type, value, label });
   }
-  return updateConfigOption(id, { value, label });
+  const result = updateConfigOption(id, { value, label });
+  // 更新时如果找不到记录，返回新创建的作为后备
+  return result ?? createConfigOption({ type, value, label });
 }
 
 export async function deleteConfigOptionAction(id: number) {
