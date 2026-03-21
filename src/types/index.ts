@@ -1,7 +1,19 @@
 // src/types/index.ts
 
-export type UserOrganization = 'W' | 'X' | 'Z';
-export type UserCategory = 'J' | 'W';
+export type ConfigOptionType = 'organization' | 'category';
+
+export interface ConfigOption {
+  id: number;
+  type: ConfigOptionType;
+  value: string;
+  label: string;
+  sort_order: number;
+  created_at: string;
+}
+
+// 保留类型别名以兼容，但改为 string 以支持配置化
+export type UserOrganization = string;
+export type UserCategory = string;
 
 export interface User {
   id: number;
