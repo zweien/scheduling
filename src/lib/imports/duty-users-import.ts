@@ -1,10 +1,9 @@
 import ExcelJS from 'exceljs';
 import type { DutyUserImportIssue, DutyUserImportPreview, DutyUserImportRow, UserCategory, UserOrganization } from '@/types';
 import { TEMPLATE_HEADERS } from './duty-users-template';
+import { isValidConfigValue, getConfigOptions } from '../config-options';
 
 const REQUIRED_HEADER_COUNT = TEMPLATE_HEADERS.length;
-const VALID_ORGANIZATIONS = new Set<UserOrganization>(['W', 'X', 'Z']);
-const VALID_CATEGORIES = new Set<UserCategory>(['J', 'W']);
 const VALID_ACTIVE_VALUES = new Map<string, boolean>([
   ['是', true],
   ['否', false],
@@ -92,14 +91,16 @@ export async function previewDutyUsersImport(fileBuffer: Buffer): Promise<DutyUs
 
     if (!organization) {
       rowIssues.push({ row: rowNumber, field: '所属单位', message: '所属单位不能为空' });
-    } else if (!VALID_ORGANIZATIONS.has(organization as UserOrganization)) {
-      rowIssues.push({ row: rowNumber, field: '所属单位', message: '所属单位必须是 W、X、Z 之一' });
+    } else if (!isValidConfigValue('organization', organization)) {
+      const validLabels = getConfigOptions('organization').map(o => o.label).join('、');
+      rowIssues.push({ row: rowNumber, field: '所属单位', message: `所属单位必须是 ${validLabels} 之一` });
     }
 
     if (!category) {
       rowIssues.push({ row: rowNumber, field: '人员类别', message: '人员类别不能为空' });
-    } else if (!VALID_CATEGORIES.has(category as UserCategory)) {
-      rowIssues.push({ row: rowNumber, field: '人员类别', message: '人员类别必须是 J、W 之一' });
+    } else if (!isValidConfigValue('category', category)) {
+      const validLabels = getConfigOptions('category').map(c => c.label).join('、');
+      rowIssues.push({ row: rowNumber, field: '人员类别', message: `人员类别必须是 ${validLabels} 之一` });
     }
 
     if (!isActiveValue) {

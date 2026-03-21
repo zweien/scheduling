@@ -1,21 +1,38 @@
 import ExcelJS from 'exceljs';
+import { getConfigOptions } from '../config-options';
 
-const TEMPLATE_HEADERS = [
-  '姓名（必填）',
-  '所属单位（必填，W/X/Z）',
-  '人员类别（必填，J/W）',
-  '是否参与值班（必填，是/否）',
-  '备注（选填）',
-] as const;
+function buildTemplateHeaders(): string[] {
+  const organizations = getConfigOptions('organization');
+  const categories = getConfigOptions('category');
+
+  const orgValues = organizations.map(o => o.value).join('/');
+  const categoryValues = categories.map(c => c.value).join('/');
+
+  return [
+    '姓名（必填）',
+    `所属单位（必填，${orgValues}）`,
+    `人员类别（必填，${categoryValues}）`,
+    '是否参与值班（必填，是/否）',
+    '备注（选填）',
+  ];
+}
+
+const TEMPLATE_HEADERS = buildTemplateHeaders();
 
 export async function buildDutyUsersTemplateWorkbook(): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'scheduling';
   workbook.created = new Date();
 
+  const organizations = getConfigOptions('organization');
+  const categories = getConfigOptions('category');
+
+  const firstOrg = organizations[0]?.value ?? '';
+  const firstCategory = categories[0]?.value ?? '';
+
   const sheet = workbook.addWorksheet('值班人员模板');
   sheet.addRow(TEMPLATE_HEADERS);
-  sheet.addRow(['张三', 'W', 'J', '是', '示例备注']);
+  sheet.addRow(['张三', firstOrg, firstCategory, '是', '示例备注']);
 
   sheet.columns = [
     { width: 22 },
