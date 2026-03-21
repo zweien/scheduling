@@ -134,6 +134,42 @@ export const MIGRATIONS: Migration[] = [
       `).run();
     },
   },
+  {
+    version: '007_config_options',
+    up(database) {
+      // 创建 config_options 表
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS config_options (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL,
+          value TEXT NOT NULL,
+          label TEXT NOT NULL,
+          sort_order INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_config_options_type_value
+          ON config_options(type, value);
+      `);
+
+      // 初始化默认数据 - organization
+      const insertOrg = database.prepare(`
+        INSERT OR IGNORE INTO config_options (type, value, label, sort_order)
+        VALUES ('organization', ?, ?, ?)
+      `);
+      insertOrg.run('W', 'W', 1);
+      insertOrg.run('X', 'X', 2);
+      insertOrg.run('Z', 'Z', 3);
+
+      // 初始化默认数据 - category
+      const insertCat = database.prepare(`
+        INSERT OR IGNORE INTO config_options (type, value, label, sort_order)
+        VALUES ('category', ?, ?, ?)
+      `);
+      insertCat.run('J', 'J', 1);
+      insertCat.run('W', 'W', 2);
+    },
+  },
 ];
 
 export function applyMigrations(database: Database.Database) {
