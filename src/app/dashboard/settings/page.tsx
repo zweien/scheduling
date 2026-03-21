@@ -1,16 +1,22 @@
 import { getCurrentAccount, requireAuth } from '@/lib/auth';
 import { getDefaultScheduleDays, isRegistrationEnabled } from '@/lib/config';
+import { getConfigOptions } from '@/lib/config-options';
 import { Header } from '@/components/Header';
 import { TokenManager } from '@/components/TokenDialog';
 import { PasswordForm } from '@/components/PasswordDialog';
 import { RegistrationSettings } from '@/components/RegistrationSettings';
 import { DefaultScheduleDaysSettings } from '@/components/DefaultScheduleDaysSettings';
+import { ConfigOptionsSection } from '@/components/settings/ConfigOptionsSection';
 
 export default async function SettingsPage() {
   await requireAuth();
   const account = await getCurrentAccount();
   const isAdmin = account?.role === 'admin';
   const defaultScheduleDays = getDefaultScheduleDays();
+
+  // 获取配置选项数据
+  const organizations = getConfigOptions('organization');
+  const categories = getConfigOptions('category');
 
   return (
     <div className="h-screen flex flex-col">
@@ -42,6 +48,19 @@ export default async function SettingsPage() {
                 <p className="text-sm text-muted-foreground">调整未填写结束日期时的默认排班天数。</p>
               </div>
               <DefaultScheduleDaysSettings initialDays={defaultScheduleDays} />
+            </section>
+          ) : null}
+
+          {isAdmin ? (
+            <section className="rounded-2xl border bg-card p-4 sm:p-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">字段配置管理</h2>
+                <p className="text-sm text-muted-foreground">管理人员所属单位和类别的选项列表。</p>
+              </div>
+              <ConfigOptionsSection
+                initialOrganizations={organizations}
+                initialCategories={categories}
+              />
             </section>
           ) : null}
 
