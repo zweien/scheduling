@@ -170,4 +170,31 @@ export type Action =
   | 'import_users'
   | 'import_schedules'
   | 'create_token'
-  | 'disable_token';
+  | 'disable_token'
+  | 'add_leader'
+  | 'delete_leader'
+  | 'reorder_leaders'
+  | 'toggle_leader_active'
+  | 'replace_leader_schedule'
+  | 'delete_leader_schedule'
+  | 'set_default_leader';
+
+export interface Leader {
+  id: number;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LeaderSchedule {
+  id: number;
+  date: string;
+  leader_id: number;
+  is_manual: boolean;
+  created_at: string;
+}
+
+export interface LeaderScheduleWithLeader extends LeaderSchedule {
+  leader: Leader;
+}
