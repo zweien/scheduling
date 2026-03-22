@@ -170,6 +170,40 @@ export const MIGRATIONS: Migration[] = [
       insertCat.run('W', 'W', 2);
     },
   },
+  {
+    version: '008_duty_leaders',
+    up(database) {
+      // 创建 leaders 表
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS leaders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          sort_order INTEGER NOT NULL,
+          is_active INTEGER DEFAULT 1,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // 创建 leader_schedules 表
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS leader_schedules (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          date TEXT NOT NULL UNIQUE,
+          leader_id INTEGER NOT NULL,
+          is_manual INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_leader_schedules_date ON leader_schedules(date);
+      `);
+
+      // 添加默认值班领导配置项
+      database.prepare(`
+        INSERT OR IGNORE INTO config (key, value) VALUES ('default_leader_id', '')
+      `).run();
+    },
+  },
 ];
 
 export function applyMigrations(database: Database.Database) {
