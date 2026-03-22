@@ -35,6 +35,7 @@
 ## 核心能力
 
 - 双月月历与列表双视图，便于连续查看和值班回溯
+- **值班员与值班领导双轨排班**，支持三种视图模式（值班员/领导/全部）
 - 管理员 / 普通用户双角色权限模型，支持注册开关和账号管理
 - 值班人员独立管理页面，支持单位、类别、备注、启停、筛选和批量导入
 - **所属单位和人员类别可自定义配置**，支持在设置页面动态管理选项
@@ -77,6 +78,7 @@
 | 自动排班 | 按顺序循环生成指定时间范围的值班安排 |
 | 月历视图 | 同时展示当前月与下个月，支持点击调整和移动端移动模式 |
 | 列表视图 | 以时间线方式查看排班详情 |
+| 值班领导 | 支持值班领导独立排班，可在三种视图模式间切换（值班员/领导/全部） |
 | 手动调整 | 支持换人、删除、交换、移动到空日期 |
 | 值班人员管理 | 支持单位、类别（可自定义）、备注、启停、搜索、筛选 |
 | 字段配置 | 在设置页自定义所属单位和人员类别选项 |
@@ -240,13 +242,6 @@ curl "http://localhost:3000/api/schedules?start=2026-03-01&end=2026-03-31" \
   -H "Authorization: Bearer <your-token>"
 ```
 
-### 查询人员
-
-```bash
-curl "http://localhost:3000/api/users" \
-  -H "Authorization: Bearer <your-token>"
-```
-
 ### 修改指定日期排班
 
 ```bash
@@ -254,6 +249,36 @@ curl -X PATCH "http://localhost:3000/api/schedules/2026-03-16" \
   -H "Authorization: Bearer <your-token>" \
   -H "Content-Type: application/json" \
   -d '{"userId":2}'
+```
+
+### 查询人员
+
+```bash
+curl "http://localhost:3000/api/users" \
+  -H "Authorization: Bearer <your-token>"
+```
+
+### 查询领导列表
+
+```bash
+curl "http://localhost:3000/api/leaders" \
+  -H "Authorization: Bearer <your-token>"
+```
+
+### 查询领导排班
+
+```bash
+curl "http://localhost:3000/api/leader-schedules?start=2026-03-01&end=2026-03-31" \
+  -H "Authorization: Bearer <your-token>"
+```
+
+### 修改指定日期领导排班
+
+```bash
+curl -X PATCH "http://localhost:3000/api/leader-schedules/2026-03-16" \
+  -H "Authorization: Bearer <your-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"leaderId":1}'
 ```
 
 ### Token 管理接口

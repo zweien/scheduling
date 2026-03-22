@@ -136,7 +136,7 @@ const CalendarCellInner = memo(function CalendarCellInner({
       )}
 
       {/* 头像/姓名 */}
-      {(shouldShowDuty ? schedule : shouldShowLeader ? leaderSchedule : null) && (
+      {((shouldShowDuty && schedule) || (shouldShowLeader && leaderSchedule)) && (
         <div className={cn('flex h-full items-center justify-center sm:pt-4', displayMode === 'name' ? 'pt-3' : 'pt-4', viewMode === 'all' ? 'flex-col gap-0.5 sm:gap-1' : '')}>
           {/* 值班员显示 */}
           {shouldShowDuty && schedule && (

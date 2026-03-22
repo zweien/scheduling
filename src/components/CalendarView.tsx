@@ -12,12 +12,14 @@ import { EmptyScheduleState } from './EmptyScheduleState';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { SelectedSchedulesActionBar } from './SelectedSchedulesActionBar';
 import { UserSelectDialog } from './UserSelectDialog';
+import { LeaderSelectDialog } from './LeaderSelectDialog';
 import { autoScheduleFromDateAction, batchDeleteSchedules, moveSchedule, moveScheduleDirect, removeSchedule, replaceSchedule, replaceSchedules, swapSchedules, swapSchedulesDirect } from '@/app/actions/schedule';
+import { replaceLeaderSchedule, removeLeaderSchedule, getLeadersForSelect } from '@/app/actions/leader-schedules';
 import { exportSelectedSchedulesToXLSX } from '@/app/actions/export';
 import { useSchedules, useInvalidateSchedules } from '@/hooks/useSchedules';
 import { useAssignableUsers } from '@/hooks/useUsers';
-import { useLeaderSchedules } from '@/hooks/useLeaderSchedules';
-import type { AutoScheduleStartMode, ScheduleWithUser, User, LeaderScheduleWithLeader } from '@/types';
+import { useLeaderSchedules, useInvalidateLeaderSchedules } from '@/hooks/useLeaderSchedules';
+import type { AutoScheduleStartMode, ScheduleWithUser, User, LeaderScheduleWithLeader, Leader } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
 
@@ -189,6 +191,9 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [autoScheduleDate, setAutoScheduleDate] = useState<string | null>(null);
   const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
+  const [leaderSelectOpen, setLeaderSelectOpen] = useState(false);
+  const [selectedLeaderDate, setSelectedLeaderDate] = useState<string | null>(null);
+  const [hasLeaderSchedule, setHasLeaderSchedule] = useState(false);
   const hasCustomizedDisplayModeRef = useRef(false);
   const contextMenuTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -200,8 +205,19 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const { data: users = [], isLoading: isLoadingUsers } = useAssignableUsers();
   const { data: leaderSchedules = [], isLoading: isLoadingLeaderSchedules } = useLeaderSchedules(currentMonth);
   const invalidateSchedules = useInvalidateSchedules();
+  const invalidateLeaderSchedules = useInvalidateLeaderSchedules();
 
-  // 使用 useMemo 派生 selectedDates，当 schedules 变化时自动过滤无效日期
+  // 获取领导列表（用于选择对话框）
+  const [leaders, setLeaders] = useState<Leader[]>([]);
+  useEffect(() => {
+    getLeadersForSelect().then(result => {
+      if (Array.isArray(result)) {
+        setLeaders(result);
+      }
+    });
+  }, []);
+
+  // 使用 useMemo 缓存 scheduleDateSet
   const selectedDates = useMemo(() => {
     const availableDates = new Set(schedules.map(schedule => schedule.date));
     return new Set([...selectedDatesRaw].filter(date => availableDates.has(date)));
@@ -318,6 +334,25 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     return { currentMonthSchedules: current, nextMonthSchedules: next, scheduleDateSet: dateSet };
   }, [schedules, currentMonth, nextMonth]);
 
+  // 筛选当前月和下个月的值班领导排班
+  const { currentMonthLeaderSchedules, nextMonthLeaderSchedules, leaderScheduleDateSet } = useMemo(() => {
+    const current: LeaderScheduleWithLeader[] = [];
+    const next: LeaderScheduleWithLeader[] = [];
+    const dateSet = new Set<string>();
+
+    for (const ls of leaderSchedules) {
+      dateSet.add(ls.date);
+      const date = new Date(ls.date);
+      if (isSameMonth(date, currentMonth)) {
+        current.push(ls);
+      } else if (isSameMonth(date, nextMonth)) {
+        next.push(ls);
+      }
+    }
+
+    return { currentMonthLeaderSchedules: current, nextMonthLeaderSchedules: next, leaderScheduleDateSet: dateSet };
+  }, [leaderSchedules, currentMonth, nextMonth]);
+
   const handleCellClick = (date: Date, event: React.MouseEvent<HTMLDivElement>) => {
     setContextMenuState(null);
     if (!canManage) {
@@ -325,7 +360,19 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     }
     const dateStr = format(date, 'yyyy-MM-dd');
     const hasSchedule = scheduleDateSet.has(dateStr);
+    const hasLeader = leaderScheduleDateSet.has(dateStr);
     const isMultiSelect = event.metaKey || event.ctrlKey;
+
+    // 在"领导"视图模式下，显示领导选择对话框
+    if (viewMode === 'leader') {
+      if (isMultiSelect) {
+        return;
+      }
+      setSelectedLeaderDate(dateStr);
+      setHasLeaderSchedule(hasLeader);
+      setLeaderSelectOpen(true);
+      return;
+    }
 
     if (moveSourceDate) {
       if (moveSourceDate === dateStr) {
@@ -426,6 +473,28 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     setDialogOpen(false);
     setSelectedHasSchedule(false);
     await refreshData();
+  };
+
+  // 巻加领导相关的处理函数
+  const handleReplaceLeader = async (leaderId: number) => {
+    if (!canManage) {
+      return;
+    }
+    if (!selectedLeaderDate) return;
+    await replaceLeaderSchedule(selectedLeaderDate, leaderId);
+    setLeaderSelectOpen(false);
+    await Promise.all([refreshData(), invalidateLeaderSchedules()]);
+  };
+
+  const handleDeleteLeader = async () => {
+    if (!canManage || !selectedLeaderDate) {
+      return;
+    }
+
+    await removeLeaderSchedule(selectedLeaderDate);
+    setLeaderSelectOpen(false);
+    setHasLeaderSchedule(false);
+    await Promise.all([refreshData(), invalidateLeaderSchedules()]);
   };
 
   const handleSelectCurrentMonth = () => {
@@ -830,6 +899,17 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
           users={users}
           onSelect={handleBatchEdit}
           onClose={() => setBatchEditOpen(false)}
+        />
+      ) : null}
+
+      {canManage ? (
+        <LeaderSelectDialog
+          open={leaderSelectOpen}
+          leaders={leaders}
+          onSelect={handleReplaceLeader}
+          onDelete={hasLeaderSchedule ? handleDeleteLeader : undefined}
+          canDelete={hasLeaderSchedule}
+          onClose={() => setLeaderSelectOpen(false)}
         />
       ) : null}
 
