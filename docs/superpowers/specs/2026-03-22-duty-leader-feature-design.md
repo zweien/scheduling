@@ -16,12 +16,24 @@
 
 ## 数据库设计
 
-### 启用外键约束
+### 外键约束处理
 
-SQLite 默认不启用外键约束，需要在 `src/lib/db.ts` 中添加：
+SQLite 默认不启用外键约束。为避免影响现有 `schedules` 表的外键行为，不在全局启用外键约束。
+
+替代方案：在 `deleteLeader` 函数中手动处理级联删除：
 
 ```typescript
-db.pragma('foreign_keys = ON');
+export function deleteLeader(id: number): void {
+  const transaction = db.transaction(() => {
+    // 先删除该领导的所有排班记录
+    db.prepare('DELETE FROM leader_schedules WHERE leader_id = ?').run(id);
+    // 清除默认领导配置（如果被删除的是默认领导）
+    db.prepare("UPDATE config SET value = NULL WHERE key = 'default_leader_id' AND value = ?").run(String(id));
+    // 再删除领导
+    db.prepare('DELETE FROM leaders WHERE id = ?').run(id);
+  });
+  transaction();
+}
 ```
 
 ### 新增表
@@ -280,6 +292,45 @@ interface CalendarCellProps {
 - `duty`：显示现有值班员内容
 - `leader`：显示值班领导（复用现有样式）
 - `all`：上方显示值班员，下方显示值班领导（小字号纯文字）
+
+## React Query 缓存策略
+
+### 查询键设计
+
+```typescript
+// useLeaderSchedules.ts
+const queryKey = ['leaderSchedules', format(month, 'yyyy-MM')];
+```
+
+### 缓存失效联动
+
+自动排班等操作会同时影响值班员和值班领导数据，需要协调失效：
+
+```typescript
+// 在自动排班 Server Action 中
+async function autoScheduleFromDateAction(...) {
+  // ... 排班逻辑 ...
+
+  // 返回时标记需要失效的缓存
+  return { success: true, invalidatedCaches: ['schedules', 'leaderSchedules'] };
+}
+
+// 在前端处理
+const invalidateSchedules = useInvalidateSchedules();
+const invalidateLeaderSchedules = useInvalidateLeaderSchedules();
+
+// 自动排班完成后
+await Promise.all([
+  invalidateSchedules(),
+  invalidateLeaderSchedules(),
+]);
+```
+
+### 全部视图的加载状态
+
+在「全部」视图下，同时显示两种数据：
+- 任一数据加载中时，对应区域显示骨架屏
+- 使用 `isLoading` 状态独立控制各区域的加载显示
 
 ## 实现范围
 
