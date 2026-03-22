@@ -74,6 +74,7 @@ export function DutyUserManagement({ canManage }: DutyUserManagementProps) {
         setForm(current => ({ ...current, category: options.categoryOptions[0].value }));
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUsers = useCallback(async (nextFilters: DutyUserFiltersState) => {

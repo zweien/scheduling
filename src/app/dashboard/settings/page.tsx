@@ -7,6 +7,7 @@ import { PasswordForm } from '@/components/PasswordDialog';
 import { RegistrationSettings } from '@/components/RegistrationSettings';
 import { DefaultScheduleDaysSettings } from '@/components/DefaultScheduleDaysSettings';
 import { ConfigOptionsSection } from '@/components/settings/ConfigOptionsSection';
+import { DefaultLeaderSettings } from '@/components/settings/DefaultLeaderSettings';
 
 export default async function SettingsPage() {
   await requireAuth();
@@ -61,6 +62,16 @@ export default async function SettingsPage() {
                 initialOrganizations={organizations}
                 initialCategories={categories}
               />
+            </section>
+          ) : null}
+
+          {isAdmin ? (
+            <section className="rounded-2xl border bg-card p-4 sm:p-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">默认值班领导</h2>
+                <p className="text-sm text-muted-foreground">设置自动排班时使用的默认值班领导。</p>
+              </div>
+              <DefaultLeaderSettings />
             </section>
           ) : null}
 
