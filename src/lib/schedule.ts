@@ -6,11 +6,14 @@ import { generateScheduleFromDate as doGenerateScheduleFromDate } from './auto-s
 import type { AutoScheduleStartMode } from '@/types';
 import { getDefaultScheduleDays } from './config';
 import { resolveScheduleEndDate } from './default-schedule-days';
+import { getDefaultLeaderId, setLeaderSchedule } from './leader-schedules';
 
 const defaultDeps = {
   getActiveUsers,
   getSchedulesByDateRange,
   setSchedule,
+  getDefaultLeaderId,
+  setLeaderSchedule,
 };
 
 export function generateSchedule(startDate: string, endDate?: string) {
@@ -45,6 +48,13 @@ export function generateSchedule(startDate: string, endDate?: string) {
 
     const user = users[userIndex % users.length];
     defaultDeps.setSchedule(dateStr, user.id, false);
+
+    // 同步生成值班领导
+    const defaultLeaderId = defaultDeps.getDefaultLeaderId();
+    if (defaultLeaderId) {
+      defaultDeps.setLeaderSchedule(dateStr, defaultLeaderId, false);
+    }
+
     assigned.push(`${dateStr}: ${user.name}`);
     userIndex++;
   });

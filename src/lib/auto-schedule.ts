@@ -16,6 +16,8 @@ type AutoScheduleDeps = {
   getActiveUsers: () => AutoScheduleUser[];
   getSchedulesByDateRange: (startDate: string, endDate: string) => AutoScheduleSchedule[];
   setSchedule: (date: string, userId: number, isManual?: boolean) => void;
+  getDefaultLeaderId?: () => number | null;
+  setLeaderSchedule?: (date: string, leaderId: number, isManual?: boolean) => void;
 };
 
 type AutoScheduledItem = {
@@ -66,6 +68,13 @@ export function generateScheduleFromDate(
     const date = format(day, 'yyyy-MM-dd');
     const user = users[(startIndex + index) % users.length];
     deps.setSchedule(date, user.id, false);
+
+    // 同步生成值班领导
+    const defaultLeaderId = deps.getDefaultLeaderId?.();
+    if (defaultLeaderId && deps.setLeaderSchedule) {
+      deps.setLeaderSchedule(date, defaultLeaderId, false);
+    }
+
     assigned.push({
       date,
       userId: user.id,
