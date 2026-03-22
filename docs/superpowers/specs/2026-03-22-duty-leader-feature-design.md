@@ -39,14 +39,20 @@ CREATE TABLE leader_schedules (
   leader_id INTEGER NOT NULL,
   is_manual INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (leader_id) REFERENCES leaders(id)
+  FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE CASCADE
 );
 ```
+
+> **注意**：使用 `ON DELETE CASCADE`，当领导被删除时，相关排班记录一并删除。
 
 ### 配置项
 
 在 `config` 表新增：
 - `default_leader_id` - 默认值班领导的 ID
+
+### 迁移版本
+
+新增迁移版本号：`008_duty_leaders`
 
 ## 用户界面设计
 
@@ -110,9 +116,11 @@ CREATE TABLE leader_schedules (
 │  系统设置                            │
 ├─────────────────────────────────────┤
 │  默认值班领导：[王局 ▼]              │
-│  （从值班领导列表中选择）             │
+│  （从启用状态的值班领导中选择）       │
 └─────────────────────────────────────┘
 ```
+
+> **注意**：下拉框只显示 `is_active = 1` 的领导。
 
 ## 业务逻辑
 
@@ -126,9 +134,47 @@ CREATE TABLE leader_schedules (
 - 替换当天的值班领导
 - 删除当天的值班领导（恢复为默认值）
 
+### 边界情况处理
+
+#### 删除值班领导
+
+1. 删除领导时，使用 `ON DELETE CASCADE` 自动删除相关排班记录
+2. 如果被删除的领导是默认领导，清除 `default_leader_id` 配置
+
+#### 禁用值班领导
+
+1. 禁用领导不影响已有的排班记录
+2. 设置页面的默认领导下拉框只显示启用状态的领导
+3. 如果当前默认领导被禁用，设置页面显示警告提示
+
+#### 无默认领导时
+
+1. 自动排班时如果没有设置默认领导，跳过值班领导填充（不报错）
+2. 月历视图在「全部」模式下，值班领导位置显示为空
+
+## 权限控制
+
+值班领导相关操作使用与值班员相同的 `canManage` 权限：
+- 值班领导的增删改需要 `canManage = true`
+- 值班领导排班的手动调整需要 `canManage = true`
+
+## 日志记录
+
+在 `logs` 表记录值班领导相关操作，新增 Action 类型：
+
+```typescript
+| 'add_leader'
+| 'delete_leader'
+| 'reorder_leaders'
+| 'toggle_leader_active'
+| 'replace_leader_schedule'
+| 'delete_leader_schedule'
+| 'set_default_leader'
+```
+
 ## API 设计
 
-### 新增 API 路由
+### REST API
 
 | 路由 | 方法 | 说明 |
 |------|------|------|
@@ -174,8 +220,12 @@ CREATE TABLE leader_schedules (
 |------|------|
 | `src/lib/leaders.ts` | 值班领导 CRUD 操作 |
 | `src/lib/leader-schedules.ts` | 值班领导排班 CRUD |
+| `src/app/actions/leaders.ts` | 值班领导 Server Actions |
+| `src/app/actions/leader-schedules.ts` | 值班领导排班 Server Actions |
 | `src/hooks/useLeaders.ts` | 值班领导数据查询 hook |
 | `src/hooks/useLeaderSchedules.ts` | 值班领导排班数据 hook |
+| `src/hooks/useInvalidateLeaderSchedules.ts` | 值班领导排班缓存失效 hook |
+| `src/components/LeaderManagement.tsx` | 值班领导管理组件 |
 | `src/app/api/leaders/route.ts` | GET 值班领导列表 API |
 | `src/app/api/leader-schedules/route.ts` | GET 值班领导排班 API |
 | `src/app/api/leader-schedules/[date]/route.ts` | PATCH 修改值班领导 API |
@@ -184,20 +234,22 @@ CREATE TABLE leader_schedules (
 
 | 文件 | 修改内容 |
 |------|----------|
-| `src/lib/db/migrations.ts` | 添加新表迁移 |
-| `src/types/index.ts` | 添加 Leader、LeaderSchedule 类型 |
+| `src/lib/db/migrations.ts` | 添加 `008_duty_leaders` 迁移 |
+| `src/types/index.ts` | 添加 Leader、LeaderSchedule、Action 类型 |
+| `src/components/DutyUserManagement.tsx` | 添加 Tab 切换，集成 LeaderManagement 组件 |
 | `src/components/CalendarView.tsx` | 添加三种视图切换逻辑 |
 | `src/components/CalendarCell.tsx` | 支持「全部」视图的双行显示 |
 | `src/app/actions/schedule.ts` | 自动排班时同步生成值班领导 |
-| 人员管理页面组件 | 添加 Tab 切换和值班领导管理 |
 | 设置页面组件 | 添加默认值班领导配置 |
 
 ## 实现步骤
 
-1. **数据库迁移** - 新增 `leaders` 和 `leader_schedules` 表
-2. **后端逻辑** - CRUD 函数 + Server Actions
-3. **API 路由** - 值班领导和值班领导排班的 REST API
-4. **人员管理界面** - Tab 切换 + 值班领导管理
-5. **设置页面** - 默认值班领导配置
-6. **月历视图** - 三种视图切换 + 双行显示
-7. **自动排班逻辑** - 同步生成值班领导
+1. **数据库迁移** - 新增 `leaders` 和 `leader_schedules` 表（迁移版本 008）
+2. **后端逻辑** - CRUD 函数
+3. **Server Actions** - 值班领导和值班领导排班的 Server Actions
+4. **API 路由** - REST API
+5. **React Query Hooks** - 数据查询和缓存失效
+6. **人员管理界面** - Tab 切换 + 值班领导管理
+7. **设置页面** - 默认值班领导配置
+8. **月历视图** - 三种视图切换 + 双行显示
+9. **自动排班逻辑** - 同步生成值班领导
