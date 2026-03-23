@@ -83,3 +83,68 @@ src/
 - 数据库操作封装在 `src/lib/*.ts`，Server Actions 在 `src/app/actions/*.ts`
 - 路径别名 `@/*` 映射到 `./src/*`
 - 使用 `sonner` 组件显示 Toast 通知
+
+## 版本发布与部署
+
+### 版本号约定
+
+- GitHub Release 与 git tag 使用 `vX.Y.Z` 格式
+- `package.json.version` 与 tag 保持一致
+- README.md 中标注当前版本号
+
+### 发布流程
+
+```bash
+# 1. 更新版本号
+# - 修改 package.json 中的 version
+# - 修改 README.md 中的当前版本号
+
+# 2. 提交更改
+git add package.json README.md
+git commit -m "chore: bump version to v1.X.X"
+
+# 3. 创建 tag 并推送
+git tag v1.X.X
+git push
+git push origin v1.X.X
+
+# 4. 创建 GitHub Release（触发自动部署）
+gh release create v1.X.X --title "v1.X.X" --notes "更新内容..."
+```
+
+### 部署机制
+
+- **触发条件**: GitHub Release 发布（`release.published` 事件）
+- **部署目标**: VPS + PM2 + Nginx
+- **Workflow 文件**: `.github/workflows/deploy-vps.yml`
+- **监控部署**: `gh run list --limit 1` 或 `gh run view <run-id>`
+
+### 部署状态检查
+
+```bash
+# 查看最近的部署
+gh run list --limit 5
+
+# 查看部署详情
+gh run view <run-id>
+
+# 查看部署日志
+gh run view --job=<job-id> --log
+```
+
+### 手动触发部署
+
+如需在不创建新 release 的情况下部署，可手动触发：
+
+```bash
+gh workflow run deploy-vps.yml -f tag=v1.X.X
+```
+
+### 验证部署成功
+
+```bash
+# 检查服务状态
+curl -sI https://scheduling.zweien.xyz/
+
+# 或检查 GitHub Actions 日志确认 PM2 状态为 online
+```
