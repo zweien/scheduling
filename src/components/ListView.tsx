@@ -166,6 +166,15 @@ export function ListView({ refreshKey, canManage, onRequestGenerate }: ListViewP
         />
       ) : (
         <Card className="divide-y">
+          {/* 表头 */}
+          <div className="flex items-center justify-between p-3 gap-4 bg-muted/50 text-sm font-medium text-muted-foreground">
+            <div className="flex-shrink-0">日期</div>
+            <div className="flex items-center gap-4 flex-1 justify-end">
+              <div className="min-w-[80px] text-right">值班员</div>
+              <div className="min-w-[80px] text-right">领导</div>
+            </div>
+          </div>
+          {/* 数据行 */}
           {schedules.map(schedule => (
             <ScheduleRow
               key={schedule.id}
