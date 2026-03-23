@@ -246,21 +246,24 @@ export function LogContent({ active = true }: { active?: boolean }) {
           <div className="text-sm text-muted-foreground">
             共 {totalCount} 条记录
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void handleExport('json')} disabled={exporting !== null}>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={() => void handleExport('json')} disabled={exporting !== null} className="flex-1 sm:flex-initial">
               <Download className="mr-1 h-4 w-4" />
-              导出 JSON
+              <span className="hidden sm:inline">导出 JSON</span>
+              <span className="sm:hidden">JSON</span>
             </Button>
-            <Button variant="outline" onClick={() => void handleExport('csv')} disabled={exporting !== null}>
+            <Button variant="outline" size="sm" onClick={() => void handleExport('csv')} disabled={exporting !== null} className="flex-1 sm:flex-initial">
               <Download className="mr-1 h-4 w-4" />
-              导出 CSV
+              <span className="hidden sm:inline">导出 CSV</span>
+              <span className="sm:hidden">CSV</span>
             </Button>
           </div>
         </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-card">
-        <div className="grid grid-cols-[180px_140px_1fr_200px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
+        {/* 桌面端表头 - 隐藏在移动端 */}
+        <div className="hidden md:grid grid-cols-[180px_140px_1fr_200px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
           <div>时间</div>
           <div>操作类型</div>
           <div>操作对象</div>
@@ -279,27 +282,77 @@ export function LogContent({ active = true }: { active?: boolean }) {
             tableRows.map(log => (
               <div
                 key={log.id}
-                className="grid grid-cols-[180px_140px_1fr_200px_140px_160px_100px] gap-3 border-b border-border px-4 py-3 text-sm last:border-b-0"
+                className="border-b border-border last:border-b-0"
               >
-                <div className="text-muted-foreground">{log.createdAtLabel}</div>
-                <div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${log.actionBadgeClass}`}>
-                    {log.actionLabel}
-                  </span>
+                {/* 桌面端：表格行布局 */}
+                <div className="hidden md:grid grid-cols-[180px_140px_1fr_200px_140px_160px_100px] gap-3 px-4 py-3 text-sm">
+                  <div className="text-muted-foreground">{log.createdAtLabel}</div>
+                  <div>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${log.actionBadgeClass}`}>
+                      {log.actionLabel}
+                    </span>
+                  </div>
+                  <div className="min-w-0 break-all">{log.target}</div>
+                  <div className="space-y-1 text-xs">
+                    <div><span className="text-muted-foreground">旧：</span>{log.old_value ?? '-'}</div>
+                    <div><span className="text-muted-foreground">新：</span>{log.new_value ?? '-'}</div>
+                    <div><span className="text-muted-foreground">理由：</span>{log.reason ?? '-'}</div>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="font-medium">{log.operator_username ?? '-'}</div>
+                    <div className="text-muted-foreground">{log.operator_role ?? '-'}</div>
+                  </div>
+                  <div className="break-all text-xs">{log.ip_address ?? '-'}</div>
+                  <div>
+                    <SourceBadge source={log.source} />
+                  </div>
                 </div>
-                <div className="min-w-0 break-all">{log.target}</div>
-                <div className="space-y-1 text-xs">
-                  <div><span className="text-muted-foreground">旧：</span>{log.old_value ?? '-'}</div>
-                  <div><span className="text-muted-foreground">新：</span>{log.new_value ?? '-'}</div>
-                  <div><span className="text-muted-foreground">理由：</span>{log.reason ?? '-'}</div>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <div className="font-medium">{log.operator_username ?? '-'}</div>
-                  <div className="text-muted-foreground">{log.operator_role ?? '-'}</div>
-                </div>
-                <div className="break-all text-xs">{log.ip_address ?? '-'}</div>
-                <div>
-                  <SourceBadge source={log.source} />
+
+                {/* 移动端：卡片式布局 */}
+                <div className="md:hidden p-3 space-y-2">
+                  {/* 首行：时间 + 操作类型 + 来源 */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">{log.createdAtLabel}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${log.actionBadgeClass}`}>
+                      {log.actionLabel}
+                    </span>
+                    <SourceBadge source={log.source} />
+                  </div>
+
+                  {/* 操作对象 */}
+                  <div className="text-sm">
+                    <span className="text-muted-foreground text-xs">对象：</span>
+                    <span className="break-all">{log.target}</span>
+                  </div>
+
+                  {/* 详情：旧值/新值/理由 */}
+                  <div className="text-xs space-y-0.5 bg-muted/50 rounded-lg p-2">
+                    {log.old_value && (
+                      <div className="flex gap-1">
+                        <span className="text-muted-foreground shrink-0">旧：</span>
+                        <span className="break-all">{log.old_value}</span>
+                      </div>
+                    )}
+                    {log.new_value && (
+                      <div className="flex gap-1">
+                        <span className="text-muted-foreground shrink-0">新：</span>
+                        <span className="break-all">{log.new_value}</span>
+                      </div>
+                    )}
+                    {log.reason && (
+                      <div className="flex gap-1">
+                        <span className="text-muted-foreground shrink-0">理由：</span>
+                        <span className="break-all">{log.reason}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 底部：操作用户 + IP */}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{log.operator_username ?? '-'}</span>
+                    {log.operator_role && <span className="opacity-60">({log.operator_role})</span>}
+                    <span className="opacity-60">{log.ip_address ?? '-'}</span>
+                  </div>
                 </div>
               </div>
             ))

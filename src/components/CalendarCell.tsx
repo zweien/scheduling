@@ -12,6 +12,8 @@ import { format } from 'date-fns';
 interface CalendarCellProps {
   date: Date;
   schedule?: ScheduleWithUser;
+  leaderSchedule?: LeaderScheduleWithLeader;
+  viewMode?: 'duty' | 'leader' | 'all';
   isToday: boolean;
   isSelected?: boolean;
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
@@ -29,15 +31,13 @@ interface CalendarCellProps {
   holidayName?: string;
   /** 拖拽预览：被拖拽的用户信息 */
   dragPreviewUser?: { id: number; name: string };
-  /** 视图模式：值班员/领导/全部 */
-  viewMode?: 'duty' | 'leader' | 'all';
-  /** 值班领导排班信息 */
-  leaderSchedule?: LeaderScheduleWithLeader;
 }
 
 const CalendarCellInner = memo(function CalendarCellInner({
   date,
   schedule,
+  leaderSchedule,
+  viewMode = 'duty',
   isToday,
   isSelected = false,
   onClick,
@@ -54,8 +54,6 @@ const CalendarCellInner = memo(function CalendarCellInner({
   isHoliday = false,
   holidayName,
   dragPreviewUser,
-  viewMode = 'duty',
-  leaderSchedule,
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -63,10 +61,13 @@ const CalendarCellInner = memo(function CalendarCellInner({
     schedule?.original_user && schedule.original_user.id !== schedule.user.id
   );
 
-  // 根据 viewMode 确定要显示的排班信息
-  // duty: 显示值班员, leader: 显示值班领导, all: 显示两者
-  const shouldShowDuty = viewMode === 'duty' || viewMode === 'all';
-  const shouldShowLeader = (viewMode === 'leader' || viewMode === 'all') && leaderSchedule;
+  // 根据 viewMode 决定显示内容
+  const showDuty = viewMode === 'duty' || viewMode === 'all';
+  const showLeader = viewMode === 'leader' || viewMode === 'all';
+
+  // 在 leader 模式下，显示值班领导作为主要内容
+  const primarySchedule = viewMode === 'leader' ? leaderSchedule?.leader : schedule?.user;
+  const primaryName = primarySchedule?.name;
 
   return (
     <div
@@ -136,11 +137,115 @@ const CalendarCellInner = memo(function CalendarCellInner({
       )}
 
       {/* 头像/姓名 */}
-      {((shouldShowDuty && schedule) || (shouldShowLeader && leaderSchedule)) && (
-        <div className={cn('flex h-full items-center justify-center sm:pt-4', displayMode === 'name' ? 'pt-3' : 'pt-4', viewMode === 'all' ? 'flex-col gap-0.5 sm:gap-1' : '')}>
-          {/* 值班员显示 */}
-          {shouldShowDuty && schedule && (
-            <>
+      {(() => {
+        // 领导模式：只显示值班领导
+        if (viewMode === 'leader' && leaderSchedule) {
+          return (
+            <div className="flex h-full items-center justify-center pt-4">
+              {displayMode === 'avatar' ? (
+                <div
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm transition-all duration-200"
+                  style={{ backgroundColor: getAvatarColor(leaderSchedule.leader.name) }}
+                >
+                  {getAvatarInitial(leaderSchedule.leader.name)}
+                </div>
+              ) : (
+                <div
+                  className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm transition-all duration-200"
+                  style={{ backgroundColor: getAvatarColor(leaderSchedule.leader.name) }}
+                >
+                  {leaderSchedule.leader.name}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // 全部模式：上方显示值班员，下方显示值班领导
+        if (viewMode === 'all') {
+          const hasDuty = !!schedule;
+          const hasLeader = !!leaderSchedule;
+
+          if (!hasDuty && !hasLeader) {
+            return null;
+          }
+
+          return (
+            <div className="flex h-full flex-col items-center justify-center gap-0.5 pt-4">
+              {/* 值班员 */}
+              {hasDuty && (
+                showOriginalAndCurrent ? (
+                  displayMode === 'avatar' ? (
+                    <div className="flex w-full flex-col items-center justify-center gap-0.5 px-1 sm:px-2">
+                      <div className="flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[8px] text-muted-foreground sm:text-[9px]">
+                        <span className="shrink-0 font-medium">原</span>
+                        <div
+                          className="flex h-3 w-3 items-center justify-center rounded-full text-[8px] font-medium text-white sm:h-4 sm:w-4 sm:text-[9px]"
+                          style={{ backgroundColor: getAvatarColor(schedule.original_user?.name ?? '') }}
+                        >
+                          {getAvatarInitial(schedule.original_user?.name ?? '')}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[8px] text-white sm:text-[9px]" style={{ backgroundColor: getAvatarColor(schedule.user.name) }}>
+                        <span className="shrink-0 font-medium">现</span>
+                        <div className="flex h-3 w-3 items-center justify-center rounded-full border border-white/30 text-[8px] font-medium text-white sm:h-4 sm:w-4 sm:text-[9px]">
+                          {getAvatarInitial(schedule.user.name)}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-0.5 px-0.5 text-[8px] leading-tight sm:px-1 sm:text-[9px]">
+                      <div className="rounded bg-muted px-1 py-0.5 text-muted-foreground">
+                        <span>原：{schedule.original_user?.name}</span>
+                      </div>
+                      <div
+                        className="rounded px-1 py-0.5 text-white"
+                        style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                      >
+                        <span>现：{schedule.user.name}</span>
+                      </div>
+                    </div>
+                  )
+                ) : displayMode === 'avatar' ? (
+                  <div
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[9px] sm:text-xs font-medium shadow-sm transition-all duration-200"
+                    style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                  >
+                    {getAvatarInitial(schedule.user.name)}
+                  </div>
+                ) : (
+                  <div
+                    className="max-w-full rounded px-1 py-0.5 text-center text-[8px] sm:text-[10px] font-medium leading-tight text-white break-all whitespace-normal"
+                    style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                  >
+                    {schedule.user.name}
+                  </div>
+                )
+              )}
+              {/* 值班领导 */}
+              {hasLeader && (
+                displayMode === 'avatar' ? (
+                  <div
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-medium shadow-sm transition-all duration-200"
+                    style={{ backgroundColor: getAvatarColor(leaderSchedule.leader.name) }}
+                    title={`值班领导：${leaderSchedule.leader.name}`}
+                  >
+                    {getAvatarInitial(leaderSchedule.leader.name)}
+                  </div>
+                ) : (
+                  <div className="text-[8px] sm:text-[10px] text-muted-foreground font-medium">
+                    {leaderSchedule.leader.name}
+                  </div>
+                )
+              )}
+            </div>
+          );
+        }
+
+        // 值班员模式：只显示值班员（默认行为）
+        if (schedule) {
+          return (
+            <div className={cn('flex h-full items-center justify-center sm:pt-4', displayMode === 'name' ? 'pt-3' : 'pt-4')}>
               {showOriginalAndCurrent ? (
                 displayMode === 'avatar' ? (
                   <div
@@ -189,56 +294,25 @@ const CalendarCellInner = memo(function CalendarCellInner({
                 )
               ) : displayMode === 'avatar' ? (
                 <div
-                  className={cn(
-                    "rounded-full flex items-center justify-center text-white font-medium shadow-sm transition-all duration-200",
-                    viewMode === 'all' ? 'w-5 h-5 sm:w-6 sm:h-6 text-[9px] sm:text-xs' : 'w-6 h-6 sm:w-8 sm:h-8 text-xs sm:text-sm'
-                  )}
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium shadow-sm transition-all duration-200"
                   style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
                 >
                   {getAvatarInitial(schedule.user.name)}
                 </div>
               ) : (
                 <div
-                  className={cn(
-                    "rounded px-1 py-0.5 text-center font-medium leading-tight text-white break-all whitespace-normal transition-all duration-200",
-                    viewMode === 'all' ? 'text-[8px] sm:text-[10px]' : 'text-[10px] sm:text-sm'
-                  )}
+                  className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm transition-all duration-200"
                   style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
                 >
                   {schedule.user.name}
                 </div>
               )}
-            </>
-          )}
+            </div>
+          );
+        }
 
-          {/* 值班领导显示 */}
-          {shouldShowLeader && leaderSchedule && (
-            displayMode === 'avatar' ? (
-              <div
-                className={cn(
-                  "rounded-full flex items-center justify-center text-white font-medium shadow-sm transition-all duration-200",
-                  viewMode === 'all' ? 'w-4 h-4 sm:w-5 sm:h-5 text-[8px] sm:text-[9px]' : 'w-6 h-6 sm:w-8 sm:h-8 text-xs sm:text-sm'
-                )}
-                style={{ backgroundColor: getAvatarColor(leaderSchedule.leader.name) }}
-                title={viewMode === 'all' ? `值班领导：${leaderSchedule.leader.name}` : ''}
-              >
-                {getAvatarInitial(leaderSchedule.leader.name)}
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  "rounded px-1 py-0.5 text-center font-medium leading-tight text-white break-all whitespace-normal transition-all duration-200",
-                  viewMode === 'all' ? 'text-[7px] sm:text-[9px]' : 'text-[10px] sm:text-sm'
-                )}
-                style={{ backgroundColor: getAvatarColor(leaderSchedule.leader.name) }}
-                title={viewMode === 'all' ? `值班领导：${leaderSchedule.leader.name}` : ''}
-              >
-                {leaderSchedule.leader.name}
-              </div>
-            )
-          )}
-        </div>
-      )}
+        return null;
+      })()}
 
       {/* 悬停显示人员详情 tooltip */}
       {schedule && viewMode !== 'leader' && (
@@ -256,7 +330,7 @@ const CalendarCellInner = memo(function CalendarCellInner({
         </div>
       )}
 
-      {/* 值班领导 tooltip */}
+      {/* 值班领导悬停提示 */}
       {leaderSchedule && viewMode === 'leader' && (
         <div
           data-testid="leader-tooltip"
@@ -265,12 +339,13 @@ const CalendarCellInner = memo(function CalendarCellInner({
             transition-opacity duration-150
             bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-2 min-w-[120px]"
         >
-          <div className="text-sm font-medium">值班领导：{leaderSchedule.leader.name}</div>
+          <div className="text-sm font-medium">{leaderSchedule.leader.name}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">值班领导</div>
         </div>
       )}
 
       {/* 空单元格 hover 提示 */}
-      {!schedule && canManage && (
+      {!schedule && !leaderSchedule && canManage && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
           <Plus className="w-4 h-4 text-muted-foreground" />
         </div>
