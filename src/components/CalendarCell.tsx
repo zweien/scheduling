@@ -174,18 +174,69 @@ const CalendarCellInner = memo(function CalendarCellInner({
             <div className="flex h-full flex-col items-center justify-center gap-0.5 pt-4">
               {/* 值班员 */}
               {hasDuty && (
-                <div
-                  className="max-w-full rounded px-1 py-0.5 text-center text-[10px] font-medium leading-tight text-white break-all whitespace-normal sm:px-2 sm:py-1 sm:text-sm"
-                  style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
-                >
-                  {schedule.user.name}
-                </div>
+                showOriginalAndCurrent ? (
+                  displayMode === 'avatar' ? (
+                    <div className="flex w-full flex-col items-center justify-center gap-0.5 px-1 sm:px-2">
+                      <div className="flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[8px] text-muted-foreground sm:text-[9px]">
+                        <span className="shrink-0 font-medium">原</span>
+                        <div
+                          className="flex h-3 w-3 items-center justify-center rounded-full text-[8px] font-medium text-white sm:h-4 sm:w-4 sm:text-[9px]"
+                          style={{ backgroundColor: getAvatarColor(schedule.original_user?.name ?? '') }}
+                        >
+                          {getAvatarInitial(schedule.original_user?.name ?? '')}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[8px] text-white sm:text-[9px]" style={{ backgroundColor: getAvatarColor(schedule.user.name) }}>
+                        <span className="shrink-0 font-medium">现</span>
+                        <div className="flex h-3 w-3 items-center justify-center rounded-full border border-white/30 text-[8px] font-medium text-white sm:h-4 sm:w-4 sm:text-[9px]">
+                          {getAvatarInitial(schedule.user.name)}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-0.5 px-0.5 text-[8px] leading-tight sm:px-1 sm:text-[9px]">
+                      <div className="rounded bg-muted px-1 py-0.5 text-muted-foreground">
+                        <span>原：{schedule.original_user?.name}</span>
+                      </div>
+                      <div
+                        className="rounded px-1 py-0.5 text-white"
+                        style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                      >
+                        <span>现：{schedule.user.name}</span>
+                      </div>
+                    </div>
+                  )
+                ) : displayMode === 'avatar' ? (
+                  <div
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[9px] sm:text-xs font-medium shadow-sm transition-all duration-200"
+                    style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                  >
+                    {getAvatarInitial(schedule.user.name)}
+                  </div>
+                ) : (
+                  <div
+                    className="max-w-full rounded px-1 py-0.5 text-center text-[8px] sm:text-[10px] font-medium leading-tight text-white break-all whitespace-normal"
+                    style={{ backgroundColor: getAvatarColor(schedule.user.name) }}
+                  >
+                    {schedule.user.name}
+                  </div>
+                )
               )}
-              {/* 值班领导（小字号） */}
+              {/* 值班领导 */}
               {hasLeader && (
-                <div className="text-[8px] sm:text-[10px] text-muted-foreground font-medium">
-                  {leaderSchedule.leader.name}
-                </div>
+                displayMode === 'avatar' ? (
+                  <div
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[9px] font-medium shadow-sm transition-all duration-200"
+                    style={{ backgroundColor: getAvatarColor(leaderSchedule.leader.name) }}
+                    title={`值班领导：${leaderSchedule.leader.name}`}
+                  >
+                    {getAvatarInitial(leaderSchedule.leader.name)}
+                  </div>
+                ) : (
+                  <div className="text-[8px] sm:text-[10px] text-muted-foreground font-medium">
+                    {leaderSchedule.leader.name}
+                  </div>
+                )
               )}
             </div>
           );
