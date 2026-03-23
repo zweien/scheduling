@@ -17,8 +17,8 @@ import { autoScheduleFromDateAction, batchDeleteSchedules, moveSchedule, moveSch
 import { replaceLeaderSchedule, removeLeaderSchedule, getLeadersForSelect } from '@/app/actions/leader-schedules';
 import { exportSelectedSchedulesToXLSX } from '@/app/actions/export';
 import { useSchedules, useInvalidateSchedules } from '@/hooks/useSchedules';
-import { useAssignableUsers } from '@/hooks/useUsers';
 import { useLeaderSchedules, useInvalidateLeaderSchedules } from '@/hooks/useLeaderSchedules';
+import { useAssignableUsers } from '@/hooks/useUsers';
 import type { AutoScheduleStartMode, ScheduleWithUser, User, LeaderScheduleWithLeader, Leader } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
@@ -59,11 +59,11 @@ type ContextMenuState = {
 interface MonthCalendarProps {
   month: Date;
   schedules: ScheduleWithUser[];
+  leaderSchedules: LeaderScheduleWithLeader[];
   users: User[];
   today: Date;
   displayMode: DisplayMode;
   viewMode: ViewMode;
-  leaderSchedules: LeaderScheduleWithLeader[];
   dragDate: string | null;
   selectedDates: Set<string>;
   onCellClick: (date: Date, event: React.MouseEvent<HTMLDivElement>) => void;
@@ -78,10 +78,10 @@ interface MonthCalendarProps {
 const MonthCalendar = memo(function MonthCalendar({
   month,
   schedules,
+  leaderSchedules,
   today,
   displayMode,
   viewMode,
-  leaderSchedules,
   dragDate,
   selectedDates,
   onCellClick,
@@ -113,8 +113,8 @@ const MonthCalendar = memo(function MonthCalendar({
   // 使用 useMemo 缓存 leaderSchedule 查找 map
   const leaderScheduleMap = useMemo(() => {
     const map = new Map<string, LeaderScheduleWithLeader>();
-    for (const schedule of leaderSchedules) {
-      map.set(schedule.date, schedule);
+    for (const ls of leaderSchedules) {
+      map.set(ls.date, ls);
     }
     return map;
   }, [leaderSchedules]);
@@ -134,7 +134,6 @@ const MonthCalendar = memo(function MonthCalendar({
         {days.map((day, index) => {
           const dateStr = format(day, 'yyyy-MM-dd');
           const schedule = scheduleMap.get(dateStr);
-          const leaderSchedule = leaderScheduleMap.get(dateStr);
           const isCurrentMonth = isSameMonth(day, month);
           const animationDelay = Math.min(index * 5, 150);
 
@@ -151,6 +150,8 @@ const MonthCalendar = memo(function MonthCalendar({
               key={dateStr}
               date={day}
               schedule={schedule}
+              leaderSchedule={leaderScheduleMap.get(dateStr)}
+              viewMode={viewMode}
               isToday={isSameDay(day, today)}
               isSelected={selectedDates.has(dateStr)}
               onClick={event => onCellClick(day, event)}
@@ -164,8 +165,6 @@ const MonthCalendar = memo(function MonthCalendar({
               animationDelay={animationDelay}
               displayMode={displayMode}
               canManage={canManage}
-              viewMode={viewMode}
-              leaderSchedule={leaderSchedule}
             />
           );
         })}
@@ -177,10 +176,13 @@ const MonthCalendar = memo(function MonthCalendar({
 export function CalendarView({ refreshKey, canManage, onRequestGenerate }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedDatesRaw, setSelectedDatesRaw] = useState<Set<string>>(new Set());
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [selectedHasSchedule, setSelectedHasSchedule] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [batchEditOpen, setBatchEditOpen] = useState(false);
+  const [leaderSelectOpen, setLeaderSelectOpen] = useState(false);
+  const [selectedLeaderDate, setSelectedLeaderDate] = useState<string | null>(null);
+  const [hasLeaderSchedule, setHasLeaderSchedule] = useState(false);
   const [dragDate, setDragDate] = useState<string | null>(null);
   const [moveSourceDate, setMoveSourceDate] = useState<string | null>(null);
   const [pendingDragAction, setPendingDragAction] = useState<PendingDragAction | null>(null);
@@ -191,9 +193,6 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [autoScheduleDate, setAutoScheduleDate] = useState<string | null>(null);
   const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
-  const [leaderSelectOpen, setLeaderSelectOpen] = useState(false);
-  const [selectedLeaderDate, setSelectedLeaderDate] = useState<string | null>(null);
-  const [hasLeaderSchedule, setHasLeaderSchedule] = useState(false);
   const hasCustomizedDisplayModeRef = useRef(false);
   const contextMenuTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -202,8 +201,8 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
 
   // 使用 React Query hooks
   const { data: schedules = [], isLoading: isLoadingSchedules, refetch: refetchSchedules } = useSchedules(currentMonth);
-  const { data: users = [], isLoading: isLoadingUsers } = useAssignableUsers();
   const { data: leaderSchedules = [], isLoading: isLoadingLeaderSchedules } = useLeaderSchedules(currentMonth);
+  const { data: users = [], isLoading: isLoadingUsers } = useAssignableUsers();
   const invalidateSchedules = useInvalidateSchedules();
   const invalidateLeaderSchedules = useInvalidateLeaderSchedules();
 
@@ -216,12 +215,6 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       }
     });
   }, []);
-
-  // 使用 useMemo 缓存 scheduleDateSet
-  const selectedDates = useMemo(() => {
-    const availableDates = new Set(schedules.map(schedule => schedule.date));
-    return new Set([...selectedDatesRaw].filter(date => availableDates.has(date)));
-  }, [selectedDatesRaw, schedules]);
 
   const isLoading = isLoadingSchedules || isLoadingUsers || isLoadingLeaderSchedules;
 
@@ -239,6 +232,14 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       });
     }
   }, [refreshKey, refreshData]);
+
+  // 当 schedules 变化时更新选中状态
+  useEffect(() => {
+    setSelectedDates(current => {
+      const availableDates = new Set(schedules.map(schedule => schedule.date));
+      return new Set([...current].filter(date => availableDates.has(date)));
+    });
+  }, [schedules]);
 
   useEffect(() => {
     if (hasCustomizedDisplayModeRef.current || typeof window === 'undefined') {
@@ -264,7 +265,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     const mediaQuery = window.matchMedia('(max-width: 639px)');
     const syncLayout = (matches: boolean) => {
       if (matches) {
-        setSelectedDatesRaw(current => new Set(
+        setSelectedDates(current => new Set(
           [...current].filter(date => isSameMonth(new Date(date), currentMonth))
         ));
       }
@@ -353,7 +354,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     return { currentMonthLeaderSchedules: current, nextMonthLeaderSchedules: next, leaderScheduleDateSet: dateSet };
   }, [leaderSchedules, currentMonth, nextMonth]);
 
-  const handleCellClick = (date: Date, event: React.MouseEvent<HTMLDivElement>) => {
+  const handleCellClick = useCallback((date: Date, event: React.MouseEvent<HTMLDivElement>) => {
     setContextMenuState(null);
     if (!canManage) {
       return;
@@ -362,6 +363,9 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     const hasSchedule = scheduleDateSet.has(dateStr);
     const hasLeader = leaderScheduleDateSet.has(dateStr);
     const isMultiSelect = event.metaKey || event.ctrlKey;
+
+    // DEBUG: 检查 viewMode 值
+    console.log('handleCellClick - viewMode:', viewMode);
 
     // 在"领导"视图模式下，显示领导选择对话框
     if (viewMode === 'leader') {
@@ -402,7 +406,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       setDialogOpen(false);
       setSelectedDate(null);
       setSelectedHasSchedule(false);
-      setSelectedDatesRaw(current => {
+      setSelectedDates(current => {
         const next = new Set(current);
         if (next.has(dateStr)) {
           next.delete(dateStr);
@@ -414,11 +418,11 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       return;
     }
 
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setSelectedHasSchedule(hasSchedule);
     setSelectedDate(dateStr);
     setDialogOpen(true);
-  };
+  }, [canManage, viewMode, scheduleDateSet, leaderScheduleDateSet, moveSourceDate, swapSchedulesDirect, moveScheduleDirect, refreshData]);
 
   const handleCellContextMenu = (
     date: Date,
@@ -475,7 +479,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     await refreshData();
   };
 
-  // 巻加领导相关的处理函数
+  // 值班领导相关处理函数
   const handleReplaceLeader = async (leaderId: number) => {
     if (!canManage) {
       return;
@@ -483,6 +487,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     if (!selectedLeaderDate) return;
     await replaceLeaderSchedule(selectedLeaderDate, leaderId);
     setLeaderSelectOpen(false);
+    setHasLeaderSchedule(false);
     await Promise.all([refreshData(), invalidateLeaderSchedules()]);
   };
 
@@ -502,14 +507,14 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       return;
     }
 
-    setSelectedDatesRaw(new Set(currentMonthSchedules.map(schedule => schedule.date)));
+    setSelectedDates(new Set(currentMonthSchedules.map(schedule => schedule.date)));
     setDialogOpen(false);
     setSelectedDate(null);
     setSelectedHasSchedule(false);
   };
 
   const handleClearSelection = () => {
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
   };
 
   const handleBatchDelete = async () => {
@@ -528,7 +533,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       return;
     }
 
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setDialogOpen(false);
     setSelectedDate(null);
     setSelectedHasSchedule(false);
@@ -546,7 +551,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     }
 
     setBatchEditOpen(false);
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setDialogOpen(false);
     setSelectedDate(null);
     setSelectedHasSchedule(false);
@@ -654,17 +659,17 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   };
 
   const goToPrevMonth = () => {
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setCurrentMonth(subMonths(currentMonth, 1));
   };
 
   const goToNextMonth = () => {
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setCurrentMonth(addMonths(currentMonth, 1));
   };
 
   const goToToday = () => {
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setCurrentMonth(today);
   };
 
@@ -681,7 +686,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     const targetDate = contextMenuState.date;
     const hasSchedule = contextMenuState.hasSchedule;
     setContextMenuState(null);
-    setSelectedDatesRaw(new Set());
+    setSelectedDates(new Set());
     setSelectedDate(targetDate);
     setSelectedHasSchedule(hasSchedule);
 
@@ -748,6 +753,33 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">值班日历</h2>
         <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
+          {/* 视图模式切换 */}
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <Button
+              variant={viewMode === 'duty' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('duty')}
+              className="rounded-none h-8 px-2 sm:px-3"
+            >
+              值班员
+            </Button>
+            <Button
+              variant={viewMode === 'leader' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('leader')}
+              className="rounded-none h-8 px-2 sm:px-3"
+            >
+              领导
+            </Button>
+            <Button
+              variant={viewMode === 'all' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('all')}
+              className="rounded-none h-8 px-2 sm:px-3"
+            >
+              全部
+            </Button>
+          </div>
           {canManage ? (
             <>
               <Button
@@ -768,30 +800,6 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
               </Button>
             </>
           ) : null}
-          {/* 视图模式切换 */}
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'duty' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('duty')}
-            >
-              值班员
-            </Button>
-            <Button
-              variant={viewMode === 'leader' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('leader')}
-            >
-              领导
-            </Button>
-            <Button
-              variant={viewMode === 'all' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('all')}
-            >
-              全部
-            </Button>
-          </div>
           <Button
             variant="outline"
             size="sm"
@@ -843,11 +851,11 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
         <MonthCalendar
           month={currentMonth}
           schedules={currentMonthSchedules}
+          leaderSchedules={currentMonthLeaderSchedules}
           users={users}
           today={today}
           displayMode={displayMode}
           viewMode={viewMode}
-          leaderSchedules={leaderSchedules}
           dragDate={dragDate}
           selectedDates={selectedDates}
           onCellClick={handleCellClick}
@@ -862,11 +870,11 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
           <MonthCalendar
             month={nextMonth}
             schedules={nextMonthSchedules}
+            leaderSchedules={nextMonthLeaderSchedules}
             users={users}
             today={today}
             displayMode={displayMode}
             viewMode={viewMode}
-            leaderSchedules={leaderSchedules}
             dragDate={dragDate}
             selectedDates={selectedDates}
             onCellClick={handleCellClick}
@@ -907,7 +915,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
           open={leaderSelectOpen}
           leaders={leaders}
           onSelect={handleReplaceLeader}
-          onDelete={hasLeaderSchedule ? handleDeleteLeader : undefined}
+          onDelete={handleDeleteLeader}
           canDelete={hasLeaderSchedule}
           onClose={() => setLeaderSelectOpen(false)}
         />
