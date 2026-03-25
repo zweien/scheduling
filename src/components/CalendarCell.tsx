@@ -104,7 +104,7 @@ const CalendarCellInner = memo(function CalendarCellInner({
       </div>
 
       {/* 手动调整标记 */}
-      {schedule?.is_manual && (
+      {schedule?.is_manual && (viewMode !== 'leader' || leaderSchedule) && (
         <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" />
       )}
 
@@ -139,7 +139,8 @@ const CalendarCellInner = memo(function CalendarCellInner({
       {/* 头像/姓名 */}
       {(() => {
         // 领导模式：只显示值班领导
-        if (viewMode === 'leader' && leaderSchedule) {
+        if (viewMode === 'leader') {
+          if (!leaderSchedule) return null;
           return (
             <div className="flex h-full items-center justify-center pt-4">
               {displayMode === 'avatar' ? (
@@ -345,7 +346,7 @@ const CalendarCellInner = memo(function CalendarCellInner({
       )}
 
       {/* 空单元格 hover 提示 */}
-      {!schedule && !leaderSchedule && canManage && (
+      {((viewMode === 'leader' && !leaderSchedule) || (viewMode !== 'leader' && !schedule)) && canManage && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
           <Plus className="w-4 h-4 text-muted-foreground" />
         </div>

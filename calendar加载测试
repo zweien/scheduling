@@ -1,0 +1,318 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - button "切换侧边栏" [ref=e5]:
+          - img
+        - generic [ref=e6]:
+          - heading "值班排班系统" [level=1] [ref=e7]
+          - paragraph [ref=e8]: 版本 v1.4.1
+          - paragraph [ref=e9]: 排班
+      - generic [ref=e10]:
+        - button "切换主题，当前跟随系统" [ref=e11]: 💻
+        - generic [ref=e12]:
+          - button "切换到月历视图" [pressed] [ref=e13]:
+            - img
+            - text: 月历
+          - button "切换到列表视图" [ref=e14]:
+            - img
+            - text: 列表
+        - link "排班" [ref=e16] [cursor=pointer]:
+          - /url: /dashboard
+          - img
+          - generic [ref=e17]: 排班
+        - link "统计" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard/statistics
+          - img
+          - generic [ref=e19]: 统计
+        - link "值班人员" [ref=e20] [cursor=pointer]:
+          - /url: /dashboard/users
+          - img
+          - generic [ref=e21]: 值班人员
+        - link "日志" [ref=e22] [cursor=pointer]:
+          - /url: /dashboard/logs
+          - img
+          - generic [ref=e23]: 日志
+        - link "打印" [ref=e24] [cursor=pointer]:
+          - /url: /dashboard/print
+          - img
+          - generic [ref=e25]: 打印
+        - link "导出" [ref=e26] [cursor=pointer]:
+          - /url: /dashboard/export
+          - img
+          - generic [ref=e27]: 导出
+        - link "账号管理" [ref=e28] [cursor=pointer]:
+          - /url: /dashboard/accounts
+          - img
+          - generic [ref=e29]: 账号管理
+        - link "设置" [ref=e30] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img
+          - generic [ref=e31]: 设置
+        - button "退出" [ref=e33]:
+          - img
+          - generic [ref=e34]: 退出
+    - generic [ref=e35]:
+      - generic [ref=e38]:
+        - generic [ref=e40]:
+          - img [ref=e41]
+          - text: 生成排班
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: 开始日期
+            - textbox "开始日期" [ref=e47]
+          - generic [ref=e48]:
+            - generic [ref=e49]: 结束日期（可选）
+            - textbox "结束日期（可选）" [ref=e50]
+            - paragraph [ref=e430]: 不填将默认排 21 天
+          - button "生成排班" [ref=e51]
+      - main [ref=e52]:
+        - button "导入排班" [ref=e54]
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - heading "值班日历" [level=2] [ref=e57]
+            - generic [ref=e58]:
+              - button "全选当月" [ref=e431]
+              - button "取消选择" [disabled]
+              - button "切换为头像" [ref=e432]:
+                - img
+              - button "上个月" [ref=e60]:
+                - img
+                - generic [ref=e61]: 上月
+              - button "今天" [ref=e62]
+              - button "下个月" [ref=e63]:
+                - generic [ref=e64]: 下月
+                - img
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - heading "2026年3月" [level=3] [ref=e126]
+              - generic [ref=e127]:
+                - generic [ref=e128]: 一
+                - generic [ref=e129]: 二
+                - generic [ref=e130]: 三
+                - generic [ref=e131]: 四
+                - generic [ref=e132]: 五
+                - generic [ref=e133]: 六
+                - generic [ref=e134]: 日
+                - generic [ref=e136]: "23"
+                - generic [ref=e138]: "24"
+                - generic [ref=e140]: "25"
+                - generic [ref=e142]: "26"
+                - generic [ref=e144]: "27"
+                - generic [ref=e146]: "28"
+                - generic [ref=e147] [cursor=pointer]:
+                  - generic [ref=e148]: "1"
+                  - img [ref=e150]
+                - generic [ref=e151] [cursor=pointer]:
+                  - generic [ref=e152]: "2"
+                  - img [ref=e154]
+                - generic [ref=e155] [cursor=pointer]:
+                  - generic [ref=e156]: "3"
+                  - img [ref=e158]
+                - generic [ref=e159] [cursor=pointer]:
+                  - generic [ref=e160]: "4"
+                  - img [ref=e162]
+                - generic [ref=e163] [cursor=pointer]:
+                  - generic [ref=e164]: "5"
+                  - img [ref=e166]
+                - generic [ref=e167] [cursor=pointer]:
+                  - generic [ref=e168]: "6"
+                  - img [ref=e170]
+                - generic [ref=e171] [cursor=pointer]:
+                  - generic [ref=e172]: "7"
+                  - img [ref=e174]
+                - generic [active] [ref=e175] [cursor=pointer]:
+                  - generic [ref=e176]: "8"
+                  - img [ref=e434]
+                - generic [ref=e179] [cursor=pointer]:
+                  - generic [ref=e180]: "9"
+                  - img [ref=e182]
+                - generic [ref=e183] [cursor=pointer]:
+                  - generic [ref=e184]: "10"
+                  - img [ref=e186]
+                - generic [ref=e187] [cursor=pointer]:
+                  - generic [ref=e188]: "11"
+                  - img [ref=e190]
+                - generic [ref=e191] [cursor=pointer]:
+                  - generic [ref=e192]: "12"
+                  - img [ref=e194]
+                - generic [ref=e195] [cursor=pointer]:
+                  - generic [ref=e196]: "13"
+                  - img [ref=e198]
+                - generic [ref=e199] [cursor=pointer]:
+                  - generic [ref=e200]: "14"
+                  - generic [ref=e437]: 张三
+                  - generic:
+                    - generic: 张三
+                    - generic: W · W
+                - generic [ref=e203] [cursor=pointer]:
+                  - generic [ref=e204]: "15"
+                  - img [ref=e206]
+                - generic [ref=e207] [cursor=pointer]:
+                  - generic [ref=e208]: "16"
+                  - img [ref=e210]
+                - generic [ref=e211] [cursor=pointer]:
+                  - generic [ref=e212]: "17"
+                  - generic [ref=e440]: 张三
+                  - generic:
+                    - generic: 张三
+                    - generic: W · W
+                - generic [ref=e215] [cursor=pointer]:
+                  - generic [ref=e216]: "18"
+                  - img [ref=e218]
+                - generic [ref=e219] [cursor=pointer]:
+                  - generic [ref=e220]: "19"
+                  - generic [ref=e443]: 张三
+                  - generic:
+                    - generic: 张三
+                    - generic: W · W
+                - generic [ref=e223] [cursor=pointer]:
+                  - generic [ref=e224]: "20"
+                  - img [ref=e226]
+                - generic [ref=e227] [cursor=pointer]:
+                  - generic [ref=e228]: "21"
+                  - img [ref=e230]
+                - generic [ref=e231] [cursor=pointer]:
+                  - generic [ref=e232]: "22"
+                  - img [ref=e234]
+                - generic [ref=e235] [cursor=pointer]:
+                  - generic [ref=e236]: "23"
+                  - img [ref=e238]
+                - generic [ref=e239] [cursor=pointer]:
+                  - generic [ref=e240]: "24"
+                  - img [ref=e242]
+                - generic [ref=e243] [cursor=pointer]:
+                  - generic [ref=e244]: "25"
+                  - img [ref=e246]
+                - generic [ref=e247] [cursor=pointer]:
+                  - generic [ref=e248]: "26"
+                  - img [ref=e250]
+                - generic [ref=e251] [cursor=pointer]:
+                  - generic [ref=e252]: "27"
+                  - img [ref=e254]
+                - generic [ref=e255] [cursor=pointer]:
+                  - generic [ref=e256]: "28"
+                  - img [ref=e258]
+                - generic [ref=e259] [cursor=pointer]:
+                  - generic [ref=e260]: "29"
+                  - img [ref=e262]
+                - generic [ref=e263] [cursor=pointer]:
+                  - generic [ref=e264]: "30"
+                  - img [ref=e266]
+                - generic [ref=e267] [cursor=pointer]:
+                  - generic [ref=e268]: "31"
+                  - img [ref=e270]
+                - generic [ref=e272]: "1"
+                - generic [ref=e274]: "2"
+                - generic [ref=e276]: "3"
+                - generic [ref=e278]: "4"
+                - generic [ref=e280]: "5"
+            - generic [ref=e281]:
+              - heading "2026年4月" [level=3] [ref=e282]
+              - generic [ref=e283]:
+                - generic [ref=e284]: 一
+                - generic [ref=e285]: 二
+                - generic [ref=e286]: 三
+                - generic [ref=e287]: 四
+                - generic [ref=e288]: 五
+                - generic [ref=e289]: 六
+                - generic [ref=e290]: 日
+                - generic [ref=e292]: "30"
+                - generic [ref=e294]: "31"
+                - generic [ref=e295] [cursor=pointer]:
+                  - generic [ref=e296]: "1"
+                  - img [ref=e298]
+                - generic [ref=e299] [cursor=pointer]:
+                  - generic [ref=e300]: "2"
+                  - img [ref=e302]
+                - generic [ref=e303] [cursor=pointer]:
+                  - generic [ref=e304]: "3"
+                  - img [ref=e306]
+                - generic [ref=e307] [cursor=pointer]:
+                  - generic [ref=e308]: "4"
+                  - img [ref=e310]
+                - generic [ref=e311] [cursor=pointer]:
+                  - generic [ref=e312]: "5"
+                  - img [ref=e314]
+                - generic [ref=e315] [cursor=pointer]:
+                  - generic [ref=e316]: "6"
+                  - img [ref=e318]
+                - generic [ref=e319] [cursor=pointer]:
+                  - generic [ref=e320]: "7"
+                  - img [ref=e322]
+                - generic [ref=e323] [cursor=pointer]:
+                  - generic [ref=e324]: "8"
+                  - img [ref=e326]
+                - generic [ref=e327] [cursor=pointer]:
+                  - generic [ref=e328]: "9"
+                  - img [ref=e330]
+                - generic [ref=e331] [cursor=pointer]:
+                  - generic [ref=e332]: "10"
+                  - img [ref=e334]
+                - generic [ref=e335] [cursor=pointer]:
+                  - generic [ref=e336]: "11"
+                  - img [ref=e338]
+                - generic [ref=e339] [cursor=pointer]:
+                  - generic [ref=e340]: "12"
+                  - img [ref=e342]
+                - generic [ref=e343] [cursor=pointer]:
+                  - generic [ref=e344]: "13"
+                  - img [ref=e346]
+                - generic [ref=e347] [cursor=pointer]:
+                  - generic [ref=e348]: "14"
+                  - img [ref=e350]
+                - generic [ref=e351] [cursor=pointer]:
+                  - generic [ref=e352]: "15"
+                  - img [ref=e354]
+                - generic [ref=e355] [cursor=pointer]:
+                  - generic [ref=e356]: "16"
+                  - img [ref=e358]
+                - generic [ref=e359] [cursor=pointer]:
+                  - generic [ref=e360]: "17"
+                  - img [ref=e362]
+                - generic [ref=e363] [cursor=pointer]:
+                  - generic [ref=e364]: "18"
+                  - img [ref=e366]
+                - generic [ref=e367] [cursor=pointer]:
+                  - generic [ref=e368]: "19"
+                  - img [ref=e370]
+                - generic [ref=e371] [cursor=pointer]:
+                  - generic [ref=e372]: "20"
+                  - img [ref=e374]
+                - generic [ref=e375] [cursor=pointer]:
+                  - generic [ref=e376]: "21"
+                  - img [ref=e378]
+                - generic [ref=e379] [cursor=pointer]:
+                  - generic [ref=e380]: "22"
+                  - img [ref=e382]
+                - generic [ref=e383] [cursor=pointer]:
+                  - generic [ref=e384]: "23"
+                  - img [ref=e386]
+                - generic [ref=e387] [cursor=pointer]:
+                  - generic [ref=e388]: "24"
+                  - img [ref=e390]
+                - generic [ref=e391] [cursor=pointer]:
+                  - generic [ref=e392]: "25"
+                  - img [ref=e394]
+                - generic [ref=e395] [cursor=pointer]:
+                  - generic [ref=e396]: "26"
+                  - img [ref=e398]
+                - generic [ref=e399] [cursor=pointer]:
+                  - generic [ref=e400]: "27"
+                  - img [ref=e402]
+                - generic [ref=e403] [cursor=pointer]:
+                  - generic [ref=e404]: "28"
+                  - img [ref=e406]
+                - generic [ref=e407] [cursor=pointer]:
+                  - generic [ref=e408]: "29"
+                  - img [ref=e410]
+                - generic [ref=e411] [cursor=pointer]:
+                  - generic [ref=e412]: "30"
+                  - img [ref=e414]
+                - generic [ref=e416]: "1"
+                - generic [ref=e418]: "2"
+                - generic [ref=e420]: "3"
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e426] [cursor=pointer]:
+    - img [ref=e427]
+  - alert [ref=e444]
