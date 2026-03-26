@@ -18,6 +18,7 @@ import { moveScheduleWithReason, swapSchedulesWithReason } from '@/lib/schedule-
 import { revalidatePath } from 'next/cache';
 import { buildScheduleTemplateWorkbookByType } from '@/lib/imports/schedule-import-template';
 import { importScheduleRows, previewScheduleImport } from '@/lib/imports/schedule-import';
+import { backfillLeaderSchedules, getDefaultLeaderId, getLeaderSchedulesByDates, setLeaderSchedule } from '@/lib/leader-schedules';
 import type { AutoScheduleStartMode, ScheduleImportStrategy, ScheduleImportTemplateType } from '@/types';
 import type { ScheduleImportPreview } from '@/types';
 import type { ScheduleImportSuccessResult } from '@/lib/imports/schedule-import';
@@ -359,6 +360,9 @@ export async function importScheduleAction(
     getUserByName,
     getSchedulesByDates,
     setSchedule,
+    getDefaultLeaderId,
+    getLeaderSchedulesByDates,
+    setLeaderSchedule,
   }, templateType);
 
   if (!result.success) {
@@ -386,4 +390,23 @@ export async function importScheduleAction(
   }
 
   return result;
+}
+
+export async function backfillLeaderSchedulesAction(): Promise<{ success: boolean; error?: string; filledCount?: number }> {
+  const account = await requireAdmin();
+
+  try {
+    const filledCount = backfillLeaderSchedules();
+    await addWebLog(
+      'backfill_leader_schedules',
+      '批量补全值班领导',
+      undefined,
+      `已补全 ${filledCount} 条`,
+      { username: account.username, role: account.role }
+    );
+    revalidatePath('/dashboard');
+    return { success: true, filledCount };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
 }

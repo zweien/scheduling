@@ -9,6 +9,9 @@ export type ScheduleImportDependencies = {
   getUserByName: (name: string) => ImportUser | undefined;
   getSchedulesByDates: (dates: string[]) => ExistingSchedule[];
   setSchedule: (date: string, userId: number, isManual: boolean) => void;
+  getDefaultLeaderId?: () => number | null;
+  getLeaderSchedulesByDates?: (dates: string[]) => { date: string }[];
+  setLeaderSchedule?: (date: string, leaderId: number, isManual?: boolean) => void;
 };
 
 export type ScheduleImportSuccessResult = {
@@ -291,6 +294,17 @@ export async function importScheduleRows(
   let skippedCount = 0;
   let overwrittenCount = 0;
 
+  // 预加载已有领导排班日期，用于补全时判断是否需要设置
+  let existingLeaderDates: Set<string> | undefined;
+  const { getDefaultLeaderId, setLeaderSchedule, getLeaderSchedulesByDates } = dependencies;
+  if (getDefaultLeaderId && setLeaderSchedule && getLeaderSchedulesByDates) {
+    const allImportDates = preview.rows.map(row => row.date);
+    const existingLeaderSchedules = getLeaderSchedulesByDates(allImportDates);
+    existingLeaderDates = new Set(existingLeaderSchedules.map(s => s.date));
+  }
+
+  const defaultLeaderId = getDefaultLeaderId?.();
+
   for (const row of preview.rows) {
     if (conflictDates.has(row.date) && strategy === 'skip') {
       skippedCount += 1;
@@ -298,6 +312,13 @@ export async function importScheduleRows(
     }
 
     dependencies.setSchedule(row.date, row.userId, row.isManual);
+
+    // 补全值班领导：有默认领导且该日期无领导排班时自动设置
+    if (defaultLeaderId && existingLeaderDates && setLeaderSchedule && !existingLeaderDates.has(row.date)) {
+      setLeaderSchedule(row.date, defaultLeaderId, false);
+      existingLeaderDates.add(row.date);
+    }
+
     importedCount += 1;
 
     if (conflictDates.has(row.date) && strategy === 'overwrite') {
