@@ -845,32 +845,12 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
           canManage={canManage}
           onRequestGenerate={onRequestGenerate}
         />
-      ) : null}
-
-      <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
-        <MonthCalendar
-          month={currentMonth}
-          schedules={currentMonthSchedules}
-          leaderSchedules={currentMonthLeaderSchedules}
-          users={users}
-          today={today}
-          displayMode={displayMode}
-          viewMode={viewMode}
-          dragDate={dragDate}
-          selectedDates={selectedDates}
-          onCellClick={handleCellClick}
-          onCellContextMenu={handleCellContextMenu}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          canManage={canManage}
-        />
-        {isMobileSingleMonthLayout ? null : (
+      ) : (
+        <div className={isMobileSingleMonthLayout ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
           <MonthCalendar
-            month={nextMonth}
-            schedules={nextMonthSchedules}
-            leaderSchedules={nextMonthLeaderSchedules}
+            month={currentMonth}
+            schedules={currentMonthSchedules}
+            leaderSchedules={currentMonthLeaderSchedules}
             users={users}
             today={today}
             displayMode={displayMode}
@@ -885,8 +865,28 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
             onDrop={handleDrop}
             canManage={canManage}
           />
-        )}
-      </div>
+          {isMobileSingleMonthLayout ? null : (
+            <MonthCalendar
+              month={nextMonth}
+              schedules={nextMonthSchedules}
+              leaderSchedules={nextMonthLeaderSchedules}
+              users={users}
+              today={today}
+              displayMode={displayMode}
+              viewMode={viewMode}
+              dragDate={dragDate}
+              selectedDates={selectedDates}
+              onCellClick={handleCellClick}
+              onCellContextMenu={handleCellContextMenu}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              canManage={canManage}
+            />
+          )}
+        </div>
+      )}
 
       {canManage ? (
         <UserSelectDialog
