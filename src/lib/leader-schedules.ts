@@ -85,9 +85,14 @@ export function backfillLeaderSchedules(): number {
     'INSERT OR IGNORE INTO leader_schedules (date, leader_id, is_manual) VALUES (?, ?, 0)'
   );
 
-  for (const { date } of missingDates) {
-    insert.run(date, defaultLeaderId);
-  }
+  const backfill = db.transaction(() => {
+    let count = 0;
+    for (const { date } of missingDates) {
+      const result = insert.run(date, defaultLeaderId);
+      count += result.changes;
+    }
+    return count;
+  });
 
-  return missingDates.length;
+  return backfill();
 }

@@ -296,13 +296,14 @@ export async function importScheduleRows(
 
   // 预加载已有领导排班日期，用于补全时判断是否需要设置
   let existingLeaderDates: Set<string> | undefined;
-  if (dependencies.getDefaultLeaderId && dependencies.setLeaderSchedule && dependencies.getLeaderSchedulesByDates) {
+  const { getDefaultLeaderId, setLeaderSchedule, getLeaderSchedulesByDates } = dependencies;
+  if (getDefaultLeaderId && setLeaderSchedule && getLeaderSchedulesByDates) {
     const allImportDates = preview.rows.map(row => row.date);
-    const existingLeaderSchedules = dependencies.getLeaderSchedulesByDates(allImportDates);
+    const existingLeaderSchedules = getLeaderSchedulesByDates(allImportDates);
     existingLeaderDates = new Set(existingLeaderSchedules.map(s => s.date));
   }
 
-  const defaultLeaderId = dependencies.getDefaultLeaderId?.();
+  const defaultLeaderId = getDefaultLeaderId?.();
 
   for (const row of preview.rows) {
     if (conflictDates.has(row.date) && strategy === 'skip') {
@@ -313,8 +314,8 @@ export async function importScheduleRows(
     dependencies.setSchedule(row.date, row.userId, row.isManual);
 
     // 补全值班领导：有默认领导且该日期无领导排班时自动设置
-    if (defaultLeaderId && existingLeaderDates && !existingLeaderDates.has(row.date)) {
-      dependencies.setLeaderSchedule!(row.date, defaultLeaderId, false);
+    if (defaultLeaderId && existingLeaderDates && setLeaderSchedule && !existingLeaderDates.has(row.date)) {
+      setLeaderSchedule(row.date, defaultLeaderId, false);
       existingLeaderDates.add(row.date);
     }
 
