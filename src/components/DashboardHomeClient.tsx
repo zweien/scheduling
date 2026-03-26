@@ -7,6 +7,8 @@ import { CalendarView } from '@/components/CalendarView';
 import { ListView } from '@/components/ListView';
 import { Button } from '@/components/ui/button';
 import { ScheduleImportDialog } from '@/components/ScheduleImportDialog';
+import { backfillLeaderSchedulesAction } from '@/app/actions/schedule';
+import { toast } from 'sonner';
 import type { AccountRole } from '@/types';
 
 type ViewMode = 'calendar' | 'list';
@@ -20,10 +22,30 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [refreshKey, setRefreshKey] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
   const canManage = role === 'admin';
 
   const handleScheduleGenerated = () => {
     setRefreshKey(key => key + 1);
+  };
+
+  const handleBackfillLeaderSchedules = async () => {
+    setBackfilling(true);
+    try {
+      const result = await backfillLeaderSchedulesAction();
+      if (result.success) {
+        toast.success(`已补全 ${result.filledCount} 条值班领导排班`);
+        if (result.filledCount! > 0) {
+          handleScheduleGenerated();
+        }
+      } else {
+        toast.error(result.error ?? '补全失败');
+      }
+    } catch {
+      toast.error('补全失败');
+    } finally {
+      setBackfilling(false);
+    }
   };
 
   const handleOpenScheduleGenerator = () => {
@@ -53,7 +75,10 @@ export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
 
         <main className="flex-1 p-4 bg-muted/30 overflow-y-auto">
           {canManage ? (
-            <div className="mb-4 flex justify-end">
+            <div className="mb-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={handleBackfillLeaderSchedules} disabled={backfilling}>
+                {backfilling ? '补全中...' : '补全值班领导'}
+              </Button>
               <Button onClick={() => setImportOpen(true)}>导入排班</Button>
             </div>
           ) : null}

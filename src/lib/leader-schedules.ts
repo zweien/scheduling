@@ -66,3 +66,28 @@ export function getDefaultLeaderId(): number | null {
 export function setDefaultLeaderId(id: number | null): void {
   db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('default_leader_id', ?)").run(id ? String(id) : '');
 }
+
+export function backfillLeaderSchedules(): number {
+  const defaultLeaderId = getDefaultLeaderId();
+  if (!defaultLeaderId) return 0;
+
+  // 查找有排班但无领导排班的日期
+  const missingDates = db.prepare(`
+    SELECT s.date FROM schedules s
+    LEFT JOIN leader_schedules ls ON s.date = ls.date
+    WHERE ls.date IS NULL
+    ORDER BY s.date
+  `).all() as { date: string }[];
+
+  if (missingDates.length === 0) return 0;
+
+  const insert = db.prepare(
+    'INSERT OR IGNORE INTO leader_schedules (date, leader_id, is_manual) VALUES (?, ?, 0)'
+  );
+
+  for (const { date } of missingDates) {
+    insert.run(date, defaultLeaderId);
+  }
+
+  return missingDates.length;
+}
