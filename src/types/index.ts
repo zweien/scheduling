@@ -177,7 +177,8 @@ export type Action =
   | 'toggle_leader_active'
   | 'replace_leader_schedule'
   | 'delete_leader_schedule'
-  | 'set_default_leader';
+  | 'set_default_leader'
+  | 'backfill_leader_schedules';
 
 export interface Leader {
   id: number;
