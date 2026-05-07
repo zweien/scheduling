@@ -37,6 +37,10 @@ function buildScheduleMap(schedules: ScheduleWithUser[]) {
   return new Map(schedules.map(schedule => [schedule.date, schedule]));
 }
 
+function sanitizeCellText(value: string) {
+  return value.replace(/\s*\r?\n\s*/g, ' ').replace(/\|/g, '\\|').trim();
+}
+
 function formatCell(day: Date, monthDate: Date, schedule?: ScheduleWithUser) {
   if (!isSameMonth(day, monthDate)) {
     return '';
@@ -47,7 +51,7 @@ function formatCell(day: Date, monthDate: Date, schedule?: ScheduleWithUser) {
     return dayText;
   }
 
-  return `${dayText} ${schedule.user.name}`;
+  return `${dayText} ${sanitizeCellText(schedule.user.name)}`;
 }
 
 export function getMonthDateRange(month: string): MonthDateRange | null {

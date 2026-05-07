@@ -61,3 +61,30 @@ test('非法月份构建 markdown 时抛错，供 API 层转换为 400', async (
 
   assert.throws(() => buildMonthlyCalendarMarkdown('2026-13', []), /Invalid month/);
 });
+
+test('姓名包含 markdown 特殊字符或换行时会被清洗，避免打坏月历表格', async () => {
+  const { buildMonthlyCalendarMarkdown } = await loadModule();
+
+  const markdown = buildMonthlyCalendarMarkdown('2026-03', [
+    {
+      id: 1,
+      date: '2026-03-16',
+      user_id: 1,
+      original_user_id: 1,
+      adjust_reason: null,
+      is_manual: false,
+      created_at: '2026-03-16 00:00:00',
+      user: {
+        id: 1,
+        name: '张|三\n值班',
+        sort_order: 1,
+        is_active: 1,
+        created_at: '2026-03-16 00:00:00',
+      },
+      original_user: null,
+    },
+  ]);
+
+  assert.match(markdown, /\| 16 张\\\|三 值班 \| 17 \| 18 \| 19 \| 20 \| 21 \| 22 \|/);
+  assert.equal(markdown.includes('\n值班 | 17 |'), false);
+});
