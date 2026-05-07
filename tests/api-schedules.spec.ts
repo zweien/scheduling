@@ -213,3 +213,152 @@ test('月历 markdown 接口缺少或非法 month 时返回 400', async ({ page,
     },
   });
 });
+
+test('查询接口成功后写入 api_request 日志', async ({ page, request }) => {
+  await login(page, adminUsername, adminPassword);
+  const token = await createToken(page, 'api-log-read-token');
+
+  const response = await request.get(`${baseUrl}/api/schedules?start=2026-03-16&end=2026-03-16`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(response.status()).toBe(200);
+
+  const log = db.prepare(`
+    SELECT action, target, new_value, operator_username, operator_role, source
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    action: string;
+    target: string;
+    new_value: string | null;
+    operator_username: string | null;
+    operator_role: string | null;
+    source: string | null;
+  };
+
+  expect(log).toMatchObject({
+    action: 'api_request',
+    target: 'GET /api/schedules 200',
+    new_value: 'OK',
+    operator_username: 'token:api-log-read-token',
+    operator_role: 'admin',
+    source: 'api',
+  });
+});
+
+test('未带 token 的 401 也会写入 api_request 日志', async ({ request }) => {
+  const response = await request.get(`${baseUrl}/api/schedules?start=2026-03-16&end=2026-03-16`);
+
+  expect(response.status()).toBe(401);
+
+  const log = db.prepare(`
+    SELECT target, new_value, operator_username, operator_role, source
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    target: string;
+    new_value: string | null;
+    operator_username: string | null;
+    operator_role: string | null;
+    source: string | null;
+  };
+
+  expect(log).toMatchObject({
+    target: 'GET /api/schedules 401',
+    new_value: 'UNAUTHORIZED',
+    operator_username: 'anonymous',
+    operator_role: null,
+    source: 'api',
+  });
+});
+
+test('monthly-markdown 成功与 month 参数错误都会写入 api_request 日志', async ({ page, request }) => {
+  await login(page, adminUsername, adminPassword);
+  const token = await createToken(page, 'api-log-monthly-token');
+
+  const success = await request.get(`${baseUrl}/api/schedules/monthly-markdown?month=2026-03`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(success.status()).toBe(200);
+
+  const successLog = db.prepare(`
+    SELECT target, new_value
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    target: string;
+    new_value: string | null;
+  };
+
+  expect(successLog).toMatchObject({
+    target: 'GET /api/schedules/monthly-markdown 200',
+    new_value: 'OK',
+  });
+
+  const invalid = await request.get(`${baseUrl}/api/schedules/monthly-markdown?month=2026-13`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(invalid.status()).toBe(400);
+
+  const invalidLog = db.prepare(`
+    SELECT target, new_value
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    target: string;
+    new_value: string | null;
+  };
+
+  expect(invalidLog).toMatchObject({
+    target: 'GET /api/schedules/monthly-markdown 400',
+    new_value: 'INVALID_INPUT',
+  });
+});
+
+test('leaders 查询成功后写入 api_request 日志', async ({ page, request }) => {
+  await login(page, adminUsername, adminPassword);
+  const token = await createToken(page, 'api-log-leaders-token');
+
+  const response = await request.get(`${baseUrl}/api/leaders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(response.status()).toBe(200);
+
+  const log = db.prepare(`
+    SELECT target, new_value, operator_username
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    target: string;
+    new_value: string | null;
+    operator_username: string | null;
+  };
+
+  expect(log).toMatchObject({
+    target: 'GET /api/leaders 200',
+    new_value: 'OK',
+    operator_username: 'token:api-log-leaders-token',
+  });
+});

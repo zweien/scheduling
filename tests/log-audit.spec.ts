@@ -90,6 +90,46 @@ test('API 写操作可记录来源并支持筛选导出', async ({ page }) => {
 
   expect(response.ok()).toBeTruthy();
 
+  const replaceLog = db.prepare(`
+    SELECT action, source, operator_username
+    FROM logs
+    WHERE action = 'replace_schedule'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    action: string;
+    source: string | null;
+    operator_username: string | null;
+  };
+
+  expect(replaceLog).toMatchObject({
+    action: 'replace_schedule',
+    source: 'api',
+    operator_username: `token:audit-token-${suffix}`,
+  });
+
+  const requestLog = db.prepare(`
+    SELECT action, target, new_value, source, operator_username
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    action: string;
+    target: string;
+    new_value: string | null;
+    source: string | null;
+    operator_username: string | null;
+  };
+
+  expect(requestLog).toMatchObject({
+    action: 'api_request',
+    target: 'PATCH /api/schedules/2030-01-15 200',
+    new_value: 'OK',
+    source: 'api',
+    operator_username: `token:audit-token-${suffix}`,
+  });
+
   await page.goto(`${baseUrl}/dashboard/logs`);
 
   await page.getByLabel('来源').selectOption('api');
@@ -98,7 +138,8 @@ test('API 写操作可记录来源并支持筛选导出', async ({ page }) => {
 
   await expect(page.locator('span').filter({ hasText: 'API' }).first()).toBeVisible();
   await expect(page.locator('div.font-medium').filter({ hasText: new RegExp(`^token:audit-token-${suffix}$`) }).first()).toBeVisible();
-  await expect(page.getByText('2030-01-15')).toBeVisible();
+  await expect(page.locator('div.min-w-0.break-all').filter({ hasText: /^日期: 2030-01-15$/ }).first()).toBeVisible();
+  await expect(page.locator('div.min-w-0.break-all').filter({ hasText: /^PATCH \/api\/schedules\/2030-01-15 200$/ }).first()).toBeVisible();
 
   const jsonDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: '导出 JSON' }).click();
@@ -154,6 +195,30 @@ test('普通用户 API 写操作被拒绝时不记录成功写日志', async ({ 
   `).get('%2030-01-16%') as { count: number };
 
   expect(forbiddenLog.count).toBe(0);
+
+  const requestLog = db.prepare(`
+    SELECT action, target, new_value, source, operator_username, operator_role
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    action: string;
+    target: string;
+    new_value: string | null;
+    source: string | null;
+    operator_username: string | null;
+    operator_role: string | null;
+  };
+
+  expect(requestLog).toMatchObject({
+    action: 'api_request',
+    target: 'PATCH /api/schedules/2030-01-16 403',
+    new_value: 'FORBIDDEN',
+    source: 'api',
+    operator_username: `token:user-audit-token-${suffix}`,
+    operator_role: 'user',
+  });
 });
 
 test('日志页面显示换班理由', async ({ page }) => {
@@ -184,7 +249,7 @@ test('日志页面显示换班理由', async ({ page }) => {
   await login(page, adminUsername, adminPassword);
   await page.goto(`${baseUrl}/dashboard/logs`);
 
-  await expect(page.getByText('临时互换白夜班安排说明')).toBeVisible();
+  await expect(page.getByText('理由：临时互换白夜班安排说明').first()).toBeVisible();
 });
 
 test('日志页面显示自动排班动作', async ({ page }) => {
@@ -216,5 +281,5 @@ test('日志页面显示自动排班动作', async ({ page }) => {
   await page.goto(`${baseUrl}/dashboard/logs`);
 
   await expect(page.locator('span').filter({ hasText: '自动排班' }).first()).toBeVisible();
-  await expect(page.getByText('起始日期: 2026-03-17')).toBeVisible();
+  await expect(page.locator('div.min-w-0.break-all').filter({ hasText: /^起始日期: 2026-03-17$/ }).first()).toBeVisible();
 });

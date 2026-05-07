@@ -236,3 +236,71 @@ test('普通用户会话可以禁用自己的 token', async ({ page }) => {
   expect(disabled.status).toBe(200);
   expect(disabled.body.disabledAt).toBeTruthy();
 });
+
+test('token 管理接口成功与失败都会写入 api_request 日志', async ({ page }) => {
+  await login(page, adminUsername, adminPassword);
+
+  const created = await page.evaluate(async () => {
+    const response = await fetch('/api/tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'token-log-audit' }),
+    });
+
+    return {
+      status: response.status,
+      body: await response.json(),
+    };
+  });
+
+  expect(created.status).toBe(200);
+
+  const createLog = db.prepare(`
+    SELECT target, new_value, source
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    target: string;
+    new_value: string | null;
+    source: string | null;
+  };
+
+  expect(createLog).toMatchObject({
+    target: 'POST /api/tokens 200',
+    new_value: 'OK',
+    source: 'api',
+  });
+
+  const invalid = await page.evaluate(async () => {
+    const response = await fetch('/api/tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '   ' }),
+    });
+
+    return {
+      status: response.status,
+      body: await response.json(),
+    };
+  });
+
+  expect(invalid.status).toBe(400);
+
+  const invalidLog = db.prepare(`
+    SELECT target, new_value
+    FROM logs
+    WHERE action = 'api_request'
+    ORDER BY id DESC
+    LIMIT 1
+  `).get() as {
+    target: string;
+    new_value: string | null;
+  };
+
+  expect(invalidLog).toMatchObject({
+    target: 'POST /api/tokens 400',
+    new_value: 'INVALID_INPUT',
+  });
+});
