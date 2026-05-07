@@ -152,3 +152,64 @@ test('管理员 Bearer Token 可以按日期修改排班', async ({ page, reques
     isManual: true,
   });
 });
+
+test('月历 markdown 接口缺少 Bearer Token 时返回 401', async ({ request }) => {
+  const response = await request.get(`${baseUrl}/api/schedules/monthly-markdown?month=2026-03`);
+
+  expect(response.status()).toBe(401);
+  await expect(response.json()).resolves.toMatchObject({
+    error: {
+      code: 'UNAUTHORIZED',
+    },
+  });
+});
+
+test('Bearer Token 可以按月查询 markdown 值班表', async ({ page, request }) => {
+  await login(page, adminUsername, adminPassword);
+  const token = await createToken(page, 'monthly-markdown-token');
+
+  const response = await request.get(`${baseUrl}/api/schedules/monthly-markdown?month=2026-03`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('text/markdown');
+
+  const markdown = await response.text();
+  expect(markdown).toContain('# 2026年3月值班表');
+  expect(markdown).toContain('| 周一 | 周二 | 周三 | 周四 | 周五 | 周六 | 周日 |');
+  expect(markdown).toContain('16 张三');
+});
+
+test('月历 markdown 接口缺少或非法 month 时返回 400', async ({ page, request }) => {
+  await login(page, adminUsername, adminPassword);
+  const token = await createToken(page, 'monthly-markdown-invalid-month-token');
+
+  const missing = await request.get(`${baseUrl}/api/schedules/monthly-markdown`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(missing.status()).toBe(400);
+  await expect(missing.json()).resolves.toMatchObject({
+    error: {
+      code: 'INVALID_INPUT',
+    },
+  });
+
+  const invalid = await request.get(`${baseUrl}/api/schedules/monthly-markdown?month=2026-13`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  expect(invalid.status()).toBe(400);
+  await expect(invalid.json()).resolves.toMatchObject({
+    error: {
+      code: 'INVALID_INPUT',
+    },
+  });
+});
