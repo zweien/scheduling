@@ -175,7 +175,7 @@ test('Bearer Token 可以按月查询 markdown 值班表', async ({ page, reques
   });
 
   expect(response.status()).toBe(200);
-  expect(response.headers()['content-type']).toContain('text/markdown');
+  expect(response.headers()['content-type']).toBe('text/markdown; charset=utf-8');
 
   const markdown = await response.text();
   expect(markdown).toContain('# 2026年3月值班表');
