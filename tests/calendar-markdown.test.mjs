@@ -30,10 +30,23 @@ test('按周一到周日输出 markdown 月历并保留空白补位', async () =
     },
   ]);
 
-  assert.match(markdown, /^# 2026年3月值班表/m);
-  assert.match(markdown, /\| 周一 \| 周二 \| 周三 \| 周四 \| 周五 \| 周六 \| 周日 \|/);
-  assert.match(markdown, /\|  \|  \|  \|  \|  \|  \| 1 \|/);
-  assert.match(markdown, /16 张三/);
+  const lines = markdown.split('\n');
+
+  assert.equal(lines[0], '# 2026年3月值班表');
+  assert.equal(lines[2], '| 周一 | 周二 | 周三 | 周四 | 周五 | 周六 | 周日 |');
+  assert.equal(lines[3], '| --- | --- | --- | --- | --- | --- | --- |');
+  assert.equal(lines[4], '|  |  |  |  |  |  | 1 |');
+  assert.match(markdown, /\| 16 张三 \| 17 \| 18 \| 19 \| 20 \| 21 \| 22 \|/);
+  assert.equal(lines.at(-1), '| 30 | 31 |  |  |  |  |  |');
+});
+
+test('合法月份返回起止日期，供 API 层查询整月排班', async () => {
+  const { getMonthDateRange } = await loadModule();
+
+  assert.deepEqual(getMonthDateRange('2026-03'), {
+    startDate: '2026-03-01',
+    endDate: '2026-03-31',
+  });
 });
 
 test('非法月份返回空结果，供 API 层判定为 400', async () => {
@@ -41,4 +54,10 @@ test('非法月份返回空结果，供 API 层判定为 400', async () => {
 
   assert.equal(getMonthDateRange('2026-13'), null);
   assert.equal(getMonthDateRange('202603'), null);
+});
+
+test('非法月份构建 markdown 时抛错，供 API 层转换为 400', async () => {
+  const { buildMonthlyCalendarMarkdown } = await loadModule();
+
+  assert.throws(() => buildMonthlyCalendarMarkdown('2026-13', []), /Invalid month/);
 });
