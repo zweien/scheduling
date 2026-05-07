@@ -1,6 +1,7 @@
 // src/lib/logs.ts
 import db from './db';
 import { getCurrentRequestIp, extractIpAddress } from './request-context';
+import { buildApiRequestLogPayload, type ApiRequestLogPayloadInput } from './api-request-log';
 import type { Log, Action, AccountRole, LogSource } from '@/types';
 
 export interface LogFilters {
@@ -160,6 +161,20 @@ export function addApiLog(
     ipAddress: extractIpAddress(request.headers),
     source: 'api',
     reason,
+  });
+}
+
+export function addApiRequestLog(
+  input: ApiRequestLogPayloadInput,
+  request: { headers: { get(name: string): string | null } },
+  actor?: LogActor | null
+) {
+  const payload = buildApiRequestLogPayload(input);
+
+  insertLog(payload.action, payload.target, payload.oldValue, payload.newValue, {
+    actor,
+    ipAddress: extractIpAddress(request.headers),
+    source: 'api',
   });
 }
 
