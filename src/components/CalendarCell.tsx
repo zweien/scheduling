@@ -106,16 +106,9 @@ const CalendarCellInner = memo(function CalendarCellInner({
         {day}
       </div>
 
-      {/* 手动调整标记 */}
-      {schedule?.is_manual && (viewMode !== 'leader' || leaderSchedule) && (
-        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" />
-      )}
-
-      {/* 日期备注标记 */}
-      {dateNote && (
-        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-blue-500" title="该日期有备注">
-          <StickyNote className="w-2 h-2 text-white" />
-        </div>
+      {/* 人工干预标记：换班或备注时显示 */}
+      {(showOriginalAndCurrent || dateNote) && (viewMode !== 'leader' || leaderSchedule) && (
+        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" title={dateNote ? '该日期有换班或备注' : '该日期有换班'} />
       )}
 
       {/* 节假日标记 */}
