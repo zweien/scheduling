@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduleGenerator } from '@/components/ScheduleGenerator';
-import { CalendarPlus } from 'lucide-react';
+import { CalendarPlus, X } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,6 +25,16 @@ export function Sidebar({ isOpen, onScheduleGenerated, onClose }: SidebarProps) 
         `}
       >
         <div className="p-4 space-y-4 overflow-y-auto h-full">
+          <div className="flex items-center justify-between lg:hidden">
+            <span className="text-sm font-medium text-muted-foreground">菜单</span>
+            <button
+              onClick={onClose}
+              className="rounded-md p-1 hover:bg-muted"
+              aria-label="关闭侧边栏"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
           <Card className="rounded-lg">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
