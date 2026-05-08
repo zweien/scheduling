@@ -36,6 +36,24 @@ function addColumnIfMissing(database: Database.Database, tableName: string, colu
 
 export const MIGRATIONS: Migration[] = [
   {
+    version: '009_date_notes',
+    up(database) {
+      // 创建日期备注表
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS date_notes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          date TEXT NOT NULL UNIQUE,
+          content TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_date_notes_date ON date_notes(date);
+      `);
+    },
+  },
+
+  {
     version: '001_initial_schema',
     up(database) {
       database.exec(`

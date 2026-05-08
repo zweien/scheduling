@@ -19,6 +19,8 @@ import { exportSelectedSchedulesToXLSX } from '@/app/actions/export';
 import { useSchedules, useInvalidateSchedules } from '@/hooks/useSchedules';
 import { useLeaderSchedules, useInvalidateLeaderSchedules } from '@/hooks/useLeaderSchedules';
 import { useAssignableUsers } from '@/hooks/useUsers';
+import { useDateNotes, useInvalidateDateNotes } from '@/hooks/useDateNotes';
+import { DateNoteDialog } from './DateNoteDialog';
 import type { AutoScheduleStartMode, ScheduleWithUser, User, LeaderScheduleWithLeader, Leader } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
@@ -73,6 +75,7 @@ interface MonthCalendarProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (date: string) => void;
   canManage: boolean;
+  dateNotes?: Map<string, string>;
 }
 
 const MonthCalendar = memo(function MonthCalendar({
@@ -91,6 +94,7 @@ const MonthCalendar = memo(function MonthCalendar({
   onDragOver,
   onDrop,
   canManage,
+  dateNotes,
 }: MonthCalendarProps) {
   // 使用 useMemo 缓存日期计算
   const days = useMemo(() => {
@@ -165,6 +169,7 @@ const MonthCalendar = memo(function MonthCalendar({
               animationDelay={animationDelay}
               displayMode={displayMode}
               canManage={canManage}
+              dateNote={dateNotes?.get(dateStr)}
             />
           );
         })}
@@ -193,6 +198,8 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
   const [autoScheduleDate, setAutoScheduleDate] = useState<string | null>(null);
   const [autoScheduleError, setAutoScheduleError] = useState<string | null>(null);
+  const [dateNoteDialogOpen, setDateNoteDialogOpen] = useState(false);
+  const [selectedDateNote, setSelectedDateNote] = useState<string>('');
   const hasCustomizedDisplayModeRef = useRef(false);
   const contextMenuTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -203,8 +210,19 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const { data: schedules = [], isLoading: isLoadingSchedules, refetch: refetchSchedules } = useSchedules(currentMonth);
   const { data: leaderSchedules = [], isLoading: isLoadingLeaderSchedules } = useLeaderSchedules(currentMonth);
   const { data: users = [], isLoading: isLoadingUsers } = useAssignableUsers();
+  const { data: dateNotesData = [] } = useDateNotes(currentMonth);
   const invalidateSchedules = useInvalidateSchedules();
   const invalidateLeaderSchedules = useInvalidateLeaderSchedules();
+  const invalidateDateNotes = useInvalidateDateNotes();
+
+  // 构建日期备注 Map
+  const dateNotesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const note of dateNotesData) {
+      map.set(note.date, note.content);
+    }
+    return map;
+  }, [dateNotesData]);
 
   // 获取领导列表（用于选择对话框）
   const [leaders, setLeaders] = useState<Leader[]>([]);
@@ -711,6 +729,14 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
         await removeSchedule(targetDate);
         await refreshData();
       })();
+      return;
+    }
+
+    if (action === 'edit_note') {
+      const noteContent = dateNotesMap.get(targetDate) ?? '';
+      setSelectedDateNote(noteContent);
+      setDateNoteDialogOpen(true);
+      return;
     }
   };
 
@@ -864,6 +890,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             canManage={canManage}
+            dateNotes={dateNotesMap}
           />
           {isMobileSingleMonthLayout ? null : (
             <MonthCalendar
@@ -883,6 +910,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
               onDragOver={handleDragOver}
               onDrop={handleDrop}
               canManage={canManage}
+              dateNotes={dateNotesMap}
             />
           )}
         </div>
@@ -968,6 +996,21 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
           }}
           onBatchDelete={() => {
             void handleBatchDelete();
+          }}
+        />
+      ) : null}
+
+      {canManage ? (
+        <DateNoteDialog
+          open={dateNoteDialogOpen}
+          date={selectedDate}
+          initialContent={selectedDateNote}
+          onClose={() => {
+            setDateNoteDialogOpen(false);
+            setSelectedDateNote('');
+          }}
+          onSuccess={() => {
+            void invalidateDateNotes(currentMonth);
           }}
         />
       ) : null}

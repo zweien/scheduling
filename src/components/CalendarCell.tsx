@@ -6,7 +6,7 @@ import { memo } from 'react';
 import type { ScheduleWithUser, LeaderScheduleWithLeader } from '@/types';
 import { getAvatarColor, getAvatarInitial } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
-import { Plus } from 'lucide-react';
+import { Plus, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CalendarCellProps {
@@ -31,6 +31,8 @@ interface CalendarCellProps {
   holidayName?: string;
   /** 拖拽预览：被拖拽的用户信息 */
   dragPreviewUser?: { id: number; name: string };
+  /** 日期备注内容 */
+  dateNote?: string;
 }
 
 const CalendarCellInner = memo(function CalendarCellInner({
@@ -54,6 +56,7 @@ const CalendarCellInner = memo(function CalendarCellInner({
   isHoliday = false,
   holidayName,
   dragPreviewUser,
+  dateNote,
 }: CalendarCellProps) {
   const day = date.getDate();
   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -106,6 +109,13 @@ const CalendarCellInner = memo(function CalendarCellInner({
       {/* 手动调整标记 */}
       {schedule?.is_manual && (viewMode !== 'leader' || leaderSchedule) && (
         <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-amber-500" />
+      )}
+
+      {/* 日期备注标记 */}
+      {dateNote && (
+        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-blue-500" title="该日期有备注">
+          <StickyNote className="w-2 h-2 text-white" />
+        </div>
       )}
 
       {/* 节假日标记 */}
@@ -328,6 +338,37 @@ const CalendarCellInner = memo(function CalendarCellInner({
           <div className="text-xs text-muted-foreground mt-0.5">
             {schedule.user.organization} · {schedule.user.category}
           </div>
+          {/* 备注信息 */}
+          {dateNote && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <StickyNote className="w-3 h-3" />
+                备注
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap max-w-[200px]">
+                {dateNote}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 只有备注没有排班时的悬浮提示 */}
+      {!schedule && dateNote && viewMode !== 'leader' && (
+        <div
+          data-testid="note-tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10
+            opacity-0 group-hover:opacity-100 pointer-events-none
+            transition-opacity duration-150
+            bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-2 min-w-[120px]"
+        >
+          <div className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
+            <StickyNote className="w-3 h-3" />
+            备注
+          </div>
+          <div className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap max-w-[200px]">
+            {dateNote}
+          </div>
         </div>
       )}
 
@@ -342,6 +383,18 @@ const CalendarCellInner = memo(function CalendarCellInner({
         >
           <div className="text-sm font-medium">{leaderSchedule.leader.name}</div>
           <div className="text-xs text-muted-foreground mt-0.5">值班领导</div>
+          {/* 备注信息 */}
+          {dateNote && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <StickyNote className="w-3 h-3" />
+                备注
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap max-w-[200px]">
+                {dateNote}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
