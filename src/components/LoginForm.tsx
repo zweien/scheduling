@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BarChart3, CalendarRange, ClipboardList, ShieldCheck } from 'lucide-react';
+import { BarChart3, CalendarRange, ClipboardList, ScanQrCode, ShieldCheck } from 'lucide-react';
 import { login } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,6 +159,23 @@ export function LoginForm({ registrationEnabled }: LoginFormProps) {
                       <span className="text-slate-400">当前未开放注册</span>
                     )}
                   </div>
+                </form>
+
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-200" />
+                  <span className="mx-4 shrink-0 text-xs text-slate-400">或</span>
+                  <div className="flex-grow border-t border-slate-200" />
+                </div>
+
+                <form action="/api/auth/dingtalk" method="GET">
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    className="h-12 w-full rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                  >
+                    <ScanQrCode className="mr-2 h-4 w-4 text-blue-500" />
+                    钉钉扫码登录
+                  </Button>
                 </form>
               </CardContent>
             </Card>
