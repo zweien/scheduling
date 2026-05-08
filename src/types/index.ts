@@ -82,6 +82,10 @@ export interface Account {
   role: AccountRole;
   is_active: boolean;
   created_at: string;
+  dingtalk_open_id: string | null;
+  dingtalk_union_id: string | null;
+  dingtalk_nick: string | null;
+  auth_provider: 'local' | 'dingtalk';
 }
 
 export interface DutyUserImportRow {
@@ -179,7 +183,8 @@ export type Action =
   | 'delete_leader_schedule'
   | 'set_default_leader'
   | 'backfill_leader_schedules'
-  | 'api_request';
+  | 'api_request'
+  | 'dingtalk_login';
 
 export interface Leader {
   id: number;

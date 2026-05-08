@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import db from './db';
 import { hashPassword, verifyPassword } from './password';
 import type { Account, AccountRole } from '@/types';
@@ -65,5 +66,23 @@ export function countAdminAccounts() {
 
 export function normalizeAccountUsername(username: string) {
   return normalizeUsername(username);
+}
+
+export function getAccountByDingtalkOpenId(openId: string): Account | undefined {
+  return db.prepare('SELECT * FROM accounts WHERE dingtalk_open_id = ?').get(openId) as Account | undefined;
+}
+
+export function createDingtalkAccount(userInfo: { openId: string; unionId: string; nick: string }): Account {
+  const openIdPrefix = userInfo.openId.substring(0, 8);
+  const username = `dingtalk_${openIdPrefix}`;
+  const displayName = userInfo.nick || `钉钉用户_${openIdPrefix.substring(0, 4)}`;
+  const passwordHash = hashPassword(crypto.randomBytes(32).toString('hex'));
+
+  const result = db.prepare(`
+    INSERT INTO accounts (username, display_name, password_hash, role, is_active, dingtalk_open_id, dingtalk_union_id, dingtalk_nick, auth_provider)
+    VALUES (?, ?, ?, 'user', 1, ?, ?, ?, 'dingtalk')
+  `).run(username, displayName, passwordHash, userInfo.openId, userInfo.unionId, userInfo.nick);
+
+  return getAccountById(result.lastInsertRowid as number)!;
 }
 

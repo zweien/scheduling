@@ -36,6 +36,21 @@ function addColumnIfMissing(database: Database.Database, tableName: string, colu
 
 export const MIGRATIONS: Migration[] = [
   {
+    version: '010_dingtalk_accounts',
+    up(database) {
+      addColumnIfMissing(database, 'accounts', 'dingtalk_open_id', 'TEXT');
+      addColumnIfMissing(database, 'accounts', 'dingtalk_union_id', 'TEXT');
+      addColumnIfMissing(database, 'accounts', 'dingtalk_nick', 'TEXT');
+      addColumnIfMissing(database, 'accounts', 'auth_provider', "TEXT NOT NULL DEFAULT 'local'");
+
+      database.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_dingtalk_open_id
+          ON accounts(dingtalk_open_id)
+          WHERE dingtalk_open_id IS NOT NULL
+      `);
+    },
+  },
+  {
     version: '009_date_notes',
     up(database) {
       // 创建日期备注表
