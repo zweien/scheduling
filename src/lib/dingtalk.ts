@@ -1,5 +1,6 @@
 // src/lib/dingtalk.ts
 import crypto from 'crypto';
+import { NextRequest } from 'next/server';
 
 const DINGTALK_AUTH_BASE = 'https://login.dingtalk.com/oauth2/auth';
 const DINGTALK_TOKEN_URL = 'https://api.dingtalk.com/v1.0/oauth2/userAccessToken';
@@ -19,6 +20,13 @@ function getClientSecret() {
 
 export function generateState(): string {
   return crypto.randomBytes(16).toString('hex');
+}
+
+export function buildAppUrl(request: NextRequest, path: string): string {
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
+  const host = forwardedHost ?? request.headers.get('host') ?? new URL(request.url).host;
+  return `${forwardedProto}://${host}${path}`;
 }
 
 export function buildAuthUrl(state: string, redirectUri: string): string {

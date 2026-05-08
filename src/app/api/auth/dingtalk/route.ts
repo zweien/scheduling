@@ -1,18 +1,13 @@
 // src/app/api/auth/dingtalk/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { buildAuthUrl, generateState } from '@/lib/dingtalk';
+import { buildAuthUrl, generateState, buildAppUrl } from '@/lib/dingtalk';
 import { cookies } from 'next/headers';
 
 const CALLBACK_PATH = '/api/auth/dingtalk/callback';
 
-function getRedirectUri(request: NextRequest): string {
-  const url = new URL(CALLBACK_PATH, request.url);
-  return url.toString();
-}
-
 export async function GET(request: NextRequest) {
   const state = generateState();
-  const redirectUri = getRedirectUri(request);
+  const redirectUri = buildAppUrl(request, CALLBACK_PATH);
 
   const authUrl = buildAuthUrl(state, redirectUri);
 

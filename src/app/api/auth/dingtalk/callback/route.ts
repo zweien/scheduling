@@ -1,7 +1,7 @@
 // src/app/api/auth/dingtalk/callback/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getUserAccessToken, getDingtalkUserInfo } from '@/lib/dingtalk';
+import { getUserAccessToken, getDingtalkUserInfo, buildAppUrl } from '@/lib/dingtalk';
 import { getAccountByDingtalkOpenId, createDingtalkAccount } from '@/lib/accounts';
 import { getSession } from '@/lib/session';
 import { addWebLog } from '@/lib/logs';
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const savedState = cookieStore.get('dingtalk_oauth_state')?.value;
 
   if (!authCode || !state || !savedState || state !== savedState) {
-    return NextResponse.redirect(new URL('/?error=dingtalk_auth_failed', request.url));
+    return NextResponse.redirect(buildAppUrl(request, '/?error=dingtalk_auth_failed'));
   }
 
   // 清除 state cookie
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!account.is_active) {
-      return NextResponse.redirect(new URL('/?error=account_disabled', request.url));
+      return NextResponse.redirect(buildAppUrl(request, '/?error=account_disabled'));
     }
 
     // 设置 session
@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
       role: account.role,
     });
 
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(buildAppUrl(request, '/dashboard'));
   } catch (error) {
     console.error('DingTalk OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/?error=dingtalk_auth_failed', request.url));
+    return NextResponse.redirect(buildAppUrl(request, '/?error=dingtalk_auth_failed'));
   }
 }
