@@ -15,44 +15,38 @@ export function Sidebar({ isOpen, onScheduleGenerated, onClose }: SidebarProps) 
   return (
     <>
       {/* 侧边栏 */}
-      <div
-        className={`
-          fixed inset-y-0 left-0 z-40 w-72 bg-background border-r
-          transform transition-transform duration-300 ease-out
-          lg:relative
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0
-        `}
-      >
-        <div className="p-4 space-y-4 overflow-y-auto h-full">
-          <div className="flex items-center justify-between lg:hidden">
-            <span className="text-sm font-medium text-muted-foreground">菜单</span>
-            <button
-              onClick={onClose}
-              className="rounded-md p-1 hover:bg-muted"
-              aria-label="关闭侧边栏"
-            >
-              <X className="h-5 w-5" />
-            </button>
+      {isOpen && (
+        <div className="fixed inset-y-0 left-0 z-40 w-72 bg-background border-r transform transition-transform duration-300 ease-out">
+          <div className="p-4 space-y-4 overflow-y-auto h-full">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">菜单</span>
+              <button
+                onClick={onClose}
+                className="rounded-md p-1 hover:bg-muted"
+                aria-label="关闭侧边栏"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <Card className="rounded-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarPlus className="w-4 h-4 text-primary" />
+                  生成排班
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScheduleGenerator onGenerated={onScheduleGenerated} />
+              </CardContent>
+            </Card>
           </div>
-          <Card className="rounded-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarPlus className="w-4 h-4 text-primary" />
-                生成排班
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScheduleGenerator onGenerated={onScheduleGenerated} />
-            </CardContent>
-          </Card>
         </div>
-      </div>
+      )}
 
-      {/* 移动端遮罩层 */}
+      {/* 遮罩层 */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 transition-opacity"
           onClick={onClose}
         />
       )}
