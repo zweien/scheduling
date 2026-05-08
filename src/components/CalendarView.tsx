@@ -24,6 +24,7 @@ import { DateNoteDialog } from './DateNoteDialog';
 import type { AutoScheduleStartMode, ScheduleWithUser, User, LeaderScheduleWithLeader, Leader } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, User as UserIcon, UserCircle } from 'lucide-react';
+import { isHoliday as checkIsHoliday, getHolidayName } from '@/lib/holidays';
 
 interface CalendarViewProps {
   refreshKey: number;
@@ -169,6 +170,8 @@ const MonthCalendar = memo(function MonthCalendar({
               animationDelay={animationDelay}
               displayMode={displayMode}
               canManage={canManage}
+              isHoliday={checkIsHoliday(dateStr)}
+              holidayName={getHolidayName(dateStr)}
               dateNote={dateNotes?.get(dateStr)}
             />
           );

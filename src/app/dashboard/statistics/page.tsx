@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
 import { BarChart3, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { isHoliday, getHolidayName, countHolidayDuty } from '@/lib/holidays';
 
 interface StatItem {
   userId: number;
@@ -307,19 +308,34 @@ export default function StatisticsPage() {
                   {/* 展开的值班日期列表 */}
                   {expandedUsers.has(stat.userId) && stat.dates.length > 0 && (
                     <div className="mt-2 p-3 bg-muted/30 rounded-lg">
-                      <div className="text-xs text-muted-foreground mb-2">
-                        值班日期 ({stat.dates.length}天)：
+                      <div className="text-xs text-muted-foreground mb-2 flex items-center gap-3">
+                        <span>值班日期 ({stat.dates.length}天)</span>
+                        {countHolidayDuty(stat.dates) > 0 && (
+                          <span className="text-amber-600 dark:text-amber-400">
+                            节假日值班 {countHolidayDuty(stat.dates)} 天
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {stat.dates.map((date, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 text-xs rounded-full text-white font-medium"
-                            style={{ backgroundColor: getAvatarColor(stat.userName) }}
-                          >
-                            {format(parseISO(date), 'M月d日', { locale: zhCN })}
-                          </span>
-                        ))}
+                        {stat.dates.map((date, idx) => {
+                          const holiday = isHoliday(date);
+                          const holidayName = getHolidayName(date);
+                          return (
+                            <span
+                              key={idx}
+                              className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                holiday
+                                  ? 'bg-amber-500 text-white ring-1 ring-amber-400'
+                                  : 'text-white'
+                              }`}
+                              style={holiday ? undefined : { backgroundColor: getAvatarColor(stat.userName) }}
+                              title={holidayName || undefined}
+                            >
+                              {format(parseISO(date), 'M月d日', { locale: zhCN })}
+                              {holiday && holidayName && `(${holidayName})`}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
