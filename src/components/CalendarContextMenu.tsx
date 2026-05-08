@@ -7,7 +7,8 @@ export type CalendarContextMenuAction =
   | 'assign_user'
   | 'replace_user'
   | 'move_schedule'
-  | 'delete_schedule';
+  | 'delete_schedule'
+  | 'edit_note';
 
 interface CalendarContextMenuProps {
   open: boolean;
@@ -22,12 +23,14 @@ interface CalendarContextMenuProps {
 const emptyDateActions: Array<{ key: CalendarContextMenuAction; label: string }> = [
   { key: 'auto_schedule', label: '自动排班' },
   { key: 'assign_user', label: '安排值班人员' },
+  { key: 'edit_note', label: '添加/编辑备注' },
 ];
 
 const scheduledDateActions: Array<{ key: CalendarContextMenuAction; label: string }> = [
   { key: 'replace_user', label: '替换值班人员' },
   { key: 'move_schedule', label: '移动到其他日期' },
   { key: 'delete_schedule', label: '删除排班' },
+  { key: 'edit_note', label: '添加/编辑备注' },
 ];
 
 export function CalendarContextMenu({
