@@ -128,8 +128,20 @@ export function isHoliday(date: string): boolean {
 }
 
 /** 判断某日期是否为调休补班日 */
-export function isWorkday(date: string): boolean {
+export function isAdjustedWorkday(date: string): boolean {
   return holidayMap.get(date)?.isWorkday === true;
+}
+
+/** 判断某日期是否为休息日（非工作日）= 法定节假日 + 普通周末 - 调休补班日 */
+export function isRestDay(date: string): boolean {
+  // 调休补班日 → 工作日
+  if (isAdjustedWorkday(date)) return false;
+  // 法定节假日 → 休息日
+  if (isHoliday(date)) return true;
+  // 普通周末（周六日）→ 休息日
+  const d = new Date(date + 'T00:00:00');
+  const day = d.getDay();
+  return day === 0 || day === 6;
 }
 
 /** 获取节假日名称 */
@@ -137,12 +149,12 @@ export function getHolidayName(date: string): string | undefined {
   return holidayMap.get(date)?.name;
 }
 
-/** 从日期列表中筛选出节假日值班日期 */
-export function filterHolidayDates(dates: string[]): string[] {
-  return dates.filter(d => isHoliday(d));
+/** 从日期列表中筛选出休息日值班日期 */
+export function filterRestDayDates(dates: string[]): string[] {
+  return dates.filter(d => isRestDay(d));
 }
 
-/** 统计节假日值班次数 */
-export function countHolidayDuty(dates: string[]): number {
-  return dates.filter(d => isHoliday(d)).length;
+/** 统计休息日（节假日+周末）值班次数 */
+export function countRestDayDuty(dates: string[]): number {
+  return dates.filter(d => isRestDay(d)).length;
 }
