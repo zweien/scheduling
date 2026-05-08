@@ -29,10 +29,11 @@ const highlights = [
 
 interface LoginFormProps {
   registrationEnabled: boolean;
+  initialError?: string | null;
 }
 
-export function LoginForm({ registrationEnabled }: LoginFormProps) {
-  const [error, setError] = useState<string | null>(null);
+export function LoginForm({ registrationEnabled, initialError }: LoginFormProps) {
+  const [error, setError] = useState<string | null>(initialError ?? null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
