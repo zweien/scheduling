@@ -18,7 +18,7 @@ interface DashboardHomeClientProps {
 }
 
 export function DashboardHomeClient({ role }: DashboardHomeClientProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' && window.innerWidth >= 1024);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [refreshKey, setRefreshKey] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
