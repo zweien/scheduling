@@ -5,13 +5,22 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { format, isSameMonth } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { getAvatarColor } from '@/lib/avatar';
-import { X } from 'lucide-react';
+import { X, Trophy } from 'lucide-react';
+import { submitGameScore, getGameLeaderboard } from '@/app/actions/game';
 
 interface Mole {
   id: number;
   dateStr: string;
   name: string;
   hit: boolean;
+}
+
+interface LeaderboardEntry {
+  id: number;
+  player_name: string;
+  score: number;
+  max_combo: number;
+  created_at: string;
 }
 
 interface WhackAMoleGameProps {
@@ -35,6 +44,9 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
   const [phase, setPhase] = useState<'countdown' | 'playing' | 'done'>('countdown');
   const [countdown, setCountdown] = useState(3);
   const [floatingScores, setFloatingScores] = useState<{ id: number; x: number; y: number; value: number }[]>([]);
+  const [rank, setRank] = useState<number | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const moleIdRef = useRef(0);
   const floatIdRef = useRef(0);
   const activeMoleIds = useRef<Set<number>>(new Set());
@@ -45,11 +57,6 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
 
   // 随机获取可用的人员名字
   const namePool = users.length > 0 ? users.map(u => u.name) : ['值班员'];
-
-  const [highScore, setHighScore] = useState(() => {
-    if (typeof window === 'undefined') return 0;
-    return parseInt(localStorage.getItem('whack_mole_high') || '0', 10);
-  });
 
   // 开始倒计时
   useEffect(() => {
@@ -92,12 +99,11 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
       activeMoleIds.current.add(id);
       setMoles(prev => [...prev, { id, dateStr, name, hit: false }]);
 
-      // 自动消失
       setTimeout(() => {
         setMoles(prev => {
           const mole = prev.find(m => m.id === id);
           if (mole && !mole.hit) {
-            setCombo(0); // 漏掉重置 combo
+            setCombo(0);
           }
           return prev.filter(m => m.id !== id);
         });
@@ -110,26 +116,30 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
     return () => clearInterval(timer);
   }, [phase, timeLeft]);
 
-  // 游戏结束保存分数
+  // 游戏结束提交分数 + 加载排行榜
   useEffect(() => {
-    if (phase !== 'done') return;
-    if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('whack_mole_high', String(score));
-    }
-  }, [phase, score, highScore]);
+    if (phase !== 'done' || submitted) return;
+    setSubmitted(true);
+
+    submitGameScore(score, maxCombo).then(result => {
+      setRank(result.rank);
+    });
+
+    getGameLeaderboard(10).then(data => {
+      setLeaderboard(data);
+    });
+  }, [phase, score, maxCombo, submitted]);
 
   const handleWhack = useCallback((mole: Mole, event: React.MouseEvent) => {
     if (mole.hit) return;
     setMoles(prev => prev.map(m => m.id === mole.id ? { ...m, hit: true } : m));
 
     const newCombo = combo + 1;
-    const points = Math.min(newCombo, 5); // combo 越高分数越高，上限 5
+    const points = Math.min(newCombo, 5);
     setCombo(newCombo);
     setMaxCombo(prev => Math.max(prev, newCombo));
     setScore(prev => prev + points);
 
-    // 飘字效果
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const floatId = ++floatIdRef.current;
     setFloatingScores(prev => [...prev, { id: floatId, x: rect.left + rect.width / 2, y: rect.top, value: points }]);
@@ -137,11 +147,23 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
       setFloatingScores(prev => prev.filter(f => f.id !== floatId));
     }, 800);
 
-    // 命中后快速消失
     setTimeout(() => {
       setMoles(prev => prev.filter(m => m.id !== mole.id));
     }, 200);
   }, [combo]);
+
+  const handleRestart = () => {
+    setScore(0);
+    setCombo(0);
+    setMaxCombo(0);
+    setTimeLeft(GAME_DURATION);
+    setMoles([]);
+    setRank(null);
+    setLeaderboard([]);
+    setSubmitted(false);
+    setPhase('countdown');
+    setCountdown(3);
+  };
 
   // 构建地鼠查找 map
   const moleMap = new Map<string, Mole>();
@@ -162,7 +184,7 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
         </div>
       ))}
 
-      <div className="bg-background rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 space-y-4">
+      <div className="bg-background rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 space-y-4 max-h-[90vh] overflow-y-auto">
         {/* 头部 */}
         <div className="flex items-center justify-between">
           <div className="text-lg font-semibold">
@@ -243,27 +265,51 @@ export function WhackAMoleGame({ month, days, users, onClose }: WhackAMoleGamePr
           </div>
         )}
 
-        {/* 结果 */}
+        {/* 结果 + 排行榜 */}
         {phase === 'done' && (
-          <div className="text-center py-6 space-y-4">
-            <div className="text-5xl font-bold text-primary">{score}</div>
-            <div className="text-sm text-muted-foreground">
-              最高连击: {maxCombo} | 历史最高: {highScore}
+          <div className="space-y-4">
+            <div className="text-center py-4 space-y-2">
+              <div className="text-5xl font-bold text-primary">{score}</div>
+              <div className="text-sm text-muted-foreground">
+                最高连击: {maxCombo}
+                {rank !== null && <span className="ml-2">排名第 {rank} 名</span>}
+              </div>
             </div>
-            {score >= highScore && score > 0 && (
-              <div className="text-yellow-500 font-medium">新纪录!</div>
+
+            {/* 排行榜 */}
+            {leaderboard.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b">
+                  <Trophy className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium">排行榜</span>
+                </div>
+                <div className="divide-y">
+                  {leaderboard.map((entry, idx) => (
+                    <div
+                      key={entry.id}
+                      className={`flex items-center justify-between px-3 py-2 text-sm ${
+                        idx === 0 ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''
+                      } ${idx === 1 ? 'bg-slate-50 dark:bg-slate-800/50' : ''} ${idx === 2 ? 'bg-orange-50 dark:bg-orange-900/20' : ''}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-5 text-center font-bold ${idx < 3 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                          {idx + 1}
+                        </span>
+                        <span className="font-medium">{entry.player_name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">x{entry.max_combo}</span>
+                        <span className="font-bold tabular-nums">{entry.score}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
+
             <div className="flex gap-3 justify-center pt-2">
               <button
-                onClick={() => {
-                  setScore(0);
-                  setCombo(0);
-                  setMaxCombo(0);
-                  setTimeLeft(GAME_DURATION);
-                  setMoles([]);
-                  setPhase('countdown');
-                  setCountdown(3);
-                }}
+                onClick={handleRestart}
                 className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
               >
                 再来一局

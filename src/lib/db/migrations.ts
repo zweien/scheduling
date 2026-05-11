@@ -36,6 +36,22 @@ function addColumnIfMissing(database: Database.Database, tableName: string, colu
 
 export const MIGRATIONS: Migration[] = [
   {
+    version: '011_game_scores',
+    up(database) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS game_scores (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          player_name TEXT NOT NULL,
+          score INTEGER NOT NULL,
+          max_combo INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_game_scores_score ON game_scores(score DESC);
+      `);
+    },
+  },
+  {
     version: '010_dingtalk_accounts',
     up(database) {
       addColumnIfMissing(database, 'accounts', 'dingtalk_open_id', 'TEXT');
