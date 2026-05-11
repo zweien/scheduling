@@ -14,11 +14,12 @@
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 5" />
   <img src="https://img.shields.io/badge/SQLite-better--sqlite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
   <img src="https://img.shields.io/badge/Auth-Multi--User-0F766E?style=for-the-badge" alt="Multi User Auth" />
+  <img src="https://img.shields.io/badge/DingTalk-OAuth2-0089FF?style=for-the-badge" alt="DingTalk OAuth2" />
   <img src="https://img.shields.io/badge/Export-CSV%20%7C%20JSON%20%7C%20XLSX-7C3AED?style=for-the-badge" alt="Export formats" />
 </p>
 
 <p align="center">
-  一个面向团队内部使用的值班排班系统，覆盖月历排班、值班人员管理、审计日志、REST API、批量导入与多格式导出。
+  一个面向团队内部使用的值班排班系统，覆盖月历排班、值班人员管理、审计日志、REST API、批量导入与多格式导出，并支持钉钉 OAuth2 登录与工作台集成。
 </p>
 
 适合内部值班、轮岗与轻量排班协作场景，重点解决排班生成、人工调整、集成对接和审计追踪这四类问题。
@@ -40,6 +41,8 @@
 - 值班人员独立管理页面，支持单位、类别、备注、启停、筛选和批量导入
 - **所属单位和人员类别可自定义配置**，支持在设置页面动态管理选项
 - 月历支持桌面拖拽交换，也支持移动端”移动模式”调整排班
+- **钉钉 OAuth2 登录**，支持扫码登录与工作台免登，与密码登录共存
+- **法定节假日与休息日统计**，内置中国法定节假日数据，支持非工作日值班统计
 - 审计日志记录操作用户、角色、IP 和来源，支持筛选、搜索、导出
 - 提供 Bearer Token 保护的 REST API，适合第三方系统查询与修改排班
 - 支持 CSV、JSON、XLSX 导出，其中 XLSX 为月历风格，便于打印和归档
@@ -84,6 +87,8 @@
 | 字段配置 | 在设置页自定义所属单位和人员类别选项 |
 | 批量导入 | 提供 XLSX 模板下载，导入前校验字段，按姓名更新或新增 |
 | 账号与权限 | 管理员和普通用户双角色，支持注册开关 |
+| 钉钉登录 | OAuth2 扫码登录与工作台免登，与密码登录共存，自动创建账号 |
+| 节假日统计 | 内置中国法定节假日数据，统计非工作日（含周末）值班天数 |
 | 审计日志 | 记录操作用户、角色、IP、来源，并支持搜索筛选导出 |
 | REST API | Bearer Token 鉴权的排班、人员、Token 管理接口 |
 | 导出能力 | 支持 CSV、JSON 与月历风格 XLSX |
@@ -130,6 +135,11 @@ npm run dev
 
 ```env
 SESSION_SECRET=your-secret-key-at-least-32-characters
+
+# 钉钉 OAuth2 登录（可选）
+DINGTALK_CLIENT_ID=your-dingtalk-client-id
+DINGTALK_CLIENT_SECRET=your-dingtalk-client-secret
+NEXT_PUBLIC_DINGTALK_CORP_ID=your-corp-id          # 工作台免登时需要
 ```
 
 ### 生产构建
@@ -141,9 +151,22 @@ npm run start
 
 ## 登录与权限模型
 
-当前系统使用账号密码登录，而不是共享密码模式。
+当前系统支持账号密码登录和钉钉 OAuth2 登录两种方式。
 
-角色分为两类：
+### 密码登录
+
+系统初始化时自动创建一个默认管理员账号（`admin` / `123456`）。
+
+### 钉钉登录
+
+配置钉钉相关环境变量后，登录页会显示"钉钉登录"按钮。支持两种模式：
+
+- **扫码登录**：用户点击按钮跳转钉钉授权页面，扫码后自动登录
+- **工作台免登**：配置 `NEXT_PUBLIC_DINGTALK_CORP_ID` 后，通过钉钉工作台打开应用时自动登录
+
+首次钉钉登录会自动创建账号（角色为普通用户），后续登录自动关联已有账号。
+
+### 角色权限
 
 - `admin`
   - 管理值班人员
@@ -289,6 +312,14 @@ curl -X PATCH "http://localhost:3000/api/leader-schedules/2026-03-16" \
 
 ## 审计与导出
 
+### 节假日与休息日统计
+
+系统内置中国法定节假日数据（当前覆盖 2025-2026 年），统计页支持：
+
+- 按人员统计非工作日值班天数（含周末和法定节假日，排除调休补班日）
+- 人员值班日期列表中标注节假日名称
+- 节假日数据每年随版本更新
+
 ### 审计日志
 
 日志页支持：
@@ -342,19 +373,25 @@ XLSX 输出特性：
 src/
 ├── app/
 │   ├── actions/              # Server Actions
+│   │   └── game.ts           # 游戏得分与排行榜
 │   ├── api/                  # REST API routes
+│   │   └── auth/dingtalk/    # 钉钉 OAuth2 回调与工作台登录
 │   ├── dashboard/            # Dashboard 各独立功能页面
+│   ├── dingtalk/             # 钉钉工作台入口页
 │   ├── register/             # 注册页
 │   ├── layout.tsx            # 根布局
 │   └── page.tsx              # 登录入口页
 ├── components/
 │   ├── ui/                   # 基础 UI 组件
+│   ├── WhackAMoleGame.tsx    # 打地鼠彩蛋游戏
 │   └── *.tsx                 # 业务组件
 ├── lib/
 │   ├── accounts.ts           # 系统账号模型
 │   ├── auth.ts               # 登录与权限校验
 │   ├── config-options.ts     # 字段配置管理
 │   ├── db.ts                 # SQLite 初始化与迁移
+│   ├── dingtalk.ts           # 钉钉 OAuth2 工具函数
+│   ├── holidays.ts           # 法定节假日数据与判断函数
 │   ├── logs.ts               # 审计日志
 │   ├── schedules.ts          # 排班读写
 │   ├── users.ts              # 值班人员管理
