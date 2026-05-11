@@ -8,6 +8,7 @@ import { zhCN } from 'date-fns/locale';
 import { CalendarCell } from './CalendarCell';
 import { CalendarContextMenu, type CalendarContextMenuAction } from './CalendarContextMenu';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
+import { WhackAMoleGame } from './WhackAMoleGame';
 import { EmptyScheduleState } from './EmptyScheduleState';
 import { ScheduleAdjustmentReasonDialog } from './ScheduleAdjustmentReasonDialog';
 import { SelectedSchedulesActionBar } from './SelectedSchedulesActionBar';
@@ -83,6 +84,7 @@ const MonthCalendar = memo(function MonthCalendar({
   month,
   schedules,
   leaderSchedules,
+  users,
   today,
   displayMode,
   viewMode,
@@ -97,6 +99,24 @@ const MonthCalendar = memo(function MonthCalendar({
   canManage,
   dateNotes,
 }: MonthCalendarProps) {
+  // 彩蛋：三击月份标题触发打地鼠
+  const [clickCount, setClickCount] = useState(0);
+  const [gameOpen, setGameOpen] = useState(false);
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTitleClick = useCallback(() => {
+    setClickCount(prev => {
+      const next = prev + 1;
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      if (next >= 3) {
+        setGameOpen(true);
+        return 0;
+      }
+      clickTimerRef.current = setTimeout(() => setClickCount(0), 500);
+      return next;
+    });
+  }, []);
+
   // 使用 useMemo 缓存日期计算
   const days = useMemo(() => {
     const monthStart = startOfMonth(month);
@@ -126,7 +146,7 @@ const MonthCalendar = memo(function MonthCalendar({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-base font-medium text-center">
+      <h3 className="text-base font-medium text-center cursor-pointer select-none" onClick={handleTitleClick}>
         {format(month, 'yyyy年M月', { locale: zhCN })}
       </h3>
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
@@ -177,6 +197,9 @@ const MonthCalendar = memo(function MonthCalendar({
           );
         })}
       </div>
+      {gameOpen && (
+        <WhackAMoleGame month={month} days={days} users={users} onClose={() => setGameOpen(false)} />
+      )}
     </div>
   );
 });
