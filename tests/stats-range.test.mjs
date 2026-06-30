@@ -58,3 +58,32 @@ test('什么参数都没给返回 null', async () => {
   assert.equal(resolveStatsRange({}), null);
   assert.equal(resolveStatsRange({ start: '2026-01-01' }), null); // 只有 start 没 end
 });
+
+test('holidayYearsForRange：单年查询含相邻年（边界日期存在相邻年份文件里）', async () => {
+  const { holidayYearsForRange } = await load();
+  assert.deepEqual(holidayYearsForRange('2026-01-01', '2026-12-31'), [2025, 2026, 2027]);
+});
+
+test('holidayYearsForRange：跨年查询展开相邻年且去重', async () => {
+  const { holidayYearsForRange } = await load();
+  assert.deepEqual(holidayYearsForRange('2024-06-01', '2026-06-01'), [2023, 2024, 2025, 2026, 2027]);
+});
+
+test('holidayYearsForRange：跨度在上限内（10 年）返回结果', async () => {
+  const { holidayYearsForRange } = await load();
+  const years = holidayYearsForRange('2020-01-01', '2029-12-31'); // 10 年
+  assert.ok(years !== null);
+  assert.equal(years[0], 2019);
+  assert.equal(years[years.length - 1], 2030);
+});
+
+test('holidayYearsForRange：跨度超上限返回 null（防 fan-out 滥用）', async () => {
+  const { holidayYearsForRange } = await load();
+  assert.equal(holidayYearsForRange('2020-01-01', '2030-12-31'), null); // 11 年
+  assert.equal(holidayYearsForRange('0000-01-01', '9999-12-31'), null); // 极端
+});
+
+test('holidayYearsForRange：非法年份返回 null', async () => {
+  const { holidayYearsForRange } = await load();
+  assert.equal(holidayYearsForRange('foo-01-01', '2026-12-31'), null);
+});

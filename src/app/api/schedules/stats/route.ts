@@ -5,7 +5,7 @@ import { withApiRequestLog } from '@/lib/api-logging';
 import { getScheduleStats } from '@/lib/schedules';
 import { getUserById } from '@/lib/users';
 import { summarizeDutyDates } from '@/lib/duty-summary';
-import { resolveStatsRange } from '@/lib/stats-range';
+import { resolveStatsRange, holidayYearsForRange } from '@/lib/stats-range';
 import { ensureHolidaysLoaded } from '@/lib/holidays';
 
 export const dynamic = 'force-dynamic';
@@ -30,11 +30,12 @@ export async function GET(request: NextRequest) {
         return apiError(400, 'INVALID_INPUT', 'provide start+end, year, or month');
       }
 
-      // best-effort 拉取区间内各年份的法定节假日（失败自动回退到静态基线）
-      const startYear = Number(range.start.slice(0, 4));
-      const endYear = Number(range.end.slice(0, 4));
-      const years: number[] = [];
-      for (let y = startYear; y <= endYear; y++) years.push(y);
+      // best-effort 拉取区间相关年份的法定节假日（含相邻年；失败自动回退到静态基线）。
+      // 跨度过大返回 400，避免触发海量并发拉取。
+      const years = holidayYearsForRange(range.start, range.end);
+      if (!years) {
+        return apiError(400, 'INVALID_INPUT', 'range too wide (max 10 years)');
+      }
       await ensureHolidaysLoaded(years);
 
       const rawStats = getScheduleStats(range.start, range.end);
