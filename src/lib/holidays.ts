@@ -8,6 +8,13 @@ export interface HolidayInfo {
   isWorkday?: boolean; // 调休补班日
 }
 
+/** holiday-cn 数据源的原始条目形状 */
+interface HolidayCnDay {
+  name: string;
+  date: string;
+  isOffDay: boolean; // true=放假，false=调休补班
+}
+
 const holidays: HolidayInfo[] = [
   // === 2025 年 ===
   // 元旦
@@ -115,9 +122,64 @@ for (const h of holidays) {
   holidayMap.set(h.date, h);
 }
 
-/** 查询某日期是否为法定节假日 */
+// --- 动态拉取的节假日（运行时覆盖静态基线，拉取失败自动回退） ---
+// 数据源：NateScarlet/holiday-cn（基于国务院办公厅通知，MIT 协议）
+const dynamicHolidayMap = new Map<string, HolidayInfo>();
+const loadedYears = new Set<number>();
+const HOLIDAY_CN_BASE = 'https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master';
+
+/** 把 holiday-cn 的 days 数组解析为 HolidayInfo[]（纯函数，便于单元测试） */
+export function parseHolidayCnDays(days: unknown): HolidayInfo[] {
+  if (!Array.isArray(days)) return [];
+  const result: HolidayInfo[] = [];
+  for (const d of days) {
+    if (!d || typeof d !== 'object') continue;
+    const day = d as HolidayCnDay;
+    if (
+      typeof day.name !== 'string' ||
+      typeof day.date !== 'string' ||
+      typeof day.isOffDay !== 'boolean' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(day.date)
+    ) {
+      continue;
+    }
+    result.push(day.isOffDay ? { name: day.name, date: day.date } : { name: day.name, date: day.date, isWorkday: true });
+  }
+  return result;
+}
+
+/** 拉取某一年的法定节假日（best-effort：失败返回 null，不抛错） */
+export async function fetchHolidaysForYear(year: number, timeoutMs = 3000): Promise<HolidayInfo[] | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(`${HOLIDAY_CN_BASE}/${year}.json`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const json = (await res.json()) as { days?: unknown };
+    return parseHolidayCnDays(json.days);
+  } catch {
+    return null;
+  }
+}
+
+/** 确保给定年份的节假日已加载到动态缓存（best-effort；拉取失败的年份下次请求会重试） */
+export async function ensureHolidaysLoaded(years: number[]): Promise<void> {
+  const missing = years.filter(y => !loadedYears.has(y));
+  if (missing.length === 0) return;
+  await Promise.all(
+    missing.map(async year => {
+      const days = await fetchHolidaysForYear(year);
+      if (days === null) return; // 拉取失败：不标记为已加载，下次请求重试
+      loadedYears.add(year);
+      for (const d of days) dynamicHolidayMap.set(d.date, d);
+    }),
+  );
+}
+
+/** 查询某日期是否为法定节假日（优先动态拉取数据，回退到静态基线） */
 export function getHolidayInfo(date: string): HolidayInfo | undefined {
-  return holidayMap.get(date);
+  return dynamicHolidayMap.get(date) ?? holidayMap.get(date);
 }
 
 /** 判断某日期是否为法定节假日（非补班日） */
