@@ -304,6 +304,54 @@ curl -X PATCH "http://localhost:3000/api/leader-schedules/2026-03-16" \
   -d '{"leaderId":1}'
 ```
 
+### 值班统计
+
+按时间范围聚合每人值班次数，并附节假日维度分类（法定节假日 / 周末 / 调休补班）。时间参数三选一：`start`+`end`、`year` 或 `month`（自动处理闰年 2 月）。
+
+```bash
+# 查询 2026 全年（等价于 ?start=2026-01-01&end=2026-12-31）
+curl "http://localhost:3000/api/schedules/stats?year=2026" \
+  -H "Authorization: Bearer <your-token>"
+
+# 查询某月：?month=2026-06
+```
+
+返回示例：
+
+```json
+{
+  "range": { "start": "2026-01-01", "end": "2026-12-31" },
+  "total": 4,
+  "userCount": 2,
+  "stats": [
+    {
+      "userId": 1,
+      "userName": "张三",
+      "count": 3,
+      "restDayCount": 2,
+      "holidayCount": 1,
+      "adjustedWorkdayCount": 1,
+      "dates": ["2026-01-01", "2026-01-04", "2026-01-10"],
+      "restDays": [
+        { "date": "2026-01-01", "name": "元旦", "type": "holiday" },
+        { "date": "2026-01-10", "type": "weekend" }
+      ]
+    }
+  ]
+}
+```
+
+字段说明：
+
+| 字段 | 含义 |
+|---|---|
+| `total` / `userCount` | 区间内总值班次数 / 涉及人数 |
+| `count` | 该人员区间内值班天数 |
+| `restDayCount` | 非工作日值班天数（法定节假日 + 周末 − 调休补班） |
+| `holidayCount` | 法定节假日值班天数 |
+| `adjustedWorkdayCount` | 调休补班值班天数 |
+| `restDays` | 非工作日明细，`type` 为 `holiday`（带 `name`）或 `weekend` |
+
 ### Token 管理接口
 
 - `GET /api/tokens`
@@ -314,11 +362,11 @@ curl -X PATCH "http://localhost:3000/api/leader-schedules/2026-03-16" \
 
 ### 节假日与休息日统计
 
-系统内置中国法定节假日数据（当前覆盖 2025-2026 年），统计页支持：
+系统运行时按年自动拉取中国法定节假日（数据源 [NateScarlet/holiday-cn](https://github.com/NateScarlet/holiday-cn)，基于国务院通知），内置 2025-2026 数据作为离线兜底。统计页支持：
 
 - 按人员统计非工作日值班天数（含周末和法定节假日，排除调休补班日）
 - 人员值班日期列表中标注节假日名称
-- 节假日数据每年随版本更新
+- 节假日数据按年自动拉取，拉取失败时回退到内置数据
 
 ### 审计日志
 
