@@ -358,6 +358,28 @@ curl "http://localhost:3000/api/schedules/stats?year=2026" \
 - `POST /api/tokens`
 - `PATCH /api/tokens/:id`
 
+## Claude Code Skill
+
+项目内置一个 Claude Code skill（`.claude/skills/scheduling-api/`），把上面的 REST API 封装成自然语言操作——在本仓库的 Claude Code 会话里直接说人话即可，无需手写 curl：
+
+- 「查一下本周谁值班」
+- 「把下周三的值班换成张三」
+- 「统计今年每个人值班几次、节假日值班几次」
+- 「导出本月值班表」
+
+skill 通过 `.claude/skills/scheduling-api/scripts/api.sh` 调用 API，自动从 `.env` 读取 `SCHEDULING_API_TOKEN` 并注入 Bearer 鉴权。
+
+### 一次性配置
+
+```bash
+cp .claude/skills/scheduling-api/assets/env.example .env
+# 编辑 .env，填入浏览器里创建的 API token：
+#   SCHEDULING_API_TOKEN=sch_...                     # 换班需 admin token
+#   SCHEDULING_BASE_URL=http://localhost:3000        # 线上：https://scheduling.zweien.xyz
+```
+
+> Token 在 Web UI（登录 → Token 管理）创建。查询 / 统计 / 导出用任意 token；换班（PATCH）需 admin 角色。该 skill 仅在 Claude Code 会话中触发，`.env` 已被 gitignore，token 不入库。
+
 ## 审计与导出
 
 ### 节假日与休息日统计
