@@ -105,7 +105,7 @@ const holidays: HolidayInfo[] = [
   { name: '中秋节', date: '2026-09-26' },
   { name: '中秋节', date: '2026-09-27' },
 
-  // 国庆节：10月1日至7日放假调休，共7天。9月27日（周日）补班
+  // 国庆节：10月1日至7日放假调休，共7天。9月20日（周日）、10月10日（周六）补班
   { name: '国庆节', date: '2026-10-01' },
   { name: '国庆节', date: '2026-10-02' },
   { name: '国庆节', date: '2026-10-03' },
@@ -113,7 +113,8 @@ const holidays: HolidayInfo[] = [
   { name: '国庆节', date: '2026-10-05' },
   { name: '国庆节', date: '2026-10-06' },
   { name: '国庆节', date: '2026-10-07' },
-  { name: '国庆节', date: '2026-09-27', isWorkday: true },
+  { name: '国庆节', date: '2026-09-20', isWorkday: true },
+  { name: '国庆节', date: '2026-10-10', isWorkday: true },
 ];
 
 // 按日期索引的 Map，快速查询
