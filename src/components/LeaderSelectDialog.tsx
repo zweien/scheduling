@@ -83,7 +83,7 @@ export function LeaderSelectDialog({
               onClick={onDelete}
               className="w-full"
             >
-              恢复为默认领导
+              删除本日值班领导
             </Button>
           </div>
         ) : null}

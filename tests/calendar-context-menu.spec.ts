@@ -227,3 +227,33 @@ test('全部视图右键同时显示值班员和值班领导操作', async ({ pa
   await expect(page.getByRole('menuitem', { name: '替换值班领导' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: '删除值班领导' })).toBeVisible();
 });
+
+test('领导视图单击已排值班领导的日期显示删除按钮并可删除', async ({ page }) => {
+  const { scheduledDate } = getTargetDates();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await login(page);
+
+  await page.getByRole('button', { name: '领导', exact: true }).click();
+  await page.locator(`[data-calendar-date="${scheduledDate}"]`).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const deleteButton = dialog.getByRole('button', { name: '删除本日值班领导' });
+  await expect(deleteButton).toBeVisible();
+
+  await deleteButton.click();
+  await expect(page.locator(`[data-calendar-date="${scheduledDate}"]`)).not.toContainText('王领导');
+});
+
+test('领导视图单击空日期不显示删除按钮', async ({ page }) => {
+  const { emptyDate } = getTargetDates();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await login(page);
+
+  await page.getByRole('button', { name: '领导', exact: true }).click();
+  await page.locator(`[data-calendar-date="${emptyDate}"]`).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '删除本日值班领导' })).toHaveCount(0);
+});
