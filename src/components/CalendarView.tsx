@@ -55,6 +55,7 @@ type PendingDragAction =
 type ContextMenuState = {
   date: string;
   hasSchedule: boolean;
+  hasLeaderSchedule: boolean;
   x: number;
   y: number;
   triggerId: string;
@@ -71,7 +72,12 @@ interface MonthCalendarProps {
   dragDate: string | null;
   selectedDates: Set<string>;
   onCellClick: (date: Date, event: React.MouseEvent<HTMLDivElement>) => void;
-  onCellContextMenu: (date: Date, schedule: ScheduleWithUser | undefined, event: React.MouseEvent<HTMLDivElement>) => void;
+  onCellContextMenu: (
+    date: Date,
+    schedule: ScheduleWithUser | undefined,
+    leaderSchedule: LeaderScheduleWithLeader | undefined,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => void;
   onDragStart: (date: string) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -180,7 +186,7 @@ const MonthCalendar = memo(function MonthCalendar({
               isToday={isSameDay(day, today)}
               isSelected={selectedDates.has(dateStr)}
               onClick={event => onCellClick(day, event)}
-              onContextMenu={event => onCellContextMenu(day, schedule, event)}
+              onContextMenu={event => onCellContextMenu(day, schedule, leaderScheduleMap.get(dateStr), event)}
               onDragStart={() => onDragStart(dateStr)}
               onDragEnd={onDragEnd}
               onDragOver={onDragOver}
@@ -408,9 +414,6 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     const hasLeader = leaderScheduleDateSet.has(dateStr);
     const isMultiSelect = event.metaKey || event.ctrlKey;
 
-    // DEBUG: 检查 viewMode 值
-    console.log('handleCellClick - viewMode:', viewMode);
-
     // 在"领导"视图模式下，显示领导选择对话框
     if (viewMode === 'leader') {
       if (isMultiSelect) {
@@ -471,6 +474,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
   const handleCellContextMenu = (
     date: Date,
     schedule: ScheduleWithUser | undefined,
+    leaderSchedule: LeaderScheduleWithLeader | undefined,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
     if (!canManage || isTouchDevice || dragDate || moveSourceDate) {
@@ -485,6 +489,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
     setContextMenuState({
       date: dateStr,
       hasSchedule: Boolean(schedule),
+      hasLeaderSchedule: Boolean(leaderSchedule),
       x: event.clientX,
       y: event.clientY,
       triggerId,
@@ -729,6 +734,7 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
 
     const targetDate = contextMenuState.date;
     const hasSchedule = contextMenuState.hasSchedule;
+    const hasLeaderSchedule = contextMenuState.hasLeaderSchedule;
     setContextMenuState(null);
     setSelectedDates(new Set());
     setSelectedDate(targetDate);
@@ -745,6 +751,13 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       return;
     }
 
+    if (action === 'assign_leader' || action === 'replace_leader') {
+      setSelectedLeaderDate(targetDate);
+      setHasLeaderSchedule(hasLeaderSchedule);
+      setLeaderSelectOpen(true);
+      return;
+    }
+
     if (action === 'move_schedule') {
       setMoveSourceDate(targetDate);
       return;
@@ -754,6 +767,14 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
       void (async () => {
         await removeSchedule(targetDate);
         await refreshData();
+      })();
+      return;
+    }
+
+    if (action === 'delete_leader_schedule') {
+      void (async () => {
+        await removeLeaderSchedule(targetDate);
+        await Promise.all([refreshData(), invalidateLeaderSchedules()]);
       })();
       return;
     }
@@ -993,6 +1014,8 @@ export function CalendarView({ refreshKey, canManage, onRequestGenerate }: Calen
         x={contextMenuState?.x ?? 0}
         y={contextMenuState?.y ?? 0}
         hasSchedule={contextMenuState?.hasSchedule ?? false}
+        hasLeaderSchedule={contextMenuState?.hasLeaderSchedule ?? false}
+        viewMode={viewMode}
         labelledBy={contextMenuState?.triggerId}
         onSelect={handleContextMenuAction}
         onClose={handleCloseContextMenu}

@@ -8,13 +8,20 @@ export type CalendarContextMenuAction =
   | 'replace_user'
   | 'move_schedule'
   | 'delete_schedule'
+  | 'assign_leader'
+  | 'replace_leader'
+  | 'delete_leader_schedule'
   | 'edit_note';
+
+type ContextMenuViewMode = 'duty' | 'leader' | 'all';
 
 interface CalendarContextMenuProps {
   open: boolean;
   x: number;
   y: number;
   hasSchedule: boolean;
+  hasLeaderSchedule: boolean;
+  viewMode: ContextMenuViewMode;
   labelledBy?: string;
   onSelect: (action: CalendarContextMenuAction) => void;
   onClose: () => void;
@@ -33,11 +40,53 @@ const scheduledDateActions: Array<{ key: CalendarContextMenuAction; label: strin
   { key: 'edit_note', label: '添加/编辑备注' },
 ];
 
+const leaderEmptyDateActions: Array<{ key: CalendarContextMenuAction; label: string }> = [
+  { key: 'assign_leader', label: '安排值班领导' },
+  { key: 'edit_note', label: '添加/编辑备注' },
+];
+
+const leaderScheduledDateActions: Array<{ key: CalendarContextMenuAction; label: string }> = [
+  { key: 'replace_leader', label: '替换值班领导' },
+  { key: 'delete_leader_schedule', label: '删除值班领导' },
+  { key: 'edit_note', label: '添加/编辑备注' },
+];
+
+function getMenuActions(
+  viewMode: ContextMenuViewMode,
+  hasSchedule: boolean,
+  hasLeaderSchedule: boolean
+): Array<{ key: CalendarContextMenuAction; label: string }> {
+  if (viewMode === 'leader') {
+    return hasLeaderSchedule ? leaderScheduledDateActions : leaderEmptyDateActions;
+  }
+
+  if (viewMode === 'duty') {
+    return hasSchedule ? scheduledDateActions : emptyDateActions;
+  }
+
+  // 全部视图：值班员操作 + 值班领导操作
+  const actions = hasSchedule
+    ? scheduledDateActions.filter(action => action.key !== 'edit_note')
+    : emptyDateActions.filter(action => action.key !== 'edit_note');
+  actions.push(
+    hasLeaderSchedule
+      ? { key: 'replace_leader', label: '替换值班领导' }
+      : { key: 'assign_leader', label: '安排值班领导' }
+  );
+  if (hasLeaderSchedule) {
+    actions.push({ key: 'delete_leader_schedule', label: '删除值班领导' });
+  }
+  actions.push({ key: 'edit_note', label: '添加/编辑备注' });
+  return actions;
+}
+
 export function CalendarContextMenu({
   open,
   x,
   y,
   hasSchedule,
+  hasLeaderSchedule,
+  viewMode,
   labelledBy,
   onSelect,
   onClose,
@@ -77,7 +126,7 @@ export function CalendarContextMenu({
     return null;
   }
 
-  const actions = hasSchedule ? scheduledDateActions : emptyDateActions;
+  const actions = getMenuActions(viewMode, hasSchedule, hasLeaderSchedule);
 
   return (
     <div
