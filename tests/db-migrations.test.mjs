@@ -31,7 +31,7 @@ test('applyMigrations creates schema_migrations and records executed versions', 
     .all()
     .map(row => row.version);
 
-  assert.deepEqual(versions, MIGRATIONS.map(migration => migration.version));
+  assert.deepEqual(versions, [...MIGRATIONS].map(m => m.version).sort());
 });
 
 test('applyMigrations upgrades legacy schema with missing profile and audit columns', async () => {
@@ -72,7 +72,19 @@ test('applyMigrations upgrades legacy schema with missing profile and audit colu
   );
   assert.deepEqual(
     getColumnNames(database, 'accounts'),
-    ['id', 'username', 'display_name', 'password_hash', 'created_at', 'role', 'is_active']
+    [
+      'id',
+      'username',
+      'display_name',
+      'password_hash',
+      'created_at',
+      'role',
+      'is_active',
+      'dingtalk_open_id',
+      'dingtalk_union_id',
+      'dingtalk_nick',
+      'auth_provider',
+    ]
   );
   assert.deepEqual(
     getColumnNames(database, 'logs'),
@@ -96,6 +108,25 @@ test('applyMigrations adds schedule adjustment and log reason columns', async ()
   assert(scheduleColumns.includes('original_user_id'));
   assert(scheduleColumns.includes('adjust_reason'));
   assert(logColumns.includes('reason'));
+});
+
+test('全新数据库按版本号顺序完成迁移（依赖 accounts 的 010 在 001 之后执行）', async () => {
+  const { applyMigrations } = await loadMigrationsModule();
+  const database = new Database(':memory:');
+
+  applyMigrations(database);
+
+  const accountColumns = getColumnNames(database, 'accounts');
+  assert(accountColumns.includes('dingtalk_open_id'), '010 的钉钉字段应已应用');
+  assert(accountColumns.includes('role'), '003 的角色字段应已应用');
+
+  const tables = database
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+    .all()
+    .map(row => row.name);
+  for (const table of ['users', 'accounts', 'schedules', 'logs', 'api_tokens', 'game_scores', 'date_notes', 'leaders', 'leader_schedules']) {
+    assert(tables.includes(table), `缺少表 ${table}`);
+  }
 });
 
 test('seedDatabase creates default config and admin account idempotently', async () => {

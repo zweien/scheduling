@@ -263,11 +263,13 @@ export function applyMigrations(database: Database.Database) {
       .map(row => row.version)
   );
 
-  for (const migration of MIGRATIONS) {
-    if (applied.has(migration.version)) {
-      continue;
-    }
+  // 数组里新迁移习惯性插在最前面，必须按版本号排序后执行，
+  // 否则全新数据库会先跑 010/011 而此时 accounts 等表还未由 001 创建
+  const pending = [...MIGRATIONS]
+    .sort((a, b) => a.version.localeCompare(b.version))
+    .filter(migration => !applied.has(migration.version));
 
+  for (const migration of pending) {
     const transaction = database.transaction(() => {
       migration.up(database);
       database.prepare('INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)').run(migration.version);
