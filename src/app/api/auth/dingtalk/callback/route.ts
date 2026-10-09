@@ -2,9 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUserAccessToken, getDingtalkUserInfo, buildAppUrl } from '@/lib/dingtalk';
-import { getAccountByDingtalkOpenId, createDingtalkAccount } from '@/lib/accounts';
-import { getSession } from '@/lib/session';
-import { addWebLog } from '@/lib/logs';
+import { completeDingtalkLogin } from '@/lib/dingtalk-login';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -23,40 +21,21 @@ export async function GET(request: NextRequest) {
   cookieStore.delete('dingtalk_oauth_state');
 
   try {
-    // authCode → accessToken
+    // authCode → 用户级 accessToken → 用户信息（OAuth2 体系）
     const tokenResult = await getUserAccessToken(authCode);
-
-    // accessToken → 用户信息
     const userInfo = await getDingtalkUserInfo(tokenResult.accessToken);
 
-    // 查找或创建账号
-    let account = getAccountByDingtalkOpenId(userInfo.openId);
-    if (!account) {
-      account = createDingtalkAccount({
-        openId: userInfo.openId,
-        unionId: userInfo.unionId,
-        nick: userInfo.nick,
-      });
-    }
+    const result = await completeDingtalkLogin({
+      openId: userInfo.openId,
+      unionId: userInfo.unionId,
+      nick: userInfo.nick,
+      identity: userInfo.openId,
+      source: 'dingtalk_qr',
+    });
 
-    if (!account.is_active) {
+    if (!result.ok) {
       return NextResponse.redirect(buildAppUrl(request, '/?error=account_disabled'));
     }
-
-    // 设置 session
-    const session = await getSession();
-    session.isLoggedIn = true;
-    session.accountId = account.id;
-    session.username = account.username;
-    session.displayName = account.display_name;
-    session.role = account.role;
-    await session.save();
-
-    // 记录日志
-    await addWebLog('dingtalk_login', `账号: ${account.username}`, undefined, `钉钉扫码登录 (${account.role})`, {
-      username: account.username,
-      role: account.role,
-    });
 
     return NextResponse.redirect(buildAppUrl(request, '/dashboard'));
   } catch (error) {

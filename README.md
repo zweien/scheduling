@@ -26,7 +26,7 @@
 
 当前版本：
 
-- `v1.14.2`
+- `v1.15.0`
 
 发布约定：
 
@@ -136,13 +136,13 @@ npm run dev
 ```env
 SESSION_SECRET=your-secret-key-at-least-32-characters
 
-# 钉钉 OAuth2 登录（可选）
-DINGTALK_CLIENT_ID=your-dingtalk-client-id
-DINGTALK_CLIENT_SECRET=your-dingtalk-client-secret
-NEXT_PUBLIC_DINGTALK_CORP_ID=your-corp-id          # 工作台免登时需要
+# 钉钉登录（可选）
+DINGTALK_CLIENT_ID=your-dingtalk-client-id            # 即钉钉后台的 Client ID（原 AppKey）
+DINGTALK_CLIENT_SECRET=your-dingtalk-client-secret    # 即 Client Secret（原 AppSecret）
+DINGTALK_CORP_ID=your-corp-id                         # 可选：不配置时由工作台 URL 自动携带
 ```
 
-> 钉钉相关变量需写入服务器上的 `.env.production`（见 `docs/deployment/vps.md`）。`NEXT_PUBLIC_DINGTALK_CORP_ID` 会在构建时内联进前端产物，仅在服务器本地 `.env` 中配置不会生效。
+> 钉钉相关变量需写入服务器上的 `.env.production`（见 `docs/deployment/vps.md`）。免登所需的 `clientId` 由 `/api/auth/dingtalk/config` 在运行时下发，不依赖构建期环境变量。
 
 ### 生产构建
 
@@ -163,10 +163,20 @@ npm run start
 
 配置钉钉相关环境变量后，登录页会显示"钉钉登录"按钮。支持两种模式：
 
-- **扫码登录**：用户点击按钮跳转钉钉授权页面，扫码后自动登录
-- **工作台免登**：配置 `NEXT_PUBLIC_DINGTALK_CORP_ID` 后，通过钉钉工作台打开应用时自动登录
+- **扫码登录**：用户点击按钮跳转钉钉授权页面，扫码后自动登录（浏览器可用）
+- **工作台免登**：从钉钉工作台打开应用时，通过 JSAPI 免登码自动登录，无需任何输入（仅钉钉端内有效，端外自动回退扫码登录）
 
-首次钉钉登录会自动创建账号（角色为普通用户），后续登录自动关联已有账号。
+首次钉钉登录会自动创建账号（角色为普通用户），后续登录自动关联已有账号。扫码与免登通过 `unionId` 识别为同一账号。
+
+钉钉开发者后台需要配置（应用详情 → 开发配置 → 安全设置）：
+
+| 配置项 | 填写值 |
+| --- | --- |
+| 应用首页地址 / PC 端首页地址 | `https://<你的域名>/dingtalk?corpid=$CORPID$` |
+| 端内免登地址 | `https://<你的域名>/dingtalk` |
+| 重定向 URL（回调域名） | `https://<你的域名>/api/auth/dingtalk/callback` |
+
+配置完成后需发布应用。免登码换取 userid 使用应用级 access_token（`/v1.0/oauth2/accessToken`），服务端已内置缓存。
 
 ### 角色权限
 

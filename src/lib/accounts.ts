@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import db from './db';
 import { hashPassword, verifyPassword } from './password';
+import { buildDingtalkUsername, buildDingtalkDisplayName } from './dingtalk-identity';
 import type { Account, AccountRole } from '@/types';
 
 function normalizeUsername(username: string) {
@@ -72,16 +73,50 @@ export function getAccountByDingtalkOpenId(openId: string): Account | undefined 
   return db.prepare('SELECT * FROM accounts WHERE dingtalk_open_id = ?').get(openId) as Account | undefined;
 }
 
-export function createDingtalkAccount(userInfo: { openId: string; unionId: string; nick: string }): Account {
-  const openIdPrefix = userInfo.openId.substring(0, 8);
-  const username = `dingtalk_${openIdPrefix}`;
-  const displayName = userInfo.nick || `钉钉用户_${openIdPrefix.substring(0, 4)}`;
+export function getAccountByDingtalkUnionId(unionId: string): Account | undefined {
+  if (!unionId) {
+    return undefined;
+  }
+  return db.prepare('SELECT * FROM accounts WHERE dingtalk_union_id = ?').get(unionId) as Account | undefined;
+}
+
+/** 回填钉钉身份字段（例如历史账号只有 open_id，免登登录补上 union_id） */
+export function updateAccountDingtalkIdentity(
+  accountId: number,
+  patch: { dingtalk_open_id?: string; dingtalk_union_id?: string; dingtalk_nick?: string }
+): Account {
+  const fields = Object.keys(patch);
+  if (fields.length > 0) {
+    const assignments = fields.map(field => `${field} = ?`).join(', ');
+    const values = fields.map(field => patch[field as keyof typeof patch] as string);
+    db.prepare(`UPDATE accounts SET ${assignments} WHERE id = ?`).run(...values, accountId);
+  }
+  return getAccountById(accountId)!;
+}
+
+export function createDingtalkAccount(userInfo: {
+  openId?: string;
+  unionId?: string;
+  nick?: string;
+  identity?: string;
+}): Account {
+  // identity 为账号唯一标识（扫码登录用 openId，免登用 userId）
+  const identity = userInfo.identity ?? userInfo.openId ?? userInfo.unionId ?? '';
+  const username = buildDingtalkUsername(identity);
+  const displayName = buildDingtalkDisplayName(userInfo.nick ?? '', identity);
   const passwordHash = hashPassword(crypto.randomBytes(32).toString('hex'));
 
   const result = db.prepare(`
     INSERT INTO accounts (username, display_name, password_hash, role, is_active, dingtalk_open_id, dingtalk_union_id, dingtalk_nick, auth_provider)
     VALUES (?, ?, ?, 'user', 1, ?, ?, ?, 'dingtalk')
-  `).run(username, displayName, passwordHash, userInfo.openId, userInfo.unionId, userInfo.nick);
+  `).run(
+    username,
+    displayName,
+    passwordHash,
+    userInfo.openId ?? null,
+    userInfo.unionId ?? null,
+    userInfo.nick ?? null
+  );
 
   return getAccountById(result.lastInsertRowid as number)!;
 }

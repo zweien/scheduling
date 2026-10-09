@@ -2,81 +2,138 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Script from 'next/script';
+import Link from 'next/link';
 
 declare global {
   interface Window {
     dd?: {
       ready: (fn: () => void) => void;
-      runtime: {
-        permission: {
-          requestAuthCode: (params: {
-            corpId: string;
-            onSuccess: (result: { code: string }) => void;
-            onFail: (err: unknown) => void;
-          }) => void;
-        };
-      };
+      env?: { platform?: string };
+      requestAuthCode: (params: {
+        corpId: string;
+        clientId: string;
+        onSuccess: (result: { code: string }) => void;
+        onFail: (err: unknown) => void;
+      }) => void;
     };
   }
 }
 
+type Status = 'loading' | 'redirecting' | 'error';
+
+const SDK_SRC = 'https://g.alicdn.com/dingding/dingtalk-jsapi/3.1.0/dingtalk.open.js';
+// 钉钉端外不会触发任何回调，需要自行兜底超时后回退到 OAuth 跳转
+const AUTH_CODE_TIMEOUT_MS = 4000;
+
 export default function DingtalkPage() {
-  const [status, setStatus] = useState<'loading' | 'error' | 'redirecting'>('loading');
+  const [status, setStatus] = useState<Status>('loading');
   const [errorMsg, setErrorMsg] = useState('');
+  const [sdkReady, setSdkReady] = useState(false);
+
+  const fallbackToOAuth = () => {
+    window.location.href = '/api/auth/dingtalk';
+  };
 
   useEffect(() => {
-    const corpId = process.env.NEXT_PUBLIC_DINGTALK_CORP_ID;
-
-    if (!corpId) {
-      // 没有 corpId，回退到 OAuth 跳转流程
-      window.location.href = '/api/auth/dingtalk';
+    if (!sdkReady) {
       return;
     }
 
-    // 等待钉钉 JS SDK 加载
-    const checkSdk = () => {
-      if (window.dd?.ready) {
-        window.dd.ready(() => {
-          window.dd!.runtime.permission.requestAuthCode({
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const run = async () => {
+      const dd = window.dd;
+      // 不在钉钉端内（含普通浏览器、PC 浏览器）→ 直接走 OAuth 扫码登录
+      if (!dd || dd.env?.platform === 'notInDingTalk') {
+        fallbackToOAuth();
+        return;
+      }
+
+      // corpId 由钉钉在应用首页地址中把 $CORPID$ 替换后带在 query 上
+      const corpId = new URLSearchParams(window.location.search).get('corpid') ?? '';
+      if (!corpId) {
+        fallbackToOAuth();
+        return;
+      }
+
+      let clientId = '';
+      try {
+        const res = await fetch('/api/auth/dingtalk/config');
+        const data = await res.json();
+        clientId = data.clientId ?? '';
+        if (!data.enabled || !clientId) {
+          fallbackToOAuth();
+          return;
+        }
+      } catch {
+        fallbackToOAuth();
+        return;
+      }
+
+      if (cancelled) return;
+
+      const exchange = async (code: string) => {
+        if (cancelled) return;
+        setStatus('redirecting');
+        try {
+          const res = await fetch('/api/auth/dingtalk/workbench', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authCode: code }),
+          });
+          const data = await res.json();
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            setStatus('error');
+            setErrorMsg(data.error === 'account_disabled' ? '账号已被禁用' : '登录失败，请重试');
+          }
+        } catch {
+          setStatus('error');
+          setErrorMsg('请求失败，请重试');
+        }
+      };
+
+      // requestAuthCode 无需鉴权（无需 dd.config / jsapi_ticket）
+      dd.ready(() => {
+        if (cancelled) return;
+        timer = setTimeout(() => {
+          if (!cancelled) fallbackToOAuth();
+        }, AUTH_CODE_TIMEOUT_MS);
+
+        try {
+          dd.requestAuthCode({
             corpId,
-            onSuccess: async (result) => {
-              setStatus('redirecting');
-              try {
-                const res = await fetch('/api/auth/dingtalk/workbench', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ authCode: result.code }),
-                });
-                const data = await res.json();
-                if (data.redirect) {
-                  window.location.href = data.redirect;
-                } else {
-                  setStatus('error');
-                  setErrorMsg(data.error || '登录失败');
-                }
-              } catch {
-                setStatus('error');
-                setErrorMsg('请求失败');
-              }
+            clientId,
+            onSuccess: result => {
+              if (timer) clearTimeout(timer);
+              void exchange(result.code);
             },
-            onFail: (err) => {
-              console.error('DingTalk requestAuthCode failed:', err);
-              // 获取 authCode 失败，回退到 OAuth 跳转
-              window.location.href = '/api/auth/dingtalk';
+            onFail: () => {
+              if (timer) clearTimeout(timer);
+              fallbackToOAuth();
             },
           });
-        });
-      } else {
-        // 不在钉钉环境，回退到 OAuth 跳转
-        window.location.href = '/api/auth/dingtalk';
-      }
+        } catch {
+          if (timer) clearTimeout(timer);
+          fallbackToOAuth();
+        }
+      });
     };
 
-    checkSdk();
-  }, []);
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [sdkReady]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
+      <Script src={SDK_SRC} strategy="afterInteractive" onReady={() => setSdkReady(true)} onError={fallbackToOAuth} />
       <div className="text-center space-y-4">
         {status === 'loading' && (
           <>
@@ -90,7 +147,7 @@ export default function DingtalkPage() {
         {status === 'error' && (
           <>
             <p className="text-sm text-destructive">{errorMsg}</p>
-            <a href="/" className="text-sm text-primary underline">返回首页</a>
+            <Link href="/" className="text-sm text-primary underline">返回首页</Link>
           </>
         )}
       </div>
