@@ -1,6 +1,6 @@
 ---
 name: scheduling-api
-description: Operate the 值班排班系统 (duty-scheduling system) through its REST API — query who is on duty, swap/change a day's assignment, get duty statistics (with holiday breakdown), export the monthly roster. Use whenever the user wants to interact with the scheduling/值班/排班 system from the terminal, e.g. "查一下本周谁值班", "把下周三的值班换成张三", "统计今年每个人值班几次", "导出本月值班表", "今年节假日值班情况", or mentions scheduling.zweien.xyz / the scheduling repo / 值班表 / 调班 / 换班. Auth and base URL are handled by the bundled scripts/api.sh helper reading .env.
+description: Operate the 值班排班系统 (duty-scheduling system) through its REST API — query who is on duty, swap/change a day's assignment, get duty statistics (with holiday breakdown), export the monthly roster. Use whenever the user wants to interact with the scheduling/值班/排班 system from the terminal, e.g. "查一下本周谁值班", "把下周三的值班换成张三", "统计今年每个人值班几次", "导出本月值班表", "今年节假日值班情况", or mentions scheduling.idrl.top / the scheduling repo / 值班表 / 调班 / 换班. Auth and base URL are handled by the bundled scripts/api.sh helper reading .env.
 ---
 
 # scheduling-api — 值班系统 API 操作
@@ -16,7 +16,7 @@ Put the token in the repo root `.env` (this file is gitignored, so it stays loca
 ```bash
 # .env  （从 skill 的 assets/env.example 复制后填写）
 SCHEDULING_API_TOKEN=sch_xxxxxxxxxxxxxxxxxxxxxxxx
-SCHEDULING_BASE_URL=http://localhost:3000   # 开发；线上用 https://scheduling.zweien.xyz
+SCHEDULING_BASE_URL=http://localhost:3000   # 开发；线上用 https://scheduling.idrl.top
 ```
 
 If `.env` is missing or the token is empty, the helper prints a clear error.

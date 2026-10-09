@@ -144,7 +144,7 @@ gh workflow run deploy-vps.yml -f tag=v1.X.X
 
 ```bash
 # 检查服务状态
-curl -sI https://scheduling.zweien.xyz/
+curl -sI https://scheduling.idrl.top/
 
 # 或检查 GitHub Actions 日志确认 PM2 状态为 online
 ```

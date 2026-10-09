@@ -142,6 +142,8 @@ DINGTALK_CLIENT_SECRET=your-dingtalk-client-secret
 NEXT_PUBLIC_DINGTALK_CORP_ID=your-corp-id          # 工作台免登时需要
 ```
 
+> 钉钉相关变量需写入服务器上的 `.env.production`（见 `docs/deployment/vps.md`）。`NEXT_PUBLIC_DINGTALK_CORP_ID` 会在构建时内联进前端产物，仅在服务器本地 `.env` 中配置不会生效。
+
 ### 生产构建
 
 ```bash
@@ -375,7 +377,7 @@ skill 通过 `.claude/skills/scheduling-api/scripts/api.sh` 调用 API，自动�
 cp .claude/skills/scheduling-api/assets/env.example .env
 # 编辑 .env，填入浏览器里创建的 API token：
 #   SCHEDULING_API_TOKEN=sch_...                     # 换班需 admin token
-#   SCHEDULING_BASE_URL=http://localhost:3000        # 线上：https://scheduling.zweien.xyz
+#   SCHEDULING_BASE_URL=http://localhost:3000        # 线上：https://scheduling.idrl.top
 ```
 
 > Token 在 Web UI（登录 → Token 管理）创建。查询 / 统计 / 导出用任意 token；换班（PATCH）需 admin 角色。该 skill 仅在 Claude Code 会话中触发，`.env` 已被 gitignore，token 不入库。
