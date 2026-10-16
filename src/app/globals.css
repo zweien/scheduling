@@ -294,3 +294,25 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* 兼容旧内核（如钉钉移动端 webview，内核 < Chrome 104）：
+   Tailwind v4 把 translate 工具类编译为独立 translate 属性，旧内核不识别，
+   元素会停留在 top/left 偏移处（对话框左上角钉在屏幕中心、tooltip 偏右等）。
+   对「定位关键」的位移类补 transform 回退；仅在不支持 translate 属性的环境生效。 */
+@supports not (translate: 0) {
+  .-translate-x-1\/2 {
+    transform: translateX(-50%);
+  }
+
+  .-translate-y-1\/2 {
+    transform: translateY(-50%);
+  }
+
+  .sm\:-translate-x-1\/2 {
+    transform: translateX(-50%);
+  }
+
+  .hover\:-translate-y-0\.5:hover {
+    transform: translateY(-2px);
+  }
+}
